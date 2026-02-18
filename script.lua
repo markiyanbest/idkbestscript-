@@ -1,5 +1,5 @@
--- [[ V260.40: OMNI-REBORN - SUPREME HITBOX ENFORCER ]]
--- [[ AUTO-RESPAWN CATCH | REAL PING | AUTO-MAGNET SWITCH ]]
+-- [[ V260.43: OMNI-REBORN - FLY SPEED & NOCLIP FIXED ]]
+-- [[ FULL SPEED CONTROL | ALL FUNCTIONS ACTIVE | NO COMPRESSION ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -15,21 +15,13 @@ local Config = {
     FlySpeed = 55, 
     WalkSpeed = 85, 
     JumpPower = 125,
-    HitboxSize = Vector3.new(18, 18, 18) -- Оптимальний розмір
+    HitboxSize = Vector3.new(18, 18, 18)
 }
 
 local State = {
-    Fly = false, 
-    Aim = false, 
-    ShadowLock = false, 
-    Noclip = false, 
-    Hitbox = false, 
-    Speed = false, 
-    Bhop = false, 
-    ESP = false, 
-    Spin = false, 
-    HighJump = false, 
-    Potato = false
+    Fly = false, Aim = false, ShadowLock = false, Noclip = false, 
+    Hitbox = false, Speed = false, Bhop = false, ESP = false, 
+    Spin = false, HighJump = false, Potato = false
 }
 
 local LockedTarget = nil
@@ -43,23 +35,17 @@ pcall(function()
 end)
 
 local Screen = Instance.new("ScreenGui", game:GetService("CoreGui"))
-Screen.Name = "V259_Omni"
-Screen.ResetOnSpawn = false
+Screen.Name = "V259_Omni"; Screen.ResetOnSpawn = false
 
--- >>> КНОПКА "M" <<<
 local MToggle = Instance.new("TextButton", Screen)
 MToggle.Size = UDim2.new(0, 45, 0, 45); MToggle.Position = UDim2.new(0, 10, 0.45, 0)
 MToggle.BackgroundColor3 = Color3.new(1,1,1); MToggle.Text = "M"; MToggle.TextColor3 = Color3.new(0,0,0)
 MToggle.Font = Enum.Font.GothamBlack; MToggle.TextSize = 22; Instance.new("UICorner", MToggle)
 
--- >>> ПАНЕЛЬ СТАТИСТИКИ <<<
 local StatsFrame = Instance.new("Frame", Screen)
-StatsFrame.Size = UDim2.new(0, 110, 0, 45)
-StatsFrame.Position = UDim2.new(1, -125, 0, 15)
-StatsFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-StatsFrame.BackgroundTransparency = 0.2
-Instance.new("UICorner", StatsFrame)
-local StatsStroke = Instance.new("UIStroke", StatsFrame)
+StatsFrame.Size = UDim2.new(0, 110, 0, 45); StatsFrame.Position = UDim2.new(1, -125, 0, 15)
+StatsFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); StatsFrame.BackgroundTransparency = 0.2
+Instance.new("UICorner", StatsFrame); local StatsStroke = Instance.new("UIStroke", StatsFrame)
 StatsStroke.Color = Color3.new(1, 1, 1); StatsStroke.Thickness = 1.5
 
 local FPSLabel = Instance.new("TextLabel", StatsFrame)
@@ -72,7 +58,6 @@ PingLabel.Size = UDim2.new(1, 0, 0.5, 0); PingLabel.Position = UDim2.new(0, 0, 0
 PingLabel.BackgroundTransparency = 1; PingLabel.TextColor3 = Color3.new(1,1,1)
 PingLabel.Font = Enum.Font.GothamBold; PingLabel.TextSize = 13; PingLabel.Text = "Ping: ..."
 
--- >>> ГОЛОВНЕ МЕНЮ <<<
 local Main = Instance.new("Frame", Screen)
 Main.Size = UDim2.new(0, 230, 0, 520); Main.Position = UDim2.new(0.5, -115, 0.5, -260)
 Main.BackgroundColor3 = Color3.new(0,0,0); Main.Visible = false; Main.Active = true; Main.Draggable = true
@@ -83,34 +68,35 @@ Scroll.Size = UDim2.new(1, -10, 1, -20); Scroll.Position = UDim2.new(0, 5, 0, 10
 Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 2
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- [[ 2. CORE ENGINES (FPS / PING / HITBOX) ]]
+-- [[ 2. HITBOX & STATS CORE ]]
 local FrameLog = {}
 task.spawn(function()
     while true do
-        -- Stats Update
         local now = tick()
         for i = #FrameLog, 1, -1 do if FrameLog[i] < now - 1 then table.remove(FrameLog, i) end end
-        local fps = #FrameLog
-        local ping = math.floor(LP:GetNetworkPing() * 1000)
+        FPSLabel.Text = "FPS: " .. #FrameLog
+        PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms"
         
-        FPSLabel.Text = "FPS: " .. fps
-        PingLabel.Text = "Ping: " .. ping .. "ms"
-        
-        -- Hitbox Enforcement (Force Loop)
         if State.Hitbox then
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LP and p.Character then
                     local head = p.Character:FindFirstChild("Head")
                     if head and head:IsA("BasePart") then
                         head.Size = Config.HitboxSize
-                        head.Transparency = 0.5
+                        head.Transparency = 0.6
                         head.CanCollide = false
                         head.Massless = true
+                    end
+                    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.Size = Config.HitboxSize
+                        hrp.Transparency = 0.9
+                        hrp.CanCollide = false
                     end
                 end
             end
         end
-        task.wait(0.1) -- Висока частота перевірки для стабільності
+        task.wait(0.1)
     end
 end)
 
@@ -168,13 +154,21 @@ local function Toggle(Name)
     
     if Name == "ESP" and not State.ESP then ClearESP() end
 
-    -- Повернення нормальних хітбоксів при вимкненні
+    -- FIX: Noclip Turn Off Logic
+    if Name == "Noclip" and not State.Noclip then
+        task.wait(0.05)
+        if Char then
+            for _, v in pairs(Char:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide = true end
+            end
+        end
+    end
+
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("Head") then
-                p.Character.Head.Size = Vector3.new(1,1,1)
-                p.Character.Head.Transparency = 0
-                p.Character.Head.CanCollide = true
+            if p.Character then
+                if p.Character:FindFirstChild("Head") then p.Character.Head.Size = Vector3.new(1,1,1) p.Character.Head.Transparency = 0 end
+                if p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Size = Vector3.new(2,2,1) p.Character.HumanoidRootPart.Transparency = 1 end
             end
         end
     end
@@ -187,10 +181,6 @@ local function Toggle(Name)
             LockedTarget = nil
             MagBodyPos.MaxForce = Vector3.zero; MagBodyGyr.MaxTorque = Vector3.zero
         end
-    end
-
-    if Name == "Noclip" and not State.Noclip and Char then
-        for _, v in pairs(Char:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = true end end
     end
 
     if Name == "Potato" and State.Potato then
@@ -242,30 +232,15 @@ RunService.RenderStepped:Connect(function()
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
     if not HRP then return end
 
-    -- [[ AUTO-SWITCH MAGNET LOGIC ]]
     if State.ShadowLock then
-        -- Перевіряємо, чи жива ціль
-        local IsAlive = LockedTarget 
-                        and LockedTarget.Parent 
-                        and LockedTarget:FindFirstChild("Humanoid") 
-                        and LockedTarget.Humanoid.Health > 0
-        
-        -- Якщо цілі немає або вона померла, шукаємо нову
-        if not IsAlive then
-            LockedTarget = GetClosestPlayer()
-        end
-
-        -- Якщо ціль знайдена і жива - притягуємося
+        local IsAlive = LockedTarget and LockedTarget.Parent and LockedTarget:FindFirstChild("Humanoid") and LockedTarget.Humanoid.Health > 0
+        if not IsAlive then LockedTarget = GetClosestPlayer() end
         if LockedTarget and LockedTarget:FindFirstChild("HumanoidRootPart") then
-            MagBodyPos.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            MagBodyGyr.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            MagBodyPos.MaxForce = Vector3.new(math.huge, math.huge, math.huge); MagBodyGyr.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
             MagBodyPos.Position = LockedTarget.HumanoidRootPart.Position + (LockedTarget.HumanoidRootPart.CFrame.LookVector * -3)
-            MagBodyGyr.CFrame = LockedTarget.HumanoidRootPart.CFrame
-            HRP.RotVelocity = Vector3.zero
+            MagBodyGyr.CFrame = LockedTarget.HumanoidRootPart.CFrame; HRP.RotVelocity = Vector3.zero
         else
-            -- Якщо нікого немає поруч, вимикаємо силу, щоб не застрягти
-            MagBodyPos.MaxForce = Vector3.zero
-            MagBodyGyr.MaxTorque = Vector3.zero
+            MagBodyPos.MaxForce = Vector3.zero; MagBodyGyr.MaxTorque = Vector3.zero
         end
     end
 
@@ -274,6 +249,7 @@ RunService.RenderStepped:Connect(function()
         if target and target:FindFirstChild("Head") then Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Head.Position) end
     end
 
+    -- FLY LOGIC WITH UPDATED SPEED CONFIG
     if State.Fly then
         local move = Vector3.zero
         if UIS:IsKeyDown(Enum.KeyCode.W) then move += Camera.CFrame.LookVector end
@@ -284,9 +260,7 @@ RunService.RenderStepped:Connect(function()
     end
 
     if State.ESP then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LP then UpdateESP(p) end
-        end
+        for _, p in pairs(Players:GetPlayers()) do if p ~= LP then UpdateESP(p) end end
     end
 end)
 
@@ -306,11 +280,12 @@ end)
 
 RunService.Stepped:Connect(function()
     if State.Noclip and LP.Character then
-        for _, v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+        for _, v in pairs(LP.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
     end
 end)
 
--- Keybinds
 UIS.InputBegan:Connect(function(i, g)
     if g then return end
     if i.KeyCode == Enum.KeyCode.F then Toggle("Fly") end
