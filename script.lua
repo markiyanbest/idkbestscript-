@@ -1,5 +1,5 @@
--- [[ V260.43: OMNI-REBORN - FLY SPEED & NOCLIP FIXED ]]
--- [[ FULL SPEED CONTROL | ALL FUNCTIONS ACTIVE | NO COMPRESSION ]]
+-- [[ V260.45: OMNI-REBORN - PERFECT HITBOX RESET & NOCLIP FIXED ]]
+-- [[ FULL SCRIPT | NO COMPRESSION | ORIGINAL SIZE RESTORE ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -24,6 +24,8 @@ local State = {
     Spin = false, HighJump = false, Potato = false
 }
 
+-- Таблиця для збереження оригінальних розмірів
+local OriginalSizes = {}
 local LockedTarget = nil
 local Buttons = {}
 
@@ -68,7 +70,7 @@ Scroll.Size = UDim2.new(1, -10, 1, -20); Scroll.Position = UDim2.new(0, 5, 0, 10
 Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 2
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- [[ 2. HITBOX & STATS CORE ]]
+-- [[ 2. HITBOX CORE - ВИПРАВЛЕНО ]]
 local FrameLog = {}
 task.spawn(function()
     while true do
@@ -84,6 +86,12 @@ task.spawn(function()
                     for _, name in pairs(parts) do
                         local part = p.Character:FindFirstChild(name)
                         if part and part:IsA("BasePart") then
+                            -- Зберігаємо оригінальний розмір ОДИН раз
+                            if not OriginalSizes[p.UserId] then OriginalSizes[p.UserId] = {} end
+                            if not OriginalSizes[p.UserId][name] then
+                                OriginalSizes[p.UserId][name] = part.Size
+                            end
+                            
                             part.Size = Config.HitboxSize
                             part.Transparency = 0.8
                             part.CanCollide = false 
@@ -156,21 +164,21 @@ local function Toggle(Name)
     if Name == "Noclip" and not State.Noclip then
         if Char then
             for _, v in pairs(Char:GetDescendants()) do
-                if v:IsA("BasePart") then 
-                    v.CanCollide = true -- Повертаємо фізику миттєво
-                end
+                if v:IsA("BasePart") then v.CanCollide = true end
             end
         end
     end
 
+    -- ВИПРАВЛЕНО: Скидання розмірів без «жирного торса»
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do
-            if p.Character then
+            if p.Character and OriginalSizes[p.UserId] then
                 local parts = {"Head", "Torso", "UpperTorso", "LowerTorso"}
                 for _, n in pairs(parts) do
                     local pt = p.Character:FindFirstChild(n)
-                    if pt then
-                        pt.Size = (n == "Head") and Vector3.new(1,1,1) or Vector3.new(2,2,1)
+                    local savedSize = OriginalSizes[p.UserId][n]
+                    if pt and savedSize then
+                        pt.Size = savedSize
                         pt.Transparency = 0
                         pt.CanCollide = true
                     end
@@ -275,7 +283,6 @@ RunService.Heartbeat:Connect(function()
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end
     
-    -- ВИПРАВЛЕНО: Плавний BHOP
     if UIS:IsKeyDown(Enum.KeyCode.Space) and State.Bhop then
         if Hum.FloorMaterial ~= Enum.Material.Air then
             Hum:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -292,13 +299,10 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ВИПРАВЛЕНО: Робочий NOCLIP
 RunService.Stepped:Connect(function()
     if State.Noclip and LP.Character then
         for _, v in pairs(LP.Character:GetDescendants()) do
-            if v:IsA("BasePart") then 
-                v.CanCollide = false 
-            end
+            if v:IsA("BasePart") then v.CanCollide = false end
         end
     end
 end)
