@@ -1,5 +1,5 @@
--- [[ V260.45: OMNI-REBORN - PERFECT HITBOX RESET & NOCLIP FIXED ]]
--- [[ FULL SCRIPT | NO COMPRESSION | ORIGINAL SIZE RESTORE ]]
+-- [[ V260.48: OMNI-REBORN - FINAL STABILITY UPDATE ]]
+-- [[ NO PARALYZE HITBOX | STABLE HIGHLIGHT ESP | FULL CODE ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -15,7 +15,7 @@ local Config = {
     FlySpeed = 55, 
     WalkSpeed = 85, 
     JumpPower = 125,
-    HitboxSize = Vector3.new(18, 18, 18) 
+    HitboxSize = Vector3.new(18, 18, 18)
 }
 
 local State = {
@@ -24,8 +24,6 @@ local State = {
     Spin = false, HighJump = false, Potato = false
 }
 
--- Таблиця для збереження оригінальних розмірів
-local OriginalSizes = {}
 local LockedTarget = nil
 local Buttons = {}
 
@@ -70,43 +68,7 @@ Scroll.Size = UDim2.new(1, -10, 1, -20); Scroll.Position = UDim2.new(0, 5, 0, 10
 Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 2
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- [[ 2. HITBOX CORE - ВИПРАВЛЕНО ]]
-local FrameLog = {}
-task.spawn(function()
-    while true do
-        local now = tick()
-        for i = #FrameLog, 1, -1 do if FrameLog[i] < now - 1 then table.remove(FrameLog, i) end end
-        FPSLabel.Text = "FPS: " .. #FrameLog
-        PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms"
-        
-        if State.Hitbox then
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LP and p.Character then
-                    local parts = {"Head", "Torso", "UpperTorso", "LowerTorso"}
-                    for _, name in pairs(parts) do
-                        local part = p.Character:FindFirstChild(name)
-                        if part and part:IsA("BasePart") then
-                            -- Зберігаємо оригінальний розмір ОДИН раз
-                            if not OriginalSizes[p.UserId] then OriginalSizes[p.UserId] = {} end
-                            if not OriginalSizes[p.UserId][name] then
-                                OriginalSizes[p.UserId][name] = part.Size
-                            end
-                            
-                            part.Size = Config.HitboxSize
-                            part.Transparency = 0.8
-                            part.CanCollide = false 
-                            part.CanTouch = true 
-                            part.Massless = true
-                        end
-                    end
-                end
-            end
-        end
-        task.wait(0.1)
-    end
-end)
-
--- [[ 3. HELPERS & ESP ]]
+-- [[ 2. HELPERS ]]
 local function GetClosestPlayer()
     local target, minDistance = nil, math.huge
     for _, p in pairs(Players:GetPlayers()) do
@@ -127,32 +89,13 @@ local function ClearESP()
     end
 end
 
-local function UpdateESP(Player)
-    if not Player.Character or not State.ESP then return end
-    local Highlight = Player.Character:FindFirstChild("OmniHighlight") or Instance.new("Highlight", Player.Character)
-    Highlight.Name = "OmniHighlight"; Highlight.FillColor = Color3.new(1, 0, 0); Highlight.Enabled = true
-
-    local Head = Player.Character:FindFirstChild("Head")
-    if Head then
-        local Billboard = Head:FindFirstChild("OmniTag") or Instance.new("BillboardGui", Head)
-        Billboard.Name = "OmniTag"; Billboard.Size = UDim2.new(0, 200, 0, 50); Billboard.AlwaysOnTop = true
-        local TagLabel = Billboard:FindFirstChild("Label") or Instance.new("TextLabel", Billboard)
-        TagLabel.Name = "Label"; TagLabel.BackgroundTransparency = 1; TagLabel.Size = UDim2.new(1, 0, 1, 0)
-        TagLabel.TextColor3 = Color3.new(1, 1, 1); TagLabel.Font = Enum.Font.GothamBold
-        local hum = Player.Character:FindFirstChild("Humanoid")
-        local health = hum and math.floor(hum.Health) or 0
-        local dist = math.floor((LP.Character.HumanoidRootPart.Position - Head.Position).Magnitude)
-        TagLabel.Text = Player.Name .. "\n[" .. health .. " HP] [" .. dist .. "m]"
-    end
-end
-
--- [[ 4. PHYSICAL MAGNET ]]
+-- [[ 3. PHYSICAL MAGNET COMPONENTS ]]
 local MagBodyPos = Instance.new("BodyPosition")
 MagBodyPos.P = 45000; MagBodyPos.D = 800; MagBodyPos.MaxForce = Vector3.zero
 local MagBodyGyr = Instance.new("BodyGyro")
 MagBodyGyr.P = 45000; MagBodyGyr.MaxTorque = Vector3.zero
 
--- [[ 5. TOGGLE SYSTEM ]]
+-- [[ 4. TOGGLE SYSTEM ]]
 local function Toggle(Name)
     State[Name] = not State[Name]
     local Char = LP.Character
@@ -160,29 +103,11 @@ local function Toggle(Name)
     
     if Name == "ESP" and not State.ESP then ClearESP() end
 
-    -- ВИПРАВЛЕНО: Жорстке вимкнення Noclip
     if Name == "Noclip" and not State.Noclip then
+        task.wait(0.05)
         if Char then
             for _, v in pairs(Char:GetDescendants()) do
                 if v:IsA("BasePart") then v.CanCollide = true end
-            end
-        end
-    end
-
-    -- ВИПРАВЛЕНО: Скидання розмірів без «жирного торса»
-    if Name == "Hitbox" and not State.Hitbox then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p.Character and OriginalSizes[p.UserId] then
-                local parts = {"Head", "Torso", "UpperTorso", "LowerTorso"}
-                for _, n in pairs(parts) do
-                    local pt = p.Character:FindFirstChild(n)
-                    local savedSize = OriginalSizes[p.UserId][n]
-                    if pt and savedSize then
-                        pt.Size = savedSize
-                        pt.Transparency = 0
-                        pt.CanCollide = true
-                    end
-                end
             end
         end
     end
@@ -208,7 +133,7 @@ local function Toggle(Name)
     end
 end
 
--- [[ 6. UI CONSTRUCTION ]]
+-- [[ 5. UI CONSTRUCTION ]]
 local function CreateSlider(Text, Min, Max, Default, Callback)
     local Container = Instance.new("Frame", Scroll); Container.Size = UDim2.new(0.9, 0, 0, 50); Container.BackgroundTransparency = 1
     local Label = Instance.new("TextLabel", Container); Label.Size = UDim2.new(1, 0, 0, 20); Label.Text = Text .. ": " .. Default; Label.TextColor3 = Color3.new(1,1,1); Label.BackgroundTransparency = 1; Label.Font = Enum.Font.GothamBold; Label.TextSize = 10
@@ -240,9 +165,94 @@ for i, n in ipairs(Names) do CreateBtn(n, Logic[i]) end
 MToggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 
--- [[ 7. FINAL LOGIC LOOP ]]
+-- [[ 6. MAIN RENDER LOOP ]]
+local FrameLog = {}
 RunService.RenderStepped:Connect(function()
     table.insert(FrameLog, tick())
+    for i = #FrameLog, 1, -1 do if FrameLog[i] < tick() - 1 then table.remove(FrameLog, i) end end
+    FPSLabel.Text = "FPS: " .. #FrameLog
+    PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms"
+
+    -- [[ 🥊 HITBOX BLOCK - FIXED ]]
+    if State.Hitbox then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                for _, partName in pairs({"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}) do
+                    local part = p.Character:FindFirstChild(partName)
+                    if part and part:IsA("BasePart") and part.Size.X < 15 then
+                        part.Size = Config.HitboxSize
+                        part.Transparency = 0.5
+                        part.CanCollide = false
+                        part.CanTouch = false
+                        part.CanQuery = false
+                        part.Material = Enum.Material.Neon
+                        -- ПРИМІТКА: Massless видалено для запобігання паралічу
+                    end
+                end
+            end
+        end
+    else
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                for _, partName in pairs({"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}) do
+                    local part = p.Character:FindFirstChild(partName)
+                    if part and part:IsA("BasePart") and part.Size.X > 2 then
+                        if part.Name == "Head" then
+                            part.Size = Vector3.new(2,1,1)
+                        else
+                            part.Size = Vector3.new(2,2,1)
+                        end
+                        part.Transparency = 0
+                        part.CanCollide = true
+                        part.CanTouch = true
+                        part.CanQuery = true
+                        part.Material = Enum.Material.Plastic
+                    end
+                end
+            end
+        end
+    end
+
+    -- [[ 📦 ESP BLOCK - STABLE HIGHLIGHT ]]
+    if State.ESP then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LP and p.Character then
+                local highlight = p.Character:FindFirstChild("OmniHighlight") or Instance.new("Highlight", p.Character)
+                highlight.Name = "OmniHighlight"
+                highlight.FillColor = Color3.new(1, 0, 0)
+                highlight.OutlineColor = Color3.new(1, 1, 1)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Enabled = true
+                
+                local head = p.Character:FindFirstChild("Head")
+                if head then
+                    local billboard = head:FindFirstChild("OmniTag") or Instance.new("BillboardGui", head)
+                    billboard.Name = "OmniTag"
+                    billboard.Size = UDim2.new(0, 200, 0, 50)
+                    billboard.StudsOffset = Vector3.new(0, 3, 0)
+                    billboard.AlwaysOnTop = true
+                    
+                    local tag = billboard:FindFirstChild("Label") or Instance.new("TextLabel", billboard)
+                    tag.Name = "Label"
+                    tag.Size = UDim2.new(1, 0, 1, 0)
+                    tag.BackgroundTransparency = 1
+                    tag.TextColor3 = Color3.new(1, 1, 1)
+                    tag.Font = Enum.Font.GothamBold
+                    tag.TextSize = 14
+                    
+                    local hum = p.Character:FindFirstChild("Humanoid")
+                    local health = hum and math.floor(hum.Health) or 0
+                    local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                    local dist = root and math.floor((root.Position - head.Position).Magnitude) or 0
+                    tag.Text = p.Name .. "\nHP: " .. health .. " | Dist: " .. dist .. "m"
+                end
+            end
+        end
+    else
+        ClearESP()
+    end
+
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
     if not HRP then return end
 
@@ -271,28 +281,17 @@ RunService.RenderStepped:Connect(function()
         if UIS:IsKeyDown(Enum.KeyCode.D) then move += Camera.CFrame.RightVector end
         HRP.Velocity = move * Config.FlySpeed
     end
-
-    if State.ESP then
-        for _, p in pairs(Players:GetPlayers()) do if p ~= LP then UpdateESP(p) end end
-    end
 end)
 
+-- [[ 7. HEARTBEAT LOOP ]]
 RunService.Heartbeat:Connect(function()
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid")
     if not HRP or not Hum then return end
-    
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end
-    
-    if UIS:IsKeyDown(Enum.KeyCode.Space) and State.Bhop then
-        if Hum.FloorMaterial ~= Enum.Material.Air then
-            Hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end
-    
     if UIS:IsKeyDown(Enum.KeyCode.Space) and Hum.FloorMaterial ~= Enum.Material.Air then
-        if State.HighJump then HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z) end
+        if State.HighJump then HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z)
+        elseif State.Bhop then Hum:ChangeState(Enum.HumanoidStateType.Jumping) end
     end
-
     if State.Speed and Hum.MoveDirection.Magnitude > 0 and not State.Fly then
         local s = (Hum.FloorMaterial == Enum.Material.Air) and 16 or Config.WalkSpeed
         HRP.Velocity = Vector3.new(Hum.MoveDirection.X * s, HRP.Velocity.Y, Hum.MoveDirection.Z * s)
