@@ -15,7 +15,7 @@ local Config = {
     FlySpeed = 55, 
     WalkSpeed = 85, 
     JumpPower = 125,
-    HitboxSize = Vector3.new(18, 18, 18)
+    HitboxSize = Vector3.new(18, 18, 18) 
 }
 
 local State = {
@@ -80,18 +80,16 @@ task.spawn(function()
         if State.Hitbox then
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LP and p.Character then
-                    local head = p.Character:FindFirstChild("Head")
-                    if head and head:IsA("BasePart") then
-                        head.Size = Config.HitboxSize
-                        head.Transparency = 0.6
-                        head.CanCollide = false
-                        head.Massless = true
-                    end
-                    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.Size = Config.HitboxSize
-                        hrp.Transparency = 0.9
-                        hrp.CanCollide = false
+                    local parts = {"Head", "Torso", "UpperTorso", "LowerTorso"}
+                    for _, name in pairs(parts) do
+                        local part = p.Character:FindFirstChild(name)
+                        if part and part:IsA("BasePart") then
+                            part.Size = Config.HitboxSize
+                            part.Transparency = 0.8
+                            part.CanCollide = false 
+                            part.CanTouch = true 
+                            part.Massless = true
+                        end
                     end
                 end
             end
@@ -154,12 +152,13 @@ local function Toggle(Name)
     
     if Name == "ESP" and not State.ESP then ClearESP() end
 
-    -- FIX: Noclip Turn Off Logic
+    -- ВИПРАВЛЕНО: Жорстке вимкнення Noclip
     if Name == "Noclip" and not State.Noclip then
-        task.wait(0.05)
         if Char then
             for _, v in pairs(Char:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = true end
+                if v:IsA("BasePart") then 
+                    v.CanCollide = true -- Повертаємо фізику миттєво
+                end
             end
         end
     end
@@ -167,8 +166,15 @@ local function Toggle(Name)
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do
             if p.Character then
-                if p.Character:FindFirstChild("Head") then p.Character.Head.Size = Vector3.new(1,1,1) p.Character.Head.Transparency = 0 end
-                if p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Size = Vector3.new(2,2,1) p.Character.HumanoidRootPart.Transparency = 1 end
+                local parts = {"Head", "Torso", "UpperTorso", "LowerTorso"}
+                for _, n in pairs(parts) do
+                    local pt = p.Character:FindFirstChild(n)
+                    if pt then
+                        pt.Size = (n == "Head") and Vector3.new(1,1,1) or Vector3.new(2,2,1)
+                        pt.Transparency = 0
+                        pt.CanCollide = true
+                    end
+                end
             end
         end
     end
@@ -249,7 +255,6 @@ RunService.RenderStepped:Connect(function()
         if target and target:FindFirstChild("Head") then Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Head.Position) end
     end
 
-    -- FLY LOGIC WITH UPDATED SPEED CONFIG
     if State.Fly then
         local move = Vector3.zero
         if UIS:IsKeyDown(Enum.KeyCode.W) then move += Camera.CFrame.LookVector end
@@ -267,21 +272,33 @@ end)
 RunService.Heartbeat:Connect(function()
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid")
     if not HRP or not Hum then return end
+    
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end
-    if UIS:IsKeyDown(Enum.KeyCode.Space) and Hum.FloorMaterial ~= Enum.Material.Air then
-        if State.HighJump then HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z)
-        elseif State.Bhop then Hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    
+    -- ВИПРАВЛЕНО: Плавний BHOP
+    if UIS:IsKeyDown(Enum.KeyCode.Space) and State.Bhop then
+        if Hum.FloorMaterial ~= Enum.Material.Air then
+            Hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
+    
+    if UIS:IsKeyDown(Enum.KeyCode.Space) and Hum.FloorMaterial ~= Enum.Material.Air then
+        if State.HighJump then HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z) end
+    end
+
     if State.Speed and Hum.MoveDirection.Magnitude > 0 and not State.Fly then
         local s = (Hum.FloorMaterial == Enum.Material.Air) and 16 or Config.WalkSpeed
         HRP.Velocity = Vector3.new(Hum.MoveDirection.X * s, HRP.Velocity.Y, Hum.MoveDirection.Z * s)
     end
 end)
 
+-- ВИПРАВЛЕНО: Робочий NOCLIP
 RunService.Stepped:Connect(function()
     if State.Noclip and LP.Character then
         for _, v in pairs(LP.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
+            if v:IsA("BasePart") then 
+                v.CanCollide = false 
+            end
         end
     end
 end)
