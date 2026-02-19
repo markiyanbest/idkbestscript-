@@ -46,7 +46,8 @@ local ButtonMSize = IsMobile and 55 or 45
 local MToggle = Instance.new("TextButton", Screen) 
 MToggle.Size = UDim2.new(0, ButtonMSize, 0, ButtonMSize); MToggle.Position = UDim2.new(0, 10, 0.45, 0) 
 MToggle.BackgroundColor3 = Color3.new(1,1,1); MToggle.Text = "M"; MToggle.TextColor3 = Color3.new(0,0,0) 
-MToggle.Font = Enum.Font.GothamBlack; MToggle.TextSize = IsMobile and 28 or 22; Instance.new("UICorner", MToggle) 
+MToggle.Font = Enum.Font.GothamBlack; MToggle.TextSize = IsMobile and 28 or 22; MToggle.ZIndex = 100
+Instance.new("UICorner", MToggle) 
 
 local StatsFrame = Instance.new("Frame", Screen) 
 StatsFrame.Size = UDim2.new(0, 110, 0, 45); StatsFrame.Position = UDim2.new(1, -125, 0, 15) 
@@ -69,14 +70,14 @@ Main.Size = UDim2.new(0, MainWidth, 0, MainHeight)
 Main.Position = UDim2.new(0.5, -MainWidth/2, 0.5, -MainHeight/2) 
 Main.BackgroundColor3 = Color3.new(0,0,0); Main.Visible = false; Main.Active = true; Main.Draggable = true 
 
-Instance.new("UICorner", Main); local Stroke = Instance.new("UIStroke", Main) 
+Instance.new("UICorner", Main); local Stroke = Instance.new("UIStroke", Main); 
 Stroke.Color = Color3.new(1,1,1); Stroke.Thickness = 2 
 
 local Scroll = Instance.new("ScrollingFrame", Main) 
 Scroll.Size = UDim2.new(1, -10, 1, -20); Scroll.Position = UDim2.new(0, 5, 0, 10) 
 Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = IsMobile and 0 or 2 
 
-local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6) 
+local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); 
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 
 -- [[ 2. HELPERS ]] 
@@ -116,6 +117,28 @@ local function Toggle(Name)
      
     if Name == "ESP" and not State.ESP then ClearESP() end 
 
+    if Name == "Hitbox" and not State.Hitbox then
+        for _, p in pairs(Players:GetPlayers()) do 
+            if p ~= LP and p.Character then 
+                for _, partName in pairs({"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}) do 
+                    local part = p.Character:FindFirstChild(partName) 
+                    if part and part:IsA("BasePart") then 
+                        if part.Name == "Head" then 
+                            part.Size = Vector3.new(2,1,1) 
+                        else 
+                            part.Size = Vector3.new(2,2,1) 
+                        end 
+                        part.Transparency = 0 
+                        part.CanCollide = true 
+                        part.CanTouch = true 
+                        part.CanQuery = true 
+                        part.Material = Enum.Material.Plastic 
+                    end 
+                end 
+            end 
+        end 
+    end
+
     if Name == "Noclip" and not State.Noclip then 
         task.wait(0.05) 
         if Char then 
@@ -148,48 +171,26 @@ end
 
 -- [[ 5. UI CONSTRUCTION ]] 
 local function CreateSlider(Text, Min, Max, Default, Callback) 
-    local Container = Instance.new("Frame", Scroll) 
-    Container.Size = UDim2.new(0.9, 0, 0, 50); Container.BackgroundTransparency = 1 
+    local Container = Instance.new("Frame", Scroll); Container.Size = UDim2.new(0.9, 0, 0, 50); Container.BackgroundTransparency = 1 
 
-    local Label = Instance.new("TextLabel", Container) 
-    Label.Size = UDim2.new(1, 0, 0, 20); Label.Text = Text .. ": " .. Default 
-    Label.TextColor3 = Color3.new(1,1,1); Label.BackgroundTransparency = 1 
-    Label.Font = Enum.Font.GothamBold; Label.TextSize = 10 
+    local Label = Instance.new("TextLabel", Container); Label.Size = UDim2.new(1, 0, 0, 20); Label.Text = Text .. ": " .. Default; 
+    Label.TextColor3 = Color3.new(1,1,1); Label.BackgroundTransparency = 1; Label.Font = Enum.Font.GothamBold; Label.TextSize = 10 
 
-    local SliderBG = Instance.new("Frame", Container) 
-    SliderBG.Size = UDim2.new(1, 0, 0, 6); SliderBG.Position = UDim2.new(0, 0, 0, 30) 
+    local SliderBG = Instance.new("Frame", Container); SliderBG.Size = UDim2.new(1, 0, 0, 6); SliderBG.Position = UDim2.new(0, 0, 0, 30); 
     SliderBG.BackgroundColor3 = Color3.fromRGB(50, 50, 55); Instance.new("UICorner", SliderBG) 
 
-    local Fill = Instance.new("Frame", SliderBG) 
-    Fill.Size = UDim2.new((Default - Min) / (Max - Min), 0, 1, 0) 
-    Fill.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", Fill) 
-
+    local Fill = Instance.new("Frame", SliderBG); Fill.Size = UDim2.new((Default - Min) / (Max - Min), 0, 1, 0); Fill.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", Fill) 
+    
     local function Update(input) 
         local pos = math.clamp((input.Position.X - SliderBG.AbsolutePosition.X) / SliderBG.AbsoluteSize.X, 0, 1) 
-        Fill.Size = UDim2.new(pos, 0, 1, 0) 
-        local value = math.floor(Min + (pos * (Max - Min))) 
-        Label.Text = Text .. ": " .. value; Callback(value) 
+        Fill.Size = UDim2.new(pos, 0, 1, 0); local value = math.floor(Min + (pos * (Max - Min))); Label.Text = Text .. ": " .. value; Callback(value) 
     end 
-
+    
     local dragging = false 
 
-    SliderBG.InputBegan:Connect(function(input) 
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-            dragging = true; Update(input) 
-        end 
-    end) 
-
-    UIS.InputChanged:Connect(function(input) 
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then 
-            Update(input) 
-        end 
-    end) 
-
-    UIS.InputEnded:Connect(function(input) 
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-            dragging = false 
-        end 
-    end) 
+    SliderBG.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; Update(input) end end) 
+    UIS.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then Update(input) end end) 
+    UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end) 
 end 
 
 CreateSlider("🚀 FLY SPEED", 0, 300, Config.FlySpeed, function(v) Config.FlySpeed = v end) 
@@ -197,10 +198,8 @@ CreateSlider("⚡ WALK SPEED", 16, 200, Config.WalkSpeed, function(v) Config.Wal
 CreateSlider("⬆️ JUMP POWER", 50, 500, Config.JumpPower, function(v) Config.JumpPower = v end) 
 
 local function CreateBtn(Text, LogicName) 
-    local Btn = Instance.new("TextButton", Scroll) 
-    Btn.Size = UDim2.new(0.9, 0, 0, 36); Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35) 
-    Btn.Text = Text; Btn.TextColor3 = Color3.new(1,1,1); Btn.Font = Enum.Font.GothamBold 
-    Btn.TextSize = 12; Instance.new("UICorner", Btn) 
+    local Btn = Instance.new("TextButton", Scroll); Btn.Size = UDim2.new(0.9, 0, 0, 36); Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35); 
+    Btn.Text = Text; Btn.TextColor3 = Color3.new(1,1,1); Btn.Font = Enum.Font.GothamBold; Btn.TextSize = 12; Instance.new("UICorner", Btn) 
     Btn.MouseButton1Click:Connect(function() Toggle(LogicName) end); Buttons[LogicName] = Btn 
 end 
 
@@ -217,9 +216,12 @@ RunService.RenderStepped:Connect(function()
     table.insert(FrameLog, tick()) 
     for i = #FrameLog, 1, -1 do if FrameLog[i] < tick() - 1 then table.remove(FrameLog, i) end end 
     FPSLabel.Text = "FPS: " .. #FrameLog 
-    PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms" 
+    
+    pcall(function()
+        PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms" 
+    end)
 
-    -- [[ 🥊 HITBOX BLOCK ]] 
+    -- [[ 🥊 HITBOX BLOCK - FIXED ]] 
     if State.Hitbox then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then 
@@ -236,25 +238,9 @@ RunService.RenderStepped:Connect(function()
                 end 
             end 
         end 
-    else 
-        for _, p in pairs(Players:GetPlayers()) do 
-            if p ~= LP and p.Character then 
-                for _, partName in pairs({"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}) do 
-                    local part = p.Character:FindFirstChild(partName) 
-                    if part and part:IsA("BasePart") and part.Size.X > 2 then 
-                        if part.Name == "Head" then part.Size = Vector3.new(2,1,1) else part.Size = Vector3.new(2,2,1) end 
-                        part.Transparency = 0 
-                        part.CanCollide = true 
-                        part.CanTouch = true 
-                        part.CanQuery = true 
-                        part.Material = Enum.Material.Plastic 
-                    end 
-                end 
-            end 
-        end 
     end 
 
-    -- [[ 📦 ESP BLOCK ]] 
+    -- [[ 📦 ESP BLOCK - STABLE HIGHLIGHT ]] 
     if State.ESP then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
@@ -269,9 +255,19 @@ RunService.RenderStepped:Connect(function()
                 local head = p.Character:FindFirstChild("Head") 
                 if head then 
                     local billboard = head:FindFirstChild("OmniTag") or Instance.new("BillboardGui", head) 
-                    billboard.Name = "OmniTag"; billboard.Size = UDim2.new(0, 200, 0, 50); billboard.StudsOffset = Vector3.new(0, 3, 0); billboard.AlwaysOnTop = true 
+                    billboard.Name = "OmniTag" 
+                    billboard.Size = UDim2.new(0, 200, 0, 50) 
+                    billboard.StudsOffset = Vector3.new(0, 3, 0) 
+                    billboard.AlwaysOnTop = true 
+                     
                     local tag = billboard:FindFirstChild("Label") or Instance.new("TextLabel", billboard) 
-                    tag.Name = "Label"; tag.Size = UDim2.new(1, 0, 1, 0); tag.BackgroundTransparency = 1; tag.TextColor3 = Color3.new(1, 1, 1); tag.Font = Enum.Font.GothamBold; tag.TextSize = 14 
+                    tag.Name = "Label" 
+                    tag.Size = UDim2.new(1, 0, 1, 0) 
+                    tag.BackgroundTransparency = 1 
+                    tag.TextColor3 = Color3.new(1, 1, 1) 
+                    tag.Font = Enum.Font.GothamBold 
+                    tag.TextSize = 14 
+                     
                     local hum = p.Character:FindFirstChild("Humanoid") 
                     local health = hum and math.floor(hum.Health) or 0 
                     local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") 
@@ -280,8 +276,6 @@ RunService.RenderStepped:Connect(function()
                 end 
             end 
         end 
-    else 
-        ClearESP() 
     end 
 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart") 
@@ -314,24 +308,15 @@ RunService.RenderStepped:Connect(function()
     end 
 end) 
 
--- [[ 7. HEARTBEAT LOOP - MOBILE & PC COMPATIBLE ]] 
+-- [[ 7. HEARTBEAT LOOP ]] 
 RunService.Heartbeat:Connect(function() 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
-
-    -- Універсальна перевірка стрибка для ПК (Space) та Телефонів (кнопка стрибка)
-    local IsJumping = UIS:IsKeyDown(Enum.KeyCode.Space) or Hum.Jump
-
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
-
-    if IsJumping and Hum.FloorMaterial ~= Enum.Material.Air then 
-        if State.HighJump then 
-            HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z) 
-        elseif State.Bhop then 
-            Hum:ChangeState(Enum.HumanoidStateType.Jumping) 
-        end 
+    if UIS:IsKeyDown(Enum.KeyCode.Space) and Hum.FloorMaterial ~= Enum.Material.Air then 
+        if State.HighJump then HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z) 
+        elseif State.Bhop then Hum:ChangeState(Enum.HumanoidStateType.Jumping) end 
     end 
-
     if State.Speed and Hum.MoveDirection.Magnitude > 0 and not State.Fly then 
         local s = (Hum.FloorMaterial == Enum.Material.Air) and 16 or Config.WalkSpeed 
         HRP.Velocity = Vector3.new(Hum.MoveDirection.X * s, HRP.Velocity.Y, Hum.MoveDirection.Z * s) 
