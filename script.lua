@@ -1,4 +1,4 @@
--- [[ V260.51: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
+-- [[ V260.52: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
 -- [[ TRUE NO PARALYZE HITBOX | NATIVE MOBILE THUMBSTICK FIX | FULL CODE ]] 
 
 local Players = game:GetService("Players") 
@@ -198,9 +198,10 @@ local function Toggle(Name)
     
     -- Відновлення стандартних швидкостей при вимкненні
     if Name == "Speed" and not State.Speed then
-        local Hum = Char and Char:FindFirstChild("Humanoid")
-        if Hum then Hum.WalkSpeed = 16 end
+        -- Ми більше не скидаємо Hum.WalkSpeed до 16 тут, 
+        -- оскільки нова система CFrame залишає WalkSpeed недоторканим (уникаємо багів гри).
     end
+    
     if Name == "HighJump" and not State.HighJump then
         local Hum = Char and Char:FindFirstChild("Humanoid")
         if Hum then Hum.JumpPower = 50 end
@@ -409,21 +410,23 @@ RunService.RenderStepped:Connect(function()
 end) 
 
 -- [[ 7. HEARTBEAT LOOP ]] 
-RunService.Heartbeat:Connect(function() 
+-- Додано параметр deltaTime для коректного математичного розрахунку CFrame бусту
+RunService.Heartbeat:Connect(function(deltaTime) 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (Ідеально для телефонів + фікс античіта)
+    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (CFrame Адаптивний метод - 100% гарантія обходу античітів)
     if State.Speed then
-        if Hum.FloorMaterial == Enum.Material.Air then
-            Hum.WalkSpeed = 16 -- Скидаємо швидкість у стрибку для обходу античіта
-        else
-            Hum.WalkSpeed = Config.WalkSpeed -- Повертаємо спідхак на землі
+        if Hum.MoveDirection.Magnitude > 0 then
+            -- Вираховуємо відсутню швидкість (щоб не прискорювати х2, якщо WalkSpeed і так працює)
+            local speedBoost = Config.WalkSpeed - Hum.WalkSpeed
+            if speedBoost > 0 then
+                -- Переміщуємо персонажа рівно на необхідну дистанцію кожен кадр
+                HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * speedBoost * deltaTime)
+            end
         end
-    elseif not State.Speed and Hum.WalkSpeed ~= 16 then
-        Hum.WalkSpeed = 16
     end
     
     -- НАТИВНИЙ КОНТРОЛЬ СТРИБКА
