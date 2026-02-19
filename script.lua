@@ -1,5 +1,5 @@
--- [[ V260.49: OMNI-REBORN - FINAL STABILITY UPDATE ]] 
--- [[ TRUE NO PARALYZE HITBOX | STABLE HIGHLIGHT ESP | FULL CODE ]] 
+-- [[ V260.50: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
+-- [[ TRUE NO PARALYZE HITBOX | NATIVE MOBILE THUMBSTICK FIX | FULL CODE ]] 
 
 local Players = game:GetService("Players") 
 local RunService = game:GetService("RunService") 
@@ -9,6 +9,15 @@ local Workspace = game:GetService("Workspace")
 
 local LP = Players.LocalPlayer 
 local Camera = Workspace.CurrentCamera 
+
+-- [[ MOBILE CONTROLS INTEGRATION ]]
+local Controls = nil
+task.spawn(function()
+    pcall(function()
+        local PlayerModule = require(LP.PlayerScripts:WaitForChild("PlayerModule", 5))
+        Controls = PlayerModule:GetControls()
+    end)
+end)
 
 -- [[ CONFIGURATION ]] 
 local Config = {  
@@ -85,7 +94,7 @@ Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = IsMobile and 0 or
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); 
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 
--- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI (ЩОБ КНОПКИ НЕ ПРОПАДАЛИ) ]]
+-- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI ]]
 Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 end)
@@ -127,7 +136,7 @@ local function Toggle(Name)
       
     if Name == "ESP" and not State.ESP then ClearESP() end 
 
-    -- ФІКС ПАРАЛІЧУ: Скидання тільки HumanoidRootPart при вимкненні
+    -- ФІКС ПАРАЛІЧУ
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
@@ -139,7 +148,7 @@ local function Toggle(Name)
                     hrp.CanTouch = true 
                     hrp.CanQuery = true 
                     hrp.Massless = false 
-                    hrp.CustomPhysicalProperties = nil -- Повертаємо стандартну фізику
+                    hrp.CustomPhysicalProperties = nil 
                 end
             end 
         end 
@@ -186,6 +195,16 @@ local function Toggle(Name)
         Lighting.GlobalShadows = false 
         for _, v in pairs(Workspace:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.Plastic end end 
     end 
+    
+    -- Відновлення стандартних швидкостей при вимкненні
+    if Name == "Speed" and not State.Speed then
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        if Hum then Hum.WalkSpeed = 16 end
+    end
+    if Name == "HighJump" and not State.HighJump then
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        if Hum then Hum.JumpPower = 50 end
+    end
 
     if Buttons[Name] then 
         Buttons[Name].BackgroundColor3 = State[Name] and Color3.new(1,1,1) or Color3.fromRGB(30, 30, 35) 
@@ -212,9 +231,22 @@ local function CreateSlider(Text, Min, Max, Default, Callback)
     
     local dragging = false 
 
-    SliderBG.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true; Update(input) end end) 
-    UIS.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then Update(input) end end) 
-    UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end) 
+    -- ФІКС ДЛЯ ТЕЛЕФОНІВ (Touch Support)
+    SliderBG.InputBegan:Connect(function(input) 
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            dragging = true; Update(input) 
+        end 
+    end) 
+    UIS.InputChanged:Connect(function(input) 
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then 
+            Update(input) 
+        end 
+    end) 
+    UIS.InputEnded:Connect(function(input) 
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            dragging = false 
+        end 
+    end) 
 end 
 
 CreateSlider("🚀 FLY SPEED", 0, 300, Config.FlySpeed, function(v) Config.FlySpeed = v end) 
@@ -263,21 +295,29 @@ RunService.RenderStepped:Connect(function()
         PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms" 
     end)
 
+    -- Читання джойстика для руху (ПК WASD теж працює)
+    local moveX, moveZ = 0, 0
+    if Controls then
+        local mv = Controls:GetMoveVector()
+        moveX, moveZ = mv.X, mv.Z
+    end
+
     if State.Freecam then
         local camMove = Vector3.zero
-        if UIS:IsKeyDown(Enum.KeyCode.W) then camMove += Camera.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then camMove -= Camera.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then camMove -= Camera.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then camMove += Camera.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.E) then camMove += Camera.CFrame.UpVector end  
-        if UIS:IsKeyDown(Enum.KeyCode.Q) then camMove -= Camera.CFrame.UpVector end  
+        -- Підтримка мобільного джойстика і WASD
+        camMove += Camera.CFrame.LookVector * -moveZ
+        camMove += Camera.CFrame.RightVector * moveX
+        
+        -- ПК клавіші для підйому/спуску
+        if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) then camMove += Camera.CFrame.UpVector end  
+        if UIS:IsKeyDown(Enum.KeyCode.Q) or UIS:IsKeyDown(Enum.KeyCode.LeftControl) then camMove -= Camera.CFrame.UpVector end  
         
         local speed = Config.FlySpeed / 25
         local newPos = Camera.CFrame.Position + (camMove * speed)
         Camera.CFrame = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(FC_Pitch, FC_Yaw, 0)
     end
 
-    -- [[ 🥊 HITBOX BLOCK - TRUE NO PARALYZE ]] 
+    -- [[ 🥊 HITBOX BLOCK ]] 
     if State.Hitbox then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then 
@@ -288,9 +328,9 @@ RunService.RenderStepped:Connect(function()
                     hrp.CanCollide = false 
                     hrp.CanTouch = true 
                     hrp.CanQuery = true 
-                    hrp.Massless = false -- Фікс: не робимо його безмасовим
+                    hrp.Massless = false 
                     hrp.Material = Enum.Material.Neon 
-                    hrp.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- Фікс: нульова фізика для анти-паралічу
+                    hrp.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) 
                 end 
             end 
         end 
@@ -356,10 +396,14 @@ RunService.RenderStepped:Connect(function()
 
     if State.Fly then 
         local move = Vector3.zero 
-        if UIS:IsKeyDown(Enum.KeyCode.W) then move += Camera.CFrame.LookVector end 
-        if UIS:IsKeyDown(Enum.KeyCode.S) then move -= Camera.CFrame.LookVector end 
-        if UIS:IsKeyDown(Enum.KeyCode.A) then move -= Camera.CFrame.RightVector end 
-        if UIS:IsKeyDown(Enum.KeyCode.D) then move += Camera.CFrame.RightVector end 
+        -- Підтримка мобільного джойстика і WASD для Fly
+        move += Camera.CFrame.LookVector * -moveZ
+        move += Camera.CFrame.RightVector * moveX
+        
+        -- ПК клавіші для підйому/спуску в Fly
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then move += Camera.CFrame.UpVector end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.Q) then move -= Camera.CFrame.UpVector end
+        
         HRP.Velocity = move * Config.FlySpeed 
     end 
 end) 
@@ -371,16 +415,27 @@ RunService.Heartbeat:Connect(function()
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    if UIS:IsKeyDown(Enum.KeyCode.Space) and Hum.FloorMaterial ~= Enum.Material.Air then 
-        if State.HighJump then HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z) 
-        elseif State.Bhop then Hum:ChangeState(Enum.HumanoidStateType.Jumping) end 
-    end 
+    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (Ідеально для телефонів)
+    if State.Speed then
+        Hum.WalkSpeed = Config.WalkSpeed
+    elseif not State.Speed and Hum.WalkSpeed == Config.WalkSpeed then
+        Hum.WalkSpeed = 16
+    end
     
-    if State.Speed and Hum.MoveDirection.Magnitude > 0 and not State.Fly then 
-        local s = (Hum.FloorMaterial == Enum.Material.Air) and 16 or Config.WalkSpeed 
-        HRP.Velocity = Vector3.new(Hum.MoveDirection.X * s, HRP.Velocity.Y, Hum.MoveDirection.Z * s) 
-    end 
-
+    -- НАТИВНИЙ КОНТРОЛЬ СТРИБКА
+    if State.HighJump then
+        Hum.UseJumpPower = true
+        Hum.JumpPower = Config.JumpPower
+    elseif not State.HighJump and Hum.JumpPower == Config.JumpPower then
+        Hum.UseJumpPower = true
+        Hum.JumpPower = 50
+    end
+    
+    -- BHOP (АВТОМАТИЧНИЙ ДЛЯ ТЕЛЕФОНІВ)
+    if State.Bhop and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
+        Hum:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+    
     if State.NoFallDamage then
         if Hum:GetState() == Enum.HumanoidStateType.Freefall then
             if HRP.AssemblyLinearVelocity.Y < -45 then
