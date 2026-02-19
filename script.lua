@@ -1,4 +1,4 @@
--- [[ V260.53: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
+-- [[ V260.52: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
 -- [[ TRUE NO PARALYZE HITBOX | NATIVE MOBILE THUMBSTICK FIX | FULL CODE ]] 
 
 local Players = game:GetService("Players") 
@@ -31,7 +31,7 @@ local State = {
     Fly = false, Aim = false, ShadowLock = false, Noclip = false,  
     Hitbox = false, Speed = false, Bhop = false, ESP = false,  
     Spin = false, HighJump = false, Potato = false,
-    FakeLag = false, Freecam = false, NoFallDamage = false, VelocityCap = false
+    FakeLag = false, Freecam = false, NoFallDamage = false
 } 
 
 local LockedTarget = nil 
@@ -196,8 +196,10 @@ local function Toggle(Name)
         for _, v in pairs(Workspace:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.Plastic end end 
     end 
     
+    -- Відновлення стандартних швидкостей при вимкненні
     if Name == "Speed" and not State.Speed then
-        -- Відновлення стандартних швидкостей залишається недоторканим завдяки CFrame методу
+        -- Ми більше не скидаємо Hum.WalkSpeed до 16 тут, 
+        -- оскільки нова система CFrame залишає WalkSpeed недоторканим (уникаємо багів гри).
     end
     
     if Name == "HighJump" and not State.HighJump then
@@ -258,9 +260,8 @@ local function CreateBtn(Text, LogicName)
     Btn.MouseButton1Click:Connect(function() Toggle(LogicName) end); Buttons[LogicName] = Btn 
 end 
 
--- ДОДАНО VELOCITY CAP ДО МЕНЮ
-local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO", "📶 FAKE LAG", "🎥 FREECAM", "🛡️ NO FALL DAMAGE", "🛑 VELOCITY CAP"} 
-local Logic = {"Fly", "Aim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato", "FakeLag", "Freecam", "NoFallDamage", "VelocityCap"} 
+local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO", "📶 FAKE LAG", "🎥 FREECAM", "🛡️ NO FALL DAMAGE"} 
+local Logic = {"Fly", "Aim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato", "FakeLag", "Freecam", "NoFallDamage"} 
 for i, n in ipairs(Names) do CreateBtn(n, Logic[i]) end 
 
 MToggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end) 
@@ -409,17 +410,20 @@ RunService.RenderStepped:Connect(function()
 end) 
 
 -- [[ 7. HEARTBEAT LOOP ]] 
+-- Додано параметр deltaTime для коректного математичного розрахунку CFrame бусту
 RunService.Heartbeat:Connect(function(deltaTime) 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (CFrame Адаптивний метод)
+    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (CFrame Адаптивний метод - 100% гарантія обходу античітів)
     if State.Speed then
         if Hum.MoveDirection.Magnitude > 0 then
+            -- Вираховуємо відсутню швидкість (щоб не прискорювати х2, якщо WalkSpeed і так працює)
             local speedBoost = Config.WalkSpeed - Hum.WalkSpeed
             if speedBoost > 0 then
+                -- Переміщуємо персонажа рівно на необхідну дистанцію кожен кадр
                 HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * speedBoost * deltaTime)
             end
         end
@@ -434,26 +438,20 @@ RunService.Heartbeat:Connect(function(deltaTime)
         Hum.JumpPower = 50
     end
     
-    -- BHOP
+    -- BHOP (АВТОМАТИЧНИЙ ДЛЯ ТЕЛЕФОНІВ)
     if State.Bhop and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
         Hum:ChangeState(Enum.HumanoidStateType.Jumping)
     end
     
-    -- [[ ФІЗИКА: БЕЗПЕЧНИЙ NO FALL DAMAGE ТА VELOCITY CAP ]]
-    local currentVelocity = HRP.AssemblyLinearVelocity
-
     if State.NoFallDamage then
-        if Hum:GetState() == Enum.HumanoidStateType.Freefall and currentVelocity.Y < -45 then
-            HRP.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, -5, currentVelocity.Z)
-            currentVelocity = HRP.AssemblyLinearVelocity -- Оновлюємо вектор для наступної перевірки
-        end
-    end
-
-    if State.VelocityCap then
-        local horizontalVelocity = Vector3.new(currentVelocity.X, 0, currentVelocity.Z)
-        if horizontalVelocity.Magnitude > 35 then
-            local cappedHorizontal = horizontalVelocity.Unit * 28
-            HRP.AssemblyLinearVelocity = Vector3.new(cappedHorizontal.X, currentVelocity.Y, cappedHorizontal.Z)
+        if Hum:GetState() == Enum.HumanoidStateType.Freefall then
+            if HRP.AssemblyLinearVelocity.Y < -45 then
+                HRP.AssemblyLinearVelocity = Vector3.new(
+                    HRP.AssemblyLinearVelocity.X,
+                    -5,  
+                    HRP.AssemblyLinearVelocity.Z
+                )
+            end
         end
     end
 end) 
