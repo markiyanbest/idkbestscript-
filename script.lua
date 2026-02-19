@@ -21,11 +21,16 @@ local Config = {
 local State = { 
     Fly = false, Aim = false, ShadowLock = false, Noclip = false,  
     Hitbox = false, Speed = false, Bhop = false, ESP = false,  
-    Spin = false, HighJump = false, Potato = false 
+    Spin = false, HighJump = false, Potato = false,
+    FakeLag = false, Freecam = false, NoFallDamage = false
 } 
 
 local LockedTarget = nil 
 local Buttons = {} 
+
+-- [[ ЗМІННІ ДЛЯ ПРАВИЛЬНОГО ОБЕРТАННЯ FREECAM ]]
+local FC_Pitch = 0
+local FC_Yaw = 0
 
 -- [[ 1. GUI SYSTEM - ADAPTIVE ]] 
 pcall(function()  
@@ -114,7 +119,7 @@ local function Toggle(Name)
     State[Name] = not State[Name] 
     local Char = LP.Character 
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart") 
-     
+      
     if Name == "ESP" and not State.ESP then ClearESP() end 
 
     if Name == "Hitbox" and not State.Hitbox then
@@ -147,6 +152,28 @@ local function Toggle(Name)
             end 
         end 
     end 
+    
+    -- ПОВНІСТЮ ОНОВЛЕНИЙ ФІКС FREECAM
+    if Name == "Freecam" then
+        if State.Freecam then
+            Camera.CameraType = Enum.CameraType.Scriptable
+            -- Записуємо поточні кути камери, щоб не було ривків при увімкненні
+            local x, y, z = Camera.CFrame:ToEulerAnglesYXZ()
+            FC_Pitch = x
+            FC_Yaw = y
+            -- Заморожуємо персонажа на місці
+            if HRP then HRP.Anchored = true end
+        else
+            Camera.CameraType = Enum.CameraType.Custom
+            UIS.MouseBehavior = Enum.MouseBehavior.Default
+            -- Розморожуємо персонажа, ТІЛЬКИ якщо не ввімкнено FakeLag
+            if HRP and not State.FakeLag then HRP.Anchored = false end
+            local Hum = Char and Char:FindFirstChild("Humanoid")
+            if Hum then
+                Camera.CameraSubject = Hum
+            end
+        end
+    end
 
     if Name == "ShadowLock" then 
         if State.ShadowLock then 
@@ -203,12 +230,32 @@ local function CreateBtn(Text, LogicName)
     Btn.MouseButton1Click:Connect(function() Toggle(LogicName) end); Buttons[LogicName] = Btn 
 end 
 
-local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO"} 
-local Logic = {"Fly", "Aim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato"} 
+local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO", "📶 FAKE LAG", "🎥 FREECAM", "🛡️ NO FALL DAMAGE"} 
+local Logic = {"Fly", "Aim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato", "FakeLag", "Freecam", "NoFallDamage"} 
 for i, n in ipairs(Names) do CreateBtn(n, Logic[i]) end 
 
 MToggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end) 
 Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20) 
+
+-- [[ ОБРОБКА ПОВОРОТУ КАМЕРИ FREECAM ]]
+UIS.InputChanged:Connect(function(input, gameProcessed)
+    if State.Freecam then
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            -- Якщо затиснуто праву кнопку миші (огляд)
+            if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+                UIS.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+                FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
+                FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.3), -math.rad(89), math.rad(89))
+            else
+                UIS.MouseBehavior = Enum.MouseBehavior.Default
+            end
+        elseif input.UserInputType == Enum.UserInputType.Touch then
+            -- Для телефонів (свайп по екрану)
+            FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
+            FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.3), -math.rad(89), math.rad(89))
+        end
+    end
+end)
 
 -- [[ 6. MAIN RENDER LOOP ]] 
 local FrameLog = {} 
@@ -221,7 +268,23 @@ RunService.RenderStepped:Connect(function()
         PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms" 
     end)
 
-    -- [[ 🥊 HITBOX BLOCK - FIXED ]] 
+    -- [[ 🎥 FREECAM - РУХ І ПОВОРОТ КАМЕРИ ]]
+    if State.Freecam then
+        local camMove = Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W) then camMove += Camera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then camMove -= Camera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then camMove -= Camera.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then camMove += Camera.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.E) then camMove += Camera.CFrame.UpVector end  -- Підйом
+        if UIS:IsKeyDown(Enum.KeyCode.Q) then camMove -= Camera.CFrame.UpVector end  -- Спуск
+        
+        -- Розрахунок нової позиції та об'єднання з кутами повороту миші
+        local speed = Config.FlySpeed / 25
+        local newPos = Camera.CFrame.Position + (camMove * speed)
+        Camera.CFrame = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(FC_Pitch, FC_Yaw, 0)
+    end
+
+    -- [[ 🥊 HITBOX BLOCK ]] 
     if State.Hitbox then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then 
@@ -240,7 +303,7 @@ RunService.RenderStepped:Connect(function()
         end 
     end 
 
-    -- [[ 📦 ESP BLOCK - STABLE HIGHLIGHT ]] 
+    -- [[ 📦 ESP BLOCK ]] 
     if State.ESP then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
@@ -312,16 +375,52 @@ end)
 RunService.Heartbeat:Connect(function() 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
+    
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
+    
     if UIS:IsKeyDown(Enum.KeyCode.Space) and Hum.FloorMaterial ~= Enum.Material.Air then 
         if State.HighJump then HRP.Velocity = Vector3.new(HRP.Velocity.X, Config.JumpPower, HRP.Velocity.Z) 
         elseif State.Bhop then Hum:ChangeState(Enum.HumanoidStateType.Jumping) end 
     end 
+    
     if State.Speed and Hum.MoveDirection.Magnitude > 0 and not State.Fly then 
         local s = (Hum.FloorMaterial == Enum.Material.Air) and 16 or Config.WalkSpeed 
         HRP.Velocity = Vector3.new(Hum.MoveDirection.X * s, HRP.Velocity.Y, Hum.MoveDirection.Z * s) 
     end 
+
+    -- [[ 🛡️ NO FALL DAMAGE ]]
+    if State.NoFallDamage then
+        if Hum:GetState() == Enum.HumanoidStateType.Freefall then
+            if HRP.AssemblyLinearVelocity.Y < -45 then
+                HRP.AssemblyLinearVelocity = Vector3.new(
+                    HRP.AssemblyLinearVelocity.X,
+                    -5,  -- Захист від удару
+                    HRP.AssemblyLinearVelocity.Z
+                )
+            end
+        end
+    end
 end) 
+
+-- [[ 📶 FAKE LAG - FIXED (БЕЗ КОНФЛІКТІВ З FREECAM) ]]
+task.spawn(function()
+    while task.wait() do
+        if State.FakeLag then
+            local Char = LP.Character
+            local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
+            if HRP then
+                HRP.Anchored = true
+                task.wait(math.random(5, 15) / 100) 
+                
+                -- Розморожуємо тільки якщо Freecam ВІМКНЕНИЙ (захист від конфлікту)
+                if HRP and not State.Freecam then HRP.Anchored = false end
+                task.wait(math.random(10, 25) / 100) 
+            end
+        else
+            task.wait(0.5) 
+        end
+    end
+end)
 
 RunService.Stepped:Connect(function() 
     if State.Noclip and LP.Character then 
