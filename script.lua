@@ -1,5 +1,5 @@
--- [[ V260.48: OMNI-REBORN - FINAL STABILITY UPDATE ]] 
--- [[ NO PARALYZE HITBOX | STABLE HIGHLIGHT ESP | FULL CODE ]] 
+-- [[ V260.49: OMNI-REBORN - FINAL STABILITY UPDATE ]] 
+-- [[ TRUE NO PARALYZE HITBOX | STABLE HIGHLIGHT ESP | FULL CODE ]] 
 
 local Players = game:GetService("Players") 
 local RunService = game:GetService("RunService") 
@@ -85,6 +85,11 @@ Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = IsMobile and 0 or
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); 
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 
+-- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI (ЩОБ КНОПКИ НЕ ПРОПАДАЛИ) ]]
+Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
+end)
+
 -- [[ 2. HELPERS ]] 
 local function GetClosestPlayer() 
     local target, minDistance = nil, math.huge 
@@ -122,24 +127,20 @@ local function Toggle(Name)
       
     if Name == "ESP" and not State.ESP then ClearESP() end 
 
+    -- ФІКС ПАРАЛІЧУ: Скидання тільки HumanoidRootPart при вимкненні
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
-                for _, partName in pairs({"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}) do 
-                    local part = p.Character:FindFirstChild(partName) 
-                    if part and part:IsA("BasePart") then 
-                        if part.Name == "Head" then 
-                            part.Size = Vector3.new(2,1,1) 
-                        else 
-                            part.Size = Vector3.new(2,2,1) 
-                        end 
-                        part.Transparency = 0 
-                        part.CanCollide = true 
-                        part.CanTouch = true 
-                        part.CanQuery = true 
-                        part.Material = Enum.Material.Plastic 
-                    end 
-                end 
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                if hrp and hrp:IsA("BasePart") then
+                    hrp.Size = Vector3.new(2,2,1)
+                    hrp.Transparency = 1 
+                    hrp.CanCollide = false 
+                    hrp.CanTouch = true 
+                    hrp.CanQuery = true 
+                    hrp.Massless = false 
+                    hrp.CustomPhysicalProperties = nil -- Повертаємо стандартну фізику
+                end
             end 
         end 
     end
@@ -153,20 +154,16 @@ local function Toggle(Name)
         end 
     end 
     
-    -- ПОВНІСТЮ ОНОВЛЕНИЙ ФІКС FREECAM
     if Name == "Freecam" then
         if State.Freecam then
             Camera.CameraType = Enum.CameraType.Scriptable
-            -- Записуємо поточні кути камери, щоб не було ривків при увімкненні
             local x, y, z = Camera.CFrame:ToEulerAnglesYXZ()
             FC_Pitch = x
             FC_Yaw = y
-            -- Заморожуємо персонажа на місці
             if HRP then HRP.Anchored = true end
         else
             Camera.CameraType = Enum.CameraType.Custom
             UIS.MouseBehavior = Enum.MouseBehavior.Default
-            -- Розморожуємо персонажа, ТІЛЬКИ якщо не ввімкнено FakeLag
             if HRP and not State.FakeLag then HRP.Anchored = false end
             local Hum = Char and Char:FindFirstChild("Humanoid")
             if Hum then
@@ -241,7 +238,6 @@ Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 UIS.InputChanged:Connect(function(input, gameProcessed)
     if State.Freecam then
         if input.UserInputType == Enum.UserInputType.MouseMovement then
-            -- Якщо затиснуто праву кнопку миші (огляд)
             if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
                 UIS.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
                 FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
@@ -250,7 +246,6 @@ UIS.InputChanged:Connect(function(input, gameProcessed)
                 UIS.MouseBehavior = Enum.MouseBehavior.Default
             end
         elseif input.UserInputType == Enum.UserInputType.Touch then
-            -- Для телефонів (свайп по екрану)
             FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
             FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.3), -math.rad(89), math.rad(89))
         end
@@ -268,36 +263,34 @@ RunService.RenderStepped:Connect(function()
         PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms" 
     end)
 
-    -- [[ 🎥 FREECAM - РУХ І ПОВОРОТ КАМЕРИ ]]
     if State.Freecam then
         local camMove = Vector3.zero
         if UIS:IsKeyDown(Enum.KeyCode.W) then camMove += Camera.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.S) then camMove -= Camera.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.A) then camMove -= Camera.CFrame.RightVector end
         if UIS:IsKeyDown(Enum.KeyCode.D) then camMove += Camera.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.E) then camMove += Camera.CFrame.UpVector end  -- Підйом
-        if UIS:IsKeyDown(Enum.KeyCode.Q) then camMove -= Camera.CFrame.UpVector end  -- Спуск
+        if UIS:IsKeyDown(Enum.KeyCode.E) then camMove += Camera.CFrame.UpVector end  
+        if UIS:IsKeyDown(Enum.KeyCode.Q) then camMove -= Camera.CFrame.UpVector end  
         
-        -- Розрахунок нової позиції та об'єднання з кутами повороту миші
         local speed = Config.FlySpeed / 25
         local newPos = Camera.CFrame.Position + (camMove * speed)
         Camera.CFrame = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(FC_Pitch, FC_Yaw, 0)
     end
 
-    -- [[ 🥊 HITBOX BLOCK ]] 
+    -- [[ 🥊 HITBOX BLOCK - TRUE NO PARALYZE ]] 
     if State.Hitbox then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then 
-                for _, partName in pairs({"Head", "UpperTorso", "LowerTorso", "Torso", "HumanoidRootPart"}) do 
-                    local part = p.Character:FindFirstChild(partName) 
-                    if part and part:IsA("BasePart") and part.Size.X < 15 then 
-                        part.Size = Config.HitboxSize 
-                        part.Transparency = 0.5 
-                        part.CanCollide = false 
-                        part.CanTouch = false 
-                        part.CanQuery = false 
-                        part.Material = Enum.Material.Neon 
-                    end 
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                if hrp and hrp:IsA("BasePart") and hrp.Size.X ~= Config.HitboxSize.X then 
+                    hrp.Size = Config.HitboxSize 
+                    hrp.Transparency = 0.5 
+                    hrp.CanCollide = false 
+                    hrp.CanTouch = true 
+                    hrp.CanQuery = true 
+                    hrp.Massless = false -- Фікс: не робимо його безмасовим
+                    hrp.Material = Enum.Material.Neon 
+                    hrp.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- Фікс: нульова фізика для анти-паралічу
                 end 
             end 
         end 
@@ -388,13 +381,12 @@ RunService.Heartbeat:Connect(function()
         HRP.Velocity = Vector3.new(Hum.MoveDirection.X * s, HRP.Velocity.Y, Hum.MoveDirection.Z * s) 
     end 
 
-    -- [[ 🛡️ NO FALL DAMAGE ]]
     if State.NoFallDamage then
         if Hum:GetState() == Enum.HumanoidStateType.Freefall then
             if HRP.AssemblyLinearVelocity.Y < -45 then
                 HRP.AssemblyLinearVelocity = Vector3.new(
                     HRP.AssemblyLinearVelocity.X,
-                    -5,  -- Захист від удару
+                    -5,  
                     HRP.AssemblyLinearVelocity.Z
                 )
             end
@@ -402,7 +394,7 @@ RunService.Heartbeat:Connect(function()
     end
 end) 
 
--- [[ 📶 FAKE LAG - FIXED (БЕЗ КОНФЛІКТІВ З FREECAM) ]]
+-- [[ 📶 FAKE LAG ]]
 task.spawn(function()
     while task.wait() do
         if State.FakeLag then
@@ -412,7 +404,6 @@ task.spawn(function()
                 HRP.Anchored = true
                 task.wait(math.random(5, 15) / 100) 
                 
-                -- Розморожуємо тільки якщо Freecam ВІМКНЕНИЙ (захист від конфлікту)
                 if HRP and not State.Freecam then HRP.Anchored = false end
                 task.wait(math.random(10, 25) / 100) 
             end
