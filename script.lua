@@ -1,4 +1,4 @@
--- [[ V260.50: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
+-- [[ V260.51: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
 -- [[ TRUE NO PARALYZE HITBOX | NATIVE MOBILE THUMBSTICK FIX | FULL CODE ]] 
 
 local Players = game:GetService("Players") 
@@ -355,7 +355,7 @@ RunService.RenderStepped:Connect(function()
                     billboard.Size = UDim2.new(0, 200, 0, 50) 
                     billboard.StudsOffset = Vector3.new(0, 3, 0) 
                     billboard.AlwaysOnTop = true 
-                     
+                      
                     local tag = billboard:FindFirstChild("Label") or Instance.new("TextLabel", billboard) 
                     tag.Name = "Label" 
                     tag.Size = UDim2.new(1, 0, 1, 0) 
@@ -363,7 +363,7 @@ RunService.RenderStepped:Connect(function()
                     tag.TextColor3 = Color3.new(1, 1, 1) 
                     tag.Font = Enum.Font.GothamBold 
                     tag.TextSize = 14 
-                     
+                      
                     local hum = p.Character:FindFirstChild("Humanoid") 
                     local health = hum and math.floor(hum.Health) or 0 
                     local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") 
@@ -415,10 +415,14 @@ RunService.Heartbeat:Connect(function()
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (Ідеально для телефонів)
+    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (Ідеально для телефонів + фікс античіта)
     if State.Speed then
-        Hum.WalkSpeed = Config.WalkSpeed
-    elseif not State.Speed and Hum.WalkSpeed == Config.WalkSpeed then
+        if Hum.FloorMaterial == Enum.Material.Air then
+            Hum.WalkSpeed = 16 -- Скидаємо швидкість у стрибку для обходу античіта
+        else
+            Hum.WalkSpeed = Config.WalkSpeed -- Повертаємо спідхак на землі
+        end
+    elseif not State.Speed and Hum.WalkSpeed ~= 16 then
         Hum.WalkSpeed = 16
     end
     
