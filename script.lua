@@ -43,14 +43,24 @@ local FC_Pitch = 0
 local FC_Yaw = 0
 
 -- [[ 1. GUI SYSTEM - ADAPTIVE ]] 
+local GuiParent
+pcall(function() GuiParent = game:GetService("CoreGui") end)
+if not GuiParent or not pcall(function() local _ = GuiParent.Name end) then
+    GuiParent = LP:WaitForChild("PlayerGui")
+end
+
 pcall(function()  
-    if game:GetService("CoreGui"):FindFirstChild("V259_Omni") then  
-        game:GetService("CoreGui").V259_Omni:Destroy()  
-    end  
+    if GuiParent:FindFirstChild("V260_Omni") then  
+        GuiParent.V260_Omni:Destroy()  
+    end
+    -- Резервна перевірка для старого CoreGui
+    if game:GetService("CoreGui"):FindFirstChild("V259_Omni") then
+        game:GetService("CoreGui").V259_Omni:Destroy()
+    end
 end) 
 
-local Screen = Instance.new("ScreenGui", game:GetService("CoreGui")) 
-Screen.Name = "V259_Omni"; Screen.ResetOnSpawn = false 
+local Screen = Instance.new("ScreenGui", GuiParent) 
+Screen.Name = "V260_Omni"; Screen.ResetOnSpawn = false 
 
 -- Перевірка пристрою для адаптації розмірів
 local IsMobile = UIS.TouchEnabled
@@ -91,11 +101,12 @@ Stroke.Color = Color3.new(1,1,1); Stroke.Thickness = 2
 local Scroll = Instance.new("ScrollingFrame", Main) 
 Scroll.Size = UDim2.new(1, -10, 1, -20); Scroll.Position = UDim2.new(0, 5, 0, 10) 
 Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = IsMobile and 0 or 2 
+Scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y -- Надійний фікс для запобігання зникненню кнопок
 
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); 
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 
--- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI ЩОБ КНОПКИ НЕ ПРОПАДАЛИ ]]
+-- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI ЩОБ КНОПКИ НЕ ПРОПАДАЛИ (Залишено як додатковий бекап) ]]
 Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 end)
@@ -322,7 +333,7 @@ RunService.RenderStepped:Connect(function(dt)
     end
 
     -- [[ 🕊️ FLY STABLE ]]
-    if State.Fly and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+    if State.Fly and not State.Freecam and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
         local HRP = LP.Character.HumanoidRootPart
         local camLook = Camera.CFrame.LookVector
         local right = Camera.CFrame.RightVector
@@ -450,7 +461,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
     -- [[ ⚡ SPEED (GROUND) STABLE З JITTER ]]
-    if State.Speed then
+    if State.Speed and not State.Fly and not State.Freecam and not State.FakeLag then
         Hum.WalkSpeed = Config.WalkSpeed -- Фікс багу, коли повзунок не реагував на низьких значеннях (16-70)
         
         if Hum.MoveDirection.Magnitude > 0 and Hum.FloorMaterial ~= Enum.Material.Air then
@@ -477,7 +488,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
     end
     
     -- НАТИВНИЙ КОНТРОЛЬ СТРИБКА
-    if State.HighJump then
+    if State.HighJump and not State.Fly then
         Hum.UseJumpPower = true
         Hum.JumpPower = Config.JumpPower
     elseif not State.HighJump and Hum.JumpPower == Config.JumpPower then
@@ -486,7 +497,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
     end
     
     -- РОЗУМНИЙ BHOP
-    if State.Bhop and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
+    if State.Bhop and not State.Fly and not State.Freecam and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
         if tick() - lastJump > 0.085 + math.random(-10, 10) / 1000 then
             Hum.Jump = true
             lastJump = tick()
