@@ -290,7 +290,7 @@ end)
 
 -- [[ 6. MAIN RENDER LOOP ]] 
 local FrameLog = {} 
-RunService.RenderStepped:Connect(function() 
+RunService.RenderStepped:Connect(function(dt) 
     table.insert(FrameLog, tick()) 
     for i = #FrameLog, 1, -1 do if FrameLog[i] < tick() - 1 then table.remove(FrameLog, i) end end 
     FPSLabel.Text = "FPS: " .. #FrameLog 
@@ -306,13 +306,31 @@ RunService.RenderStepped:Connect(function()
         moveX, moveZ = mv.X, mv.Z
     end
 
+    -- [[ 🕊️ FLY STABLE ]]
+    if State.Fly and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        local HRP = LP.Character.HumanoidRootPart
+        local camLook = Camera.CFrame.LookVector
+        local right = Camera.CFrame.RightVector
+        local speed = Config.FlySpeed
+        local velocityPrediction = HRP.AssemblyLinearVelocity * dt
+
+        local cf = HRP.CFrame
+        cf += camLook * (-moveZ * speed * dt * 0.92)  -- Вперед/Назад
+        cf += right * (moveX * speed * dt * 0.88)     -- Вліво/Вправо
+        
+        -- Вертикальний контроль для польоту
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then cf += Vector3.new(0, speed * dt, 0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then cf -= Vector3.new(0, speed * dt, 0) end
+
+        HRP.CFrame = cf:Lerp(HRP.CFrame + velocityPrediction, 0.35)
+        HRP.AssemblyLinearVelocity = Vector3.new(0,0,0) -- Стоп гравітація
+    end
+
     if State.Freecam then
         local camMove = Vector3.zero
-        -- Підтримка мобільного джойстика і WASD
         camMove += Camera.CFrame.LookVector * -moveZ
         camMove += Camera.CFrame.RightVector * moveX
         
-        -- ПК клавіші для підйому/спуску
         if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) then camMove += Camera.CFrame.UpVector end  
         if UIS:IsKeyDown(Enum.KeyCode.Q) or UIS:IsKeyDown(Enum.KeyCode.LeftControl) then camMove -= Camera.CFrame.UpVector end  
         
@@ -397,17 +415,6 @@ RunService.RenderStepped:Connect(function()
         local target = GetClosestPlayer() 
         if target and target:FindFirstChild("Head") then Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Head.Position) end 
     end 
-
-    if State.Fly then 
-        local move = Vector3.zero 
-        move += Camera.CFrame.LookVector * -moveZ
-        move += Camera.CFrame.RightVector * moveX
-        
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then move += Camera.CFrame.UpVector end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.Q) then move -= Camera.CFrame.UpVector end
-        
-        HRP.Velocity = move * Config.FlySpeed 
-    end 
 end) 
 
 -- [[ 7. HEARTBEAT LOOP ]] 
@@ -418,16 +425,14 @@ RunService.Heartbeat:Connect(function(deltaTime)
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (Фікс швидкості у повітрі)
+    -- [[ ⚡ SPEED (GROUND) STABLE ]]
     if State.Speed then
-        if Hum.MoveDirection.Magnitude > 0 then
-            -- Буст застосовується ТІЛЬКИ якщо гравець на землі. У повітрі швидкість стандартна (16).
-            if Hum.FloorMaterial ~= Enum.Material.Air then
-                local speedBoost = Config.WalkSpeed - Hum.WalkSpeed
-                if speedBoost > 0 then
-                    HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * speedBoost * deltaTime)
-                end
-            end
+        if Hum.MoveDirection.Magnitude > 0 and Hum.FloorMaterial ~= Enum.Material.Air then
+            local targetSpeed = Config.WalkSpeed
+            local wishVel = Hum.MoveDirection * targetSpeed
+            local current = HRP.AssemblyLinearVelocity
+            local newVel = current:Lerp(Vector3.new(wishVel.X, current.Y, wishVel.Z), 0.18)
+            HRP.AssemblyLinearVelocity = newVel
         end
     end
     
@@ -457,7 +462,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
         end
     end
 
-    -- ANTI-AFK (Захист від конфліктів: активується лише коли гравець стоїть на місці)
+    -- ANTI-AFK 
     if State.AntiAFK and Hum.MoveDirection.Magnitude == 0 then
         if tick() - lastAntiAfkTick > 1 then
             Hum:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)))
@@ -466,7 +471,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
     end
 end) 
 
--- [[ 📶 FAKE LAG ОПТИМІЗОВАНО (Імітація лага та Fake Ping) ]]
+-- [[ 📶 FAKE LAG ]]
 task.spawn(function()
     while true do
         if State.FakeLag then
@@ -474,7 +479,7 @@ task.spawn(function()
             local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
             if HRP then
                 HRP.Anchored = true
-                task.wait(math.random(0.05, 0.15)) -- Значення які ти просив для FakeLag
+                task.wait(math.random(0.05, 0.15)) 
                 
                 if HRP and not State.Freecam then HRP.Anchored = false end
                 task.wait(math.random(0.1, 0.25)) 
