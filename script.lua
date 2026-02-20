@@ -1,4 +1,4 @@
--- [[ V260.53: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
+-- [[ V260.60: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
 -- [[ TRUE NO PARALYZE HITBOX | NATIVE MOBILE THUMBSTICK FIX | FULL CODE ]] 
 
 local Players = game:GetService("Players") 
@@ -164,6 +164,15 @@ local function Toggle(Name)
         end 
     end 
     
+    -- Network Ownership для Fly (безпечний виклик через pcall)
+    if Name == "Fly" and HRP then
+        if State.Fly then
+            pcall(function() HRP:SetNetworkOwner(nil) end)
+        else
+            pcall(function() HRP:SetNetworkOwner(LP) end)
+        end
+    end
+
     if Name == "Freecam" then
         if State.Freecam then
             Camera.CameraType = Enum.CameraType.Scriptable
@@ -419,17 +428,26 @@ end)
 
 -- [[ 7. HEARTBEAT LOOP ]] 
 local lastAntiAfkTick = 0
+local lastJump = 0 -- Змінна для Bhop
 RunService.Heartbeat:Connect(function(deltaTime) 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    -- [[ ⚡ SPEED (GROUND) STABLE ]]
+    -- [[ ⚡ SPEED (GROUND) STABLE З JITTER ]]
     if State.Speed then
         if Hum.MoveDirection.Magnitude > 0 and Hum.FloorMaterial ~= Enum.Material.Air then
             local targetSpeed = Config.WalkSpeed
-            local wishVel = Hum.MoveDirection * targetSpeed
+            local jitter = Vector3.new(
+                math.random(-4, 4) / 10,
+                0,
+                math.random(-4, 4) / 10
+            )
+            -- Безпечний .Unit, щоб уникнути помилки, якщо jitter випадково буде 0,0,0
+            local jitterDir = jitter.Magnitude > 0 and jitter.Unit or Vector3.zero
+            local wishVel = (Hum.MoveDirection + jitterDir * 0.15) * targetSpeed
+            
             local current = HRP.AssemblyLinearVelocity
             local newVel = current:Lerp(Vector3.new(wishVel.X, current.Y, wishVel.Z), 0.18)
             HRP.AssemblyLinearVelocity = newVel
@@ -445,9 +463,12 @@ RunService.Heartbeat:Connect(function(deltaTime)
         Hum.JumpPower = 50
     end
     
-    -- BHOP
+    -- РОЗУМНИЙ BHOP
     if State.Bhop and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
-        Hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        if tick() - lastJump > 0.085 + math.random(-10, 10) / 1000 then
+            Hum.Jump = true
+            lastJump = tick()
+        end
     end
     
     if State.NoFallDamage then
@@ -471,18 +492,21 @@ RunService.Heartbeat:Connect(function(deltaTime)
     end
 end) 
 
--- [[ 📶 FAKE LAG ]]
+-- [[ 📶 SOFT FAKE LAG ]]
 task.spawn(function()
     while true do
         if State.FakeLag then
             local Char = LP.Character
             local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
             if HRP then
-                HRP.Anchored = true
-                task.wait(math.random(0.05, 0.15)) 
+                local oldVel = HRP.AssemblyLinearVelocity
+                HRP.AssemblyLinearVelocity = Vector3.new(0, oldVel.Y, 0) -- Заморозка по горизонталі
+                task.wait(math.random(60, 140) / 1000) 
                 
-                if HRP and not State.Freecam then HRP.Anchored = false end
-                task.wait(math.random(0.1, 0.25)) 
+                if HRP then HRP.AssemblyLinearVelocity = oldVel end
+                task.wait(math.random(90, 220) / 1000) 
+            else
+                task.wait(0.5)
             end
         else
             task.wait(0.5) 
