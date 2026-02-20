@@ -1,4 +1,4 @@
--- [[ V260.52: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
+-- [[ V260.53: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
 -- [[ TRUE NO PARALYZE HITBOX | NATIVE MOBILE THUMBSTICK FIX | FULL CODE ]] 
 
 local Players = game:GetService("Players") 
@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService") 
 local Lighting = game:GetService("Lighting") 
 local Workspace = game:GetService("Workspace") 
+local VirtualUser = game:GetService("VirtualUser")
 
 local LP = Players.LocalPlayer 
 local Camera = Workspace.CurrentCamera 
@@ -31,7 +32,7 @@ local State = {
     Fly = false, Aim = false, ShadowLock = false, Noclip = false,  
     Hitbox = false, Speed = false, Bhop = false, ESP = false,  
     Spin = false, HighJump = false, Potato = false,
-    FakeLag = false, Freecam = false, NoFallDamage = false
+    FakeLag = false, Freecam = false, NoFallDamage = false, AntiAFK = false
 } 
 
 local LockedTarget = nil 
@@ -94,7 +95,7 @@ Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = IsMobile and 0 or
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); 
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 
--- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI ]]
+-- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI ЩОБ КНОПКИ НЕ ПРОПАДАЛИ ]]
 Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 end)
@@ -196,12 +197,6 @@ local function Toggle(Name)
         for _, v in pairs(Workspace:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.Plastic end end 
     end 
     
-    -- Відновлення стандартних швидкостей при вимкненні
-    if Name == "Speed" and not State.Speed then
-        -- Ми більше не скидаємо Hum.WalkSpeed до 16 тут, 
-        -- оскільки нова система CFrame залишає WalkSpeed недоторканим (уникаємо багів гри).
-    end
-    
     if Name == "HighJump" and not State.HighJump then
         local Hum = Char and Char:FindFirstChild("Humanoid")
         if Hum then Hum.JumpPower = 50 end
@@ -212,6 +207,14 @@ local function Toggle(Name)
         Buttons[Name].TextColor3 = State[Name] and Color3.new(0,0,0) or Color3.new(1,1,1) 
     end 
 end 
+
+-- [[ НАДІЙНИЙ ANTI-IDLE ВІД СИСТЕМИ ROBLOX ]]
+LP.Idled:Connect(function()
+    if State.AntiAFK then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end
+end)
 
 -- [[ 5. UI CONSTRUCTION ]] 
 local function CreateSlider(Text, Min, Max, Default, Callback) 
@@ -260,8 +263,8 @@ local function CreateBtn(Text, LogicName)
     Btn.MouseButton1Click:Connect(function() Toggle(LogicName) end); Buttons[LogicName] = Btn 
 end 
 
-local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO", "📶 FAKE LAG", "🎥 FREECAM", "🛡️ NO FALL DAMAGE"} 
-local Logic = {"Fly", "Aim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato", "FakeLag", "Freecam", "NoFallDamage"} 
+local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO", "📶 FAKE LAG", "🎥 FREECAM", "🛡️ NO FALL DAMAGE", "🛡️ ANTI-AFK"} 
+local Logic = {"Fly", "Aim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato", "FakeLag", "Freecam", "NoFallDamage", "AntiAFK"} 
 for i, n in ipairs(Names) do CreateBtn(n, Logic[i]) end 
 
 MToggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end) 
@@ -397,11 +400,9 @@ RunService.RenderStepped:Connect(function()
 
     if State.Fly then 
         local move = Vector3.zero 
-        -- Підтримка мобільного джойстика і WASD для Fly
         move += Camera.CFrame.LookVector * -moveZ
         move += Camera.CFrame.RightVector * moveX
         
-        -- ПК клавіші для підйому/спуску в Fly
         if UIS:IsKeyDown(Enum.KeyCode.Space) then move += Camera.CFrame.UpVector end
         if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.Q) then move -= Camera.CFrame.UpVector end
         
@@ -410,21 +411,22 @@ RunService.RenderStepped:Connect(function()
 end) 
 
 -- [[ 7. HEARTBEAT LOOP ]] 
--- Додано параметр deltaTime для коректного математичного розрахунку CFrame бусту
+local lastAntiAfkTick = 0
 RunService.Heartbeat:Connect(function(deltaTime) 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (CFrame Адаптивний метод - 100% гарантія обходу античітів)
+    -- НАТИВНИЙ КОНТРОЛЬ ШВИДКОСТІ (Фікс швидкості у повітрі)
     if State.Speed then
         if Hum.MoveDirection.Magnitude > 0 then
-            -- Вираховуємо відсутню швидкість (щоб не прискорювати х2, якщо WalkSpeed і так працює)
-            local speedBoost = Config.WalkSpeed - Hum.WalkSpeed
-            if speedBoost > 0 then
-                -- Переміщуємо персонажа рівно на необхідну дистанцію кожен кадр
-                HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * speedBoost * deltaTime)
+            -- Буст застосовується ТІЛЬКИ якщо гравець на землі. У повітрі швидкість стандартна (16).
+            if Hum.FloorMaterial ~= Enum.Material.Air then
+                local speedBoost = Config.WalkSpeed - Hum.WalkSpeed
+                if speedBoost > 0 then
+                    HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * speedBoost * deltaTime)
+                end
             end
         end
     end
@@ -438,7 +440,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
         Hum.JumpPower = 50
     end
     
-    -- BHOP (АВТОМАТИЧНИЙ ДЛЯ ТЕЛЕФОНІВ)
+    -- BHOP
     if State.Bhop and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
         Hum:ChangeState(Enum.HumanoidStateType.Jumping)
     end
@@ -454,20 +456,28 @@ RunService.Heartbeat:Connect(function(deltaTime)
             end
         end
     end
+
+    -- ANTI-AFK (Захист від конфліктів: активується лише коли гравець стоїть на місці)
+    if State.AntiAFK and Hum.MoveDirection.Magnitude == 0 then
+        if tick() - lastAntiAfkTick > 1 then
+            Hum:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)))
+            lastAntiAfkTick = tick()
+        end
+    end
 end) 
 
--- [[ 📶 FAKE LAG ]]
+-- [[ 📶 FAKE LAG ОПТИМІЗОВАНО (Імітація лага та Fake Ping) ]]
 task.spawn(function()
-    while task.wait() do
+    while true do
         if State.FakeLag then
             local Char = LP.Character
             local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
             if HRP then
                 HRP.Anchored = true
-                task.wait(math.random(5, 15) / 100) 
+                task.wait(math.random(0.05, 0.15)) -- Значення які ти просив для FakeLag
                 
                 if HRP and not State.Freecam then HRP.Anchored = false end
-                task.wait(math.random(10, 25) / 100) 
+                task.wait(math.random(0.1, 0.25)) 
             end
         else
             task.wait(0.5) 
