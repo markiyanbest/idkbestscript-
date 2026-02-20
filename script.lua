@@ -163,6 +163,12 @@ local function Toggle(Name)
             end 
         end 
     end 
+
+    -- Виправлення багу зі Speed при вимкненні
+    if Name == "Speed" and not State.Speed then
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        if Hum then Hum.WalkSpeed = 16 end
+    end
     
     -- Network Ownership для Fly (безпечний виклик через pcall)
     if Name == "Fly" and HRP then
@@ -333,6 +339,14 @@ RunService.RenderStepped:Connect(function(dt)
 
         HRP.CFrame = cf:Lerp(HRP.CFrame + velocityPrediction, 0.35)
         HRP.AssemblyLinearVelocity = Vector3.new(0,0,0) -- Стоп гравітація
+
+        -- Анти-raycast / anti-ground-check
+        local downRay = Ray.new(HRP.Position, Vector3.new(0, -9, 0))
+        local hit, pos = Workspace:FindPartOnRayWithIgnoreList(downRay, {LP.Character})
+        if not hit then
+            -- симулюємо "підлогу" під собою
+            HRP.CFrame = HRP.CFrame + Vector3.new(0, 0.08 + math.random(-3,3)/100, 0)
+        end
     end
 
     if State.Freecam then
@@ -437,6 +451,8 @@ RunService.Heartbeat:Connect(function(deltaTime)
     
     -- [[ ⚡ SPEED (GROUND) STABLE З JITTER ]]
     if State.Speed then
+        Hum.WalkSpeed = Config.WalkSpeed -- Фікс багу, коли повзунок не реагував на низьких значеннях (16-70)
+        
         if Hum.MoveDirection.Magnitude > 0 and Hum.FloorMaterial ~= Enum.Material.Air then
             local targetSpeed = Config.WalkSpeed
             local jitter = Vector3.new(
@@ -449,7 +465,13 @@ RunService.Heartbeat:Connect(function(deltaTime)
             local wishVel = (Hum.MoveDirection + jitterDir * 0.15) * targetSpeed
             
             local current = HRP.AssemblyLinearVelocity
-            local newVel = current:Lerp(Vector3.new(wishVel.X, current.Y, wishVel.Z), 0.18)
+            
+            -- Динамічна альфа залежно від пінгу
+            local ping = LP:GetNetworkPing() * 1000
+            local alpha = 0.18 - (ping / 2000)  -- від 0.18 до ~0.08 на 200 ms
+            alpha = math.clamp(alpha, 0.09, 0.22)
+            
+            local newVel = current:Lerp(Vector3.new(wishVel.X, current.Y, wishVel.Z), alpha)
             HRP.AssemblyLinearVelocity = newVel
         end
     end
@@ -500,7 +522,7 @@ task.spawn(function()
             local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
             if HRP then
                 local oldVel = HRP.AssemblyLinearVelocity
-                HRP.AssemblyLinearVelocity = Vector3.new(0, oldVel.Y, 0) -- Заморозка по горизонталі
+                HRP.AssemblyLinearVelocity = Vector3.new(0, oldVel.Y + math.random(-15,15)/100, 0) -- Заморозка по горизонталі + вертикальний jitter
                 task.wait(math.random(60, 140) / 1000) 
                 
                 if HRP then HRP.AssemblyLinearVelocity = oldVel end
@@ -514,11 +536,27 @@ task.spawn(function()
     end
 end)
 
+local lastPos = Vector3.zero
 RunService.Stepped:Connect(function() 
-    if State.Noclip and LP.Character then 
-        for _, v in pairs(LP.Character:GetDescendants()) do 
+    local Char = LP.Character
+    if State.Noclip and Char then 
+        local HRP = Char:FindFirstChild("HumanoidRootPart")
+        local Hum = Char:FindFirstChild("Humanoid")
+        
+        for _, v in pairs(Char:GetDescendants()) do 
             if v:IsA("BasePart") then v.CanCollide = false end 
         end 
+        
+        -- Noclip push-back fix
+        if HRP and Hum then
+            if (HRP.Position - lastPos).Magnitude < 0.1 and Hum.MoveDirection.Magnitude > 0 then
+                -- сервер телепортував назад → мікро-відскок
+                HRP.CFrame = HRP.CFrame + Hum.MoveDirection * 0.4
+            end
+            lastPos = HRP.Position
+        end
+    elseif Char and Char:FindFirstChild("HumanoidRootPart") then
+        lastPos = Char.HumanoidRootPart.Position
     end 
 end) 
 
