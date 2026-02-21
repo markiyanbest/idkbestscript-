@@ -1,5 +1,5 @@
--- [[ V260.60: OMNI-REBORN - ULTIMATE MOBILE & PC STABILITY ]] 
--- [[ TRUE NO PARALYZE HITBOX | NATIVE MOBILE THUMBSTICK FIX | FULL CODE ]] 
+-- [[ V261.00: OMNI-REBORN - ANTI-PARALYZE HEADSHOT HITBOX ]] 
+-- [[ STEALTH HEAD EXPANSION | CFRAME MAGNET | VELOCITY SPOOF ]] 
 
 local Players = game:GetService("Players") 
 local RunService = game:GetService("RunService") 
@@ -14,6 +14,8 @@ local Camera = Workspace.CurrentCamera
 -- [[ MOBILE CONTROLS INTEGRATION ]]
 local Controls = nil
 task.spawn(function()
+    if not game:IsLoaded() then game.Loaded:Wait() end
+    task.wait(1.5) 
     pcall(function()
         local PlayerModule = require(LP.PlayerScripts:WaitForChild("PlayerModule", 5))
         Controls = PlayerModule:GetControls()
@@ -53,7 +55,6 @@ pcall(function()
     if GuiParent:FindFirstChild("V260_Omni") then  
         GuiParent.V260_Omni:Destroy()  
     end
-    -- Резервна перевірка для старого CoreGui
     if game:GetService("CoreGui"):FindFirstChild("V259_Omni") then
         game:GetService("CoreGui").V259_Omni:Destroy()
     end
@@ -62,7 +63,6 @@ end)
 local Screen = Instance.new("ScreenGui", GuiParent) 
 Screen.Name = "V260_Omni"; Screen.ResetOnSpawn = false 
 
--- Перевірка пристрою для адаптації розмірів
 local IsMobile = UIS.TouchEnabled
 local MainWidth = IsMobile and 200 or 230
 local MainHeight = IsMobile and 360 or 520
@@ -101,12 +101,11 @@ Stroke.Color = Color3.new(1,1,1); Stroke.Thickness = 2
 local Scroll = Instance.new("ScrollingFrame", Main) 
 Scroll.Size = UDim2.new(1, -10, 1, -20); Scroll.Position = UDim2.new(0, 5, 0, 10) 
 Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = IsMobile and 0 or 2 
-Scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y -- Надійний фікс для запобігання зникненню кнопок
+Scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y 
 
 local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 6); 
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center 
 
--- [[ ДИНАМІЧНЕ ОНОВЛЕННЯ GUI ЩОБ КНОПКИ НЕ ПРОПАДАЛИ (Залишено як додатковий бекап) ]]
 Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 end)
@@ -134,12 +133,6 @@ local function ClearESP()
     end 
 end 
 
--- [[ 3. PHYSICAL MAGNET COMPONENTS ]] 
-local MagBodyPos = Instance.new("BodyPosition") 
-MagBodyPos.P = 45000; MagBodyPos.D = 800; MagBodyPos.MaxForce = Vector3.zero 
-local MagBodyGyr = Instance.new("BodyGyro") 
-MagBodyGyr.P = 45000; MagBodyGyr.MaxTorque = Vector3.zero 
-
 -- [[ 4. TOGGLE SYSTEM ]] 
 local function Toggle(Name) 
     State[Name] = not State[Name] 
@@ -148,19 +141,18 @@ local function Toggle(Name)
       
     if Name == "ESP" and not State.ESP then ClearESP() end 
 
-    -- ФІКС ПАРАЛІЧУ
+    -- СКИДАННЯ ХІТБОКСУ ГОЛОВИ ДО СТАНДАРТУ
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
-                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-                if hrp and hrp:IsA("BasePart") then
-                    hrp.Size = Vector3.new(2,2,1)
-                    hrp.Transparency = 1 
-                    hrp.CanCollide = false 
-                    hrp.CanTouch = true 
-                    hrp.CanQuery = true 
-                    hrp.Massless = false 
-                    hrp.CustomPhysicalProperties = nil 
+                local head = p.Character:FindFirstChild("Head")
+                if head and head:IsA("BasePart") then
+                    head.Size = Vector3.new(1.2, 1.2, 1.2)
+                    head.Transparency = 0 
+                    head.CanCollide = true 
+                    head.CanTouch = true 
+                    head.CanQuery = true 
+                    head.Massless = false 
                 end
             end 
         end 
@@ -175,13 +167,11 @@ local function Toggle(Name)
         end 
     end 
 
-    -- Виправлення багу зі Speed при вимкненні
     if Name == "Speed" and not State.Speed then
         local Hum = Char and Char:FindFirstChild("Humanoid")
         if Hum then Hum.WalkSpeed = 16 end
     end
     
-    -- Network Ownership для Fly (безпечний виклик через pcall)
     if Name == "Fly" and HRP then
         if State.Fly then
             pcall(function() HRP:SetNetworkOwner(nil) end)
@@ -199,8 +189,10 @@ local function Toggle(Name)
             if HRP then HRP.Anchored = true end
         else
             Camera.CameraType = Enum.CameraType.Custom
-            UIS.MouseBehavior = Enum.MouseBehavior.Default
-            if HRP and not State.FakeLag then HRP.Anchored = false end
+            if UIS.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition then
+                UIS.MouseBehavior = Enum.MouseBehavior.Default
+            end
+            if HRP then HRP.Anchored = false end
             local Hum = Char and Char:FindFirstChild("Humanoid")
             if Hum then
                 Camera.CameraSubject = Hum
@@ -211,10 +203,8 @@ local function Toggle(Name)
     if Name == "ShadowLock" then 
         if State.ShadowLock then 
             LockedTarget = GetClosestPlayer() 
-            if HRP then MagBodyPos.Parent = HRP; MagBodyGyr.Parent = HRP end 
         else 
             LockedTarget = nil 
-            MagBodyPos.MaxForce = Vector3.zero; MagBodyGyr.MaxTorque = Vector3.zero 
         end 
     end 
 
@@ -261,7 +251,6 @@ local function CreateSlider(Text, Min, Max, Default, Callback)
     
     local dragging = false 
 
-    -- ФІКС ДЛЯ ТЕЛЕФОНІВ (Touch Support)
     SliderBG.InputBegan:Connect(function(input) 
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
             dragging = true; Update(input) 
@@ -305,7 +294,9 @@ UIS.InputChanged:Connect(function(input, gameProcessed)
                 FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
                 FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.3), -math.rad(89), math.rad(89))
             else
-                UIS.MouseBehavior = Enum.MouseBehavior.Default
+                if UIS.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition then
+                    UIS.MouseBehavior = Enum.MouseBehavior.Default
+                end
             end
         elseif input.UserInputType == Enum.UserInputType.Touch then
             FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
@@ -325,7 +316,6 @@ RunService.RenderStepped:Connect(function(dt)
         PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms" 
     end)
 
-    -- Читання джойстика для руху (ПК WASD теж працює)
     local moveX, moveZ = 0, 0
     if Controls then
         local mv = Controls:GetMoveVector()
@@ -341,21 +331,18 @@ RunService.RenderStepped:Connect(function(dt)
         local velocityPrediction = HRP.AssemblyLinearVelocity * dt
 
         local cf = HRP.CFrame
-        cf += camLook * (-moveZ * speed * dt * 0.92)  -- Вперед/Назад
-        cf += right * (moveX * speed * dt * 0.88)     -- Вліво/Вправо
+        cf += camLook * (-moveZ * speed * dt * 0.92)  
+        cf += right * (moveX * speed * dt * 0.88)     
         
-        -- Вертикальний контроль для польоту
         if UIS:IsKeyDown(Enum.KeyCode.Space) then cf += Vector3.new(0, speed * dt, 0) end
         if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then cf -= Vector3.new(0, speed * dt, 0) end
 
         HRP.CFrame = cf:Lerp(HRP.CFrame + velocityPrediction, 0.35)
-        HRP.AssemblyLinearVelocity = Vector3.new(0,0,0) -- Стоп гравітація
+        HRP.AssemblyLinearVelocity = Vector3.new(0,0,0) 
 
-        -- Анти-raycast / anti-ground-check
         local downRay = Ray.new(HRP.Position, Vector3.new(0, -9, 0))
         local hit, pos = Workspace:FindPartOnRayWithIgnoreList(downRay, {LP.Character})
         if not hit then
-            -- симулюємо "підлогу" під собою
             HRP.CFrame = HRP.CFrame + Vector3.new(0, 0.08 + math.random(-3,3)/100, 0)
         end
     end
@@ -373,20 +360,20 @@ RunService.RenderStepped:Connect(function(dt)
         Camera.CFrame = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(FC_Pitch, FC_Yaw, 0)
     end
 
-    -- [[ 🥊 HITBOX BLOCK ]] 
+    -- [[ 🥊 STEALTH HEAD HITBOX BLOCK ]] 
     if State.Hitbox then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then 
-                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-                if hrp and hrp:IsA("BasePart") and hrp.Size.X ~= Config.HitboxSize.X then 
-                    hrp.Size = Config.HitboxSize 
-                    hrp.Transparency = 0.5 
-                    hrp.CanCollide = false 
-                    hrp.CanTouch = true 
-                    hrp.CanQuery = true 
-                    hrp.Massless = false 
-                    hrp.Material = Enum.Material.Neon 
-                    hrp.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) 
+                -- ЗБІЛЬШУЄМО ГОЛОВУ ЗАМІСТЬ HRP!
+                local head = p.Character:FindFirstChild("Head")
+                if head and head:IsA("BasePart") then 
+                    if head.Size.X ~= Config.HitboxSize.X then 
+                        head.Size = Config.HitboxSize 
+                        head.Transparency = 1 
+                        head.CanTouch = true 
+                        head.CanQuery = true 
+                        head.Massless = true 
+                    end 
                 end 
             end 
         end 
@@ -433,15 +420,18 @@ RunService.RenderStepped:Connect(function(dt)
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart") 
     if not HRP then return end 
 
+    -- [[ 💀 CFRAME MAGNET (SHADOWLOCK) ]]
     if State.ShadowLock then 
         local IsAlive = LockedTarget and LockedTarget.Parent and LockedTarget:FindFirstChild("Humanoid") and LockedTarget.Humanoid.Health > 0 
         if not IsAlive then LockedTarget = GetClosestPlayer() end 
+        
         if LockedTarget and LockedTarget:FindFirstChild("HumanoidRootPart") then 
-            MagBodyPos.MaxForce = Vector3.new(math.huge, math.huge, math.huge); MagBodyGyr.MaxTorque = Vector3.new(math.huge, math.huge, math.huge) 
-            MagBodyPos.Position = LockedTarget.HumanoidRootPart.Position + (LockedTarget.HumanoidRootPart.CFrame.LookVector * -3) 
-            MagBodyGyr.CFrame = LockedTarget.HumanoidRootPart.CFrame; HRP.RotVelocity = Vector3.zero 
-        else 
-            MagBodyPos.MaxForce = Vector3.zero; MagBodyGyr.MaxTorque = Vector3.zero 
+            local targetHRP = LockedTarget.HumanoidRootPart
+            local goalCFrame = targetHRP.CFrame * CFrame.new(0, 0, 3) 
+            HRP.CFrame = HRP.CFrame:Lerp(goalCFrame, 0.45) 
+            
+            HRP.AssemblyLinearVelocity = targetHRP.AssemblyLinearVelocity
+            HRP.AssemblyAngularVelocity = Vector3.zero
         end 
     end 
 
@@ -453,7 +443,7 @@ end)
 
 -- [[ 7. HEARTBEAT LOOP ]] 
 local lastAntiAfkTick = 0
-local lastJump = 0 -- Змінна для Bhop
+local lastJump = 0 
 RunService.Heartbeat:Connect(function(deltaTime) 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
@@ -461,8 +451,8 @@ RunService.Heartbeat:Connect(function(deltaTime)
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
     -- [[ ⚡ SPEED (GROUND) STABLE З JITTER ]]
-    if State.Speed and not State.Fly and not State.Freecam and not State.FakeLag then
-        Hum.WalkSpeed = Config.WalkSpeed -- Фікс багу, коли повзунок не реагував на низьких значеннях (16-70)
+    if State.Speed and not State.Fly and not State.Freecam then
+        Hum.WalkSpeed = Config.WalkSpeed 
         
         if Hum.MoveDirection.Magnitude > 0 and Hum.FloorMaterial ~= Enum.Material.Air then
             local targetSpeed = Config.WalkSpeed
@@ -471,15 +461,13 @@ RunService.Heartbeat:Connect(function(deltaTime)
                 0,
                 math.random(-4, 4) / 10
             )
-            -- Безпечний .Unit, щоб уникнути помилки, якщо jitter випадково буде 0,0,0
             local jitterDir = jitter.Magnitude > 0 and jitter.Unit or Vector3.zero
             local wishVel = (Hum.MoveDirection + jitterDir * 0.15) * targetSpeed
             
             local current = HRP.AssemblyLinearVelocity
             
-            -- Динамічна альфа залежно від пінгу
             local ping = LP:GetNetworkPing() * 1000
-            local alpha = 0.18 - (ping / 2000)  -- від 0.18 до ~0.08 на 200 ms
+            local alpha = 0.18 - (ping / 2000)  
             alpha = math.clamp(alpha, 0.09, 0.22)
             
             local newVel = current:Lerp(Vector3.new(wishVel.X, current.Y, wishVel.Z), alpha)
@@ -487,7 +475,6 @@ RunService.Heartbeat:Connect(function(deltaTime)
         end
     end
     
-    -- НАТИВНИЙ КОНТРОЛЬ СТРИБКА
     if State.HighJump and not State.Fly then
         Hum.UseJumpPower = true
         Hum.JumpPower = Config.JumpPower
@@ -496,7 +483,6 @@ RunService.Heartbeat:Connect(function(deltaTime)
         Hum.JumpPower = 50
     end
     
-    -- РОЗУМНИЙ BHOP
     if State.Bhop and not State.Fly and not State.Freecam and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
         if tick() - lastJump > 0.085 + math.random(-10, 10) / 1000 then
             Hum.Jump = true
@@ -516,7 +502,6 @@ RunService.Heartbeat:Connect(function(deltaTime)
         end
     end
 
-    -- ANTI-AFK 
     if State.AntiAFK and Hum.MoveDirection.Magnitude == 0 then
         if tick() - lastAntiAfkTick > 1 then
             Hum:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)))
@@ -525,21 +510,27 @@ RunService.Heartbeat:Connect(function(deltaTime)
     end
 end) 
 
--- [[ 📶 SOFT FAKE LAG ]]
+-- [[ 📶 VELOCITY SPOOFING FAKE LAG ]]
 task.spawn(function()
     while true do
         if State.FakeLag then
             local Char = LP.Character
             local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
-            if HRP then
-                local oldVel = HRP.AssemblyLinearVelocity
-                HRP.AssemblyLinearVelocity = Vector3.new(0, oldVel.Y + math.random(-15,15)/100, 0) -- Заморозка по горизонталі + вертикальний jitter
-                task.wait(math.random(60, 140) / 1000) 
+            local Hum = Char and Char:FindFirstChild("Humanoid")
+            
+            if HRP and Hum and Hum.MoveDirection.Magnitude > 0 then
+                local realVel = HRP.AssemblyLinearVelocity
                 
-                if HRP then HRP.AssemblyLinearVelocity = oldVel end
-                task.wait(math.random(90, 220) / 1000) 
+                local spoofVector = Hum.MoveDirection * -150 
+                HRP.AssemblyLinearVelocity = spoofVector
+                
+                task.wait(0.04) 
+                
+                if HRP then HRP.AssemblyLinearVelocity = realVel end
+                
+                task.wait(math.random(150, 300) / 1000) 
             else
-                task.wait(0.5)
+                task.wait(0.1)
             end
         else
             task.wait(0.5) 
@@ -547,9 +538,12 @@ task.spawn(function()
     end
 end)
 
+-- [[ ⚙️ ФІЗИЧНИЙ ЦИКЛ (ВИРІШЕННЯ ПРОБЛЕМИ З ПАРАЛІЧЕМ) ]]
 local lastPos = Vector3.zero
 RunService.Stepped:Connect(function() 
     local Char = LP.Character
+    
+    -- NOCLIP
     if State.Noclip and Char then 
         local HRP = Char:FindFirstChild("HumanoidRootPart")
         local Hum = Char:FindFirstChild("Humanoid")
@@ -558,10 +552,8 @@ RunService.Stepped:Connect(function()
             if v:IsA("BasePart") then v.CanCollide = false end 
         end 
         
-        -- Noclip push-back fix
         if HRP and Hum then
             if (HRP.Position - lastPos).Magnitude < 0.1 and Hum.MoveDirection.Magnitude > 0 then
-                -- сервер телепортував назад → мікро-відскок
                 HRP.CFrame = HRP.CFrame + Hum.MoveDirection * 0.4
             end
             lastPos = HRP.Position
@@ -569,6 +561,18 @@ RunService.Stepped:Connect(function()
     elseif Char and Char:FindFirstChild("HumanoidRootPart") then
         lastPos = Char.HumanoidRootPart.Position
     end 
+    
+    -- АНТИ-ПАРАЛІЧ ХІТБОКСІВ (Вимикаємо колізію голови)
+    if State.Hitbox then
+        for _, p in pairs(Players:GetPlayers()) do 
+            if p ~= LP and p.Character then 
+                local head = p.Character:FindFirstChild("Head")
+                if head and head:IsA("BasePart") then
+                    head.CanCollide = false
+                end
+            end
+        end
+    end
 end) 
 
 UIS.InputBegan:Connect(function(i, g) 
