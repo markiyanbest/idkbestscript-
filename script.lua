@@ -236,23 +236,8 @@ local function Toggle(Name)
     if Name == "Fly" and HRP then
         if State.Fly then
             pcall(function() HRP:SetNetworkOwner(nil) end)
-            -- Обхід: AlignPosition замість CFrame Lerp
-            local alignPos = Instance.new("AlignPosition", HRP)
-            alignPos.Name = RandomString(8)
-            alignPos.Responsiveness = 200  -- Високий для швидкого руху
-            alignPos.MaxForce = math.huge
-            alignPos.Attachment0 = Instance.new("Attachment", HRP)
-            local alignOri = Instance.new("AlignOrientation", HRP)
-            alignOri.Name = RandomString(8)
-            alignOri.Responsiveness = 200
-            alignOri.MaxTorque = math.huge
-            alignOri.Attachment0 = Instance.new("Attachment", HRP)
         else
             pcall(function() HRP:SetNetworkOwner(LP) end)
-            -- Видалити align при вимкненні
-            for _, v in pairs(HRP:GetChildren()) do
-                if v:IsA("AlignPosition") or v:IsA("AlignOrientation") or v:IsA("Attachment") then v:Destroy() end
-            end
         end
     end
 
@@ -400,29 +385,28 @@ RunService.RenderStepped:Connect(function(dt)
         moveX, moveZ = mv.X, mv.Z
     end
 
-    -- Отримання поточного FPS для нормалізації швидкості
-    local currentFPS = tonumber(FPSLabel.Text:match("%d+")) or 60
-    local fpsNormalizer = math.clamp(60 / currentFPS, 0.5, 3)
-
-    -- [[ ALIGNPOSITION FLY ]]
+    -- [[ FLY ]]
     if State.Fly and not State.Freecam and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
         local HRP = LP.Character.HumanoidRootPart
-        local alignPos = HRP:FindFirstChildOfClass("AlignPosition")
-        local alignOri = HRP:FindFirstChildOfClass("AlignOrientation")
+        local camLook = Camera.CFrame.LookVector
+        local right = Camera.CFrame.RightVector
+        local speed = Config.FlySpeed
+        local velocityPrediction = HRP.AssemblyLinearVelocity * dt
 
-        if alignPos and alignOri then
-            local camLook = Camera.CFrame.LookVector
-            local right = Camera.CFrame.RightVector
-            local speed = Config.FlySpeed * fpsNormalizer
-            
-            local targetPos = HRP.Position + (camLook * (-moveZ * speed * dt * 0.92)) + (right * (moveX * speed * dt * 0.88))
-            
-            if UIS:IsKeyDown(Enum.KeyCode.Space) then targetPos += Vector3.new(0, speed * dt, 0) end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then targetPos -= Vector3.new(0, speed * dt, 0) end
-            
-            alignPos.Position = targetPos  -- Align to calculated pos
-            alignOri.CFrame = Camera.CFrame  -- Sync orientation
-            HRP.AssemblyLinearVelocity = Vector3.new(0, math.random(-2,2)/10, 0)  -- Small random Y для anti-detect
+        local cf = HRP.CFrame
+        cf += camLook * (-moveZ * speed * dt * 0.92)  
+        cf += right * (moveX * speed * dt * 0.88)     
+        
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then cf += Vector3.new(0, speed * dt, 0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then cf -= Vector3.new(0, speed * dt, 0) end
+
+        HRP.CFrame = cf:Lerp(HRP.CFrame + velocityPrediction, 0.35)
+        HRP.AssemblyLinearVelocity = Vector3.new(0,0,0) 
+
+        local downRay = Ray.new(HRP.Position, Vector3.new(0, -9, 0))
+        local hit, pos = Workspace:FindPartOnRayWithIgnoreList(downRay, {LP.Character})
+        if not hit then
+            HRP.CFrame = HRP.CFrame + Vector3.new(0, 0.08 + math.random(-3,3)/100, 0)
         end
     end
 
@@ -572,11 +556,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
         Hum.WalkSpeed = Config.WalkSpeed 
         
         if Hum.MoveDirection.Magnitude > 0 and Hum.FloorMaterial ~= Enum.Material.Air then
-            -- FPS Normalizer для стабільного спідхаку
-            local currentFPS = tonumber(FPSLabel.Text:match("%d+")) or 60
-            local fpsNormalizer = math.clamp(60 / currentFPS, 0.5, 3)
-
-            local targetSpeed = Config.WalkSpeed * fpsNormalizer
+            local targetSpeed = Config.WalkSpeed
             local jitter = Vector3.new(
                 math.random(-4, 4) / 10,
                 0,
@@ -593,16 +573,6 @@ RunService.Heartbeat:Connect(function(deltaTime)
             
             local newVel = current:Lerp(Vector3.new(wishVel.X, current.Y, wishVel.Z), alpha)
             HRP.AssemblyLinearVelocity = newVel
-
-            -- Обхід: Камера на Mobile/High Speed
-            if Config.WalkSpeed > 100 then  
-                Camera.CameraSubject = HRP  
-                task.delay(0.1, function() 
-                    if Camera.CameraSubject == HRP and Hum then
-                        Camera.CameraSubject = Hum 
-                    end
-                end)  
-            end
         end
     end
     
@@ -704,10 +674,29 @@ RunService.Stepped:Connect(function()
         for _, v in pairs(Char:GetDescendants()) do 
             if v:IsA("BasePart") then v.CanCollide = false end 
         end 
+        
+        if HRP and Hum then
+            if (HRP.Position - lastPos).Magnitude < 0.1 and Hum.MoveDirection.Magnitude > 0 then
+                HRP.CFrame = HRP.CFrame + Hum.MoveDirection * 0.4
+            end
+            lastPos = HRP.Position
+        end
+    elseif Char and Char:FindFirstChild("HumanoidRootPart") then
+        lastPos = Char.HumanoidRootPart.Position
     end 
-end)
+    
+    if State.Hitbox then
+        for _, p in pairs(Players:GetPlayers()) do 
+            if p ~= LP and p.Character then 
+                local head = p.Character:FindFirstChild("Head")
+                if head and head:IsA("BasePart") then
+                    head.CanCollide = false
+                end
+            end
+        end
+    end
+end) 
 
--- [[ KEYBINDS ]]
 UIS.InputBegan:Connect(function(i, g) 
     if g then return end 
     if i.KeyCode == Enum.KeyCode.F then Toggle("Fly") end 
