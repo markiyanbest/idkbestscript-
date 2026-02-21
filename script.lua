@@ -1,5 +1,5 @@
--- [[ V262.00: OMNI-REBORN - 2026 BYFRON BYPASS EDITION ]] 
--- [[ POLYMORPHIC GUI | PING PREDICTION | MUTATED HITBOXES | SOFT FAKELAG | SILENT AIM | ANTI-SS ]] 
+-- [[ V262.04: OMNI-REBORN - FINAL HYBRID EDITION (MOBILE + PC) ]] 
+-- [[ FIXES: FREECAM WASD BUG | CAMERA LAG | MICRO-ANCHOR FAKELAG | SAFE NO-FALL ]] 
 
 local Players = game:GetService("Players") 
 local RunService = game:GetService("RunService") 
@@ -7,9 +7,17 @@ local UIS = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting") 
 local Workspace = game:GetService("Workspace") 
 local VirtualUser = game:GetService("VirtualUser")
+local PhysicsService = game:GetService("PhysicsService")
 
 local LP = Players.LocalPlayer 
 local Camera = Workspace.CurrentCamera 
+
+-- [[ 0. PHYSICS SETUP ]]
+local SafeGroup = "OmniSafeV262"
+pcall(function()
+    PhysicsService:RegisterCollisionGroup(SafeGroup)
+    PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false)
+end)
 
 -- [[ GENERATE RANDOM STRINGS FOR BYPASS ]]
 local function RandomString(length)
@@ -26,17 +34,15 @@ Blur.Size = 0
 Blur.Parent = Lighting
 
 local function SetBlur(active)
-    Blur.Size = active and 36 or 0  -- 36 — сильний blur для захисту від скріншотів
+    Blur.Size = active and 36 or 0  
 end
 
 UIS.InputBegan:Connect(function(input, gpe)
     if gpe then return end
-    -- Виявлення F9 (Developer Console)
     if input.KeyCode == Enum.KeyCode.F9 then
         SetBlur(true)
         task.delay(1.5, function() SetBlur(false) end)
     end
-    -- Виявлення Roblox screenshot (F12 або Shift + F12)
     if input.KeyCode == Enum.KeyCode.F12 or (input.KeyCode == Enum.KeyCode.LeftShift and UIS:IsKeyDown(Enum.KeyCode.F12)) then
         SetBlur(true)
         task.delay(0.8, function() SetBlur(false) end)
@@ -147,6 +153,27 @@ Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 end)
 
 -- [[ 2. HELPERS & CLEAUP ]] 
+local function ForceRestore()
+    local Char = LP.Character
+    if Char then
+        local Hum = Char:FindFirstChild("Humanoid")
+        local HRP = Char:FindFirstChild("HumanoidRootPart")
+        
+        if Hum then Hum.PlatformStand = false end
+        
+        if HRP and HRP:FindFirstChild("SpinAV") then
+            HRP.SpinAV:Destroy()
+        end
+
+        for _, v in pairs(Char:GetDescendants()) do
+            if v:IsA("BasePart") then 
+                v.CanCollide = true
+                v.CollisionGroup = "Default" 
+            end
+        end
+    end
+end
+
 local function GetClosestPlayer() 
     local target, minDistance = nil, math.huge 
     for _, p in pairs(Players:GetPlayers()) do 
@@ -174,23 +201,19 @@ local function ClearESP()
     end 
 end 
 
--- [[ 3. УНІВЕРСАЛЬНИЙ SILENT AIM ДЛЯ XENO (БЕЗ HOOK) ]]
+-- [[ 3. УНІВЕРСАЛЬНИЙ SILENT AIM ]]
 local function SimpleSilentAim()
     if State.SilentAim and State.Aim then
         local target = GetClosestPlayer()
         if target and target:FindFirstChild("Head") then
-            -- Направляємо камеру на голову цілі перед пострілом
             local camPos = Camera.CFrame.Position
             Camera.CFrame = CFrame.new(camPos, target.Head.Position)
         end
     end
 end
 
--- Додаємо виклик у RenderStepped для миттєвої реакції
 RunService.RenderStepped:Connect(function()
-    if State.SilentAim then
-        SimpleSilentAim()
-    end
+    if State.SilentAim then SimpleSilentAim() end
 end)
 
 -- [[ 4. TOGGLE SYSTEM ]] 
@@ -199,7 +222,25 @@ local function Toggle(Name)
     local Char = LP.Character 
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart") 
       
+    if (Name == "Noclip" or Name == "ShadowLock" or Name == "Fly") and not State[Name] then
+        ForceRestore()
+    end
+
     if Name == "ESP" and not State.ESP then ClearESP() end 
+
+    if Name == "Spin" then
+        if not State.Spin then
+            if HRP and HRP:FindFirstChild("SpinAV") then HRP.SpinAV:Destroy() end
+        else
+            if HRP then
+                local av = Instance.new("BodyAngularVelocity", HRP) 
+                av.Name = "SpinAV"
+                av.MaxTorque = Vector3.new(0, math.huge, 0)
+                av.AngularVelocity = Vector3.new(0, 20, 0) 
+                av.P = 1200
+            end
+        end
+    end
 
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do 
@@ -213,20 +254,11 @@ local function Toggle(Name)
                     head.CanQuery = true 
                     head.Massless = false 
                     head.Material = Enum.Material.Plastic
-                    head.Color = Color3.new(0.639216, 0.635294, 0.607843) -- Стандартний колір голови (приблизний)
+                    head.Color = Color3.new(0.639216, 0.635294, 0.607843)
                 end
             end 
         end 
     end
-
-    if Name == "Noclip" and not State.Noclip then 
-        task.wait(0.05) 
-        if Char then 
-            for _, v in pairs(Char:GetDescendants()) do 
-                if v:IsA("BasePart") then v.CanCollide = true end 
-            end 
-        end 
-    end 
 
     if Name == "Speed" and not State.Speed then
         local Hum = Char and Char:FindFirstChild("Humanoid")
@@ -250,35 +282,42 @@ local function Toggle(Name)
             if HRP then HRP.Anchored = true end
         else
             Camera.CameraType = Enum.CameraType.Custom
-            if UIS.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition then
-                UIS.MouseBehavior = Enum.MouseBehavior.Default
-            end
+            UIS.MouseBehavior = Enum.MouseBehavior.Default 
             if HRP then HRP.Anchored = false end
             local Hum = Char and Char:FindFirstChild("Humanoid")
-            if Hum then
-                Camera.CameraSubject = Hum
-            end
+            if Hum then Camera.CameraSubject = Hum end
         end
     end
 
     if Name == "ShadowLock" then 
-        if State.ShadowLock then 
-            LockedTarget = GetClosestPlayer() 
-        else 
-            LockedTarget = nil 
-        end 
+        if State.ShadowLock then
+            LockedTarget = GetClosestPlayer()
+        else
+            LockedTarget = nil
+        end
     end 
 
     if Name == "Potato" and State.Potato then 
-        Lighting.GlobalShadows = false 
-        for _, v in pairs(Workspace:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.Plastic end end 
+        Lighting.GlobalShadows = false
+        local hrpPos = HRP and HRP.Position or Vector3.zero
+        
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                if (v.Position - hrpPos).Magnitude > 75 then
+                    v.Material = Enum.Material.Plastic
+                    v.Reflectance = 0
+                end
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                v:Destroy() 
+            elseif (v:IsA("Decal") or v:IsA("Texture")) then
+                 if v.Parent and v.Parent:IsA("BasePart") and (v.Parent.Position - hrpPos).Magnitude > 75 then
+                    v:Destroy()
+                 end
+            end
+        end
+        State.Potato = false 
     end 
     
-    if Name == "HighJump" and not State.HighJump then
-        local Hum = Char and Char:FindFirstChild("Humanoid")
-        if Hum then Hum.JumpPower = 50 end
-    end
-
     if Buttons[Name] then 
         Buttons[Name].BackgroundColor3 = State[Name] and Color3.new(1,1,1) or Color3.fromRGB(30, 30, 35) 
         Buttons[Name].TextColor3 = State[Name] and Color3.new(0,0,0) or Color3.new(1,1,1) 
@@ -289,7 +328,10 @@ end
 LP.Idled:Connect(function()
     if State.AntiAFK then
         VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+        VirtualUser:ClickButton2(Vector2.new(0,0))
+        VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
+        task.wait(0.5)
+        VirtualUser:Button2Up(Vector2.new(0,0), Camera.CFrame)
     end
 end)
 
@@ -347,21 +389,16 @@ MToggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end
 Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20) 
 
 -- [[ FREECAM INPUT ]]
-UIS.InputChanged:Connect(function(input, gameProcessed)
-    if State.Freecam then
+UIS.InputChanged:Connect(function(input, gpe)
+    if State.Freecam and not gpe then
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-                UIS.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
-                FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
-                FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.3), -math.rad(89), math.rad(89))
-            else
-                if UIS.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition then
-                    UIS.MouseBehavior = Enum.MouseBehavior.Default
-                end
+                FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.4)
+                FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.4), -math.rad(89), math.rad(89))
             end
         elseif input.UserInputType == Enum.UserInputType.Touch then
-            FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.3)
-            FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.3), -math.rad(89), math.rad(89))
+            FC_Yaw = FC_Yaw - math.rad(input.Delta.X * 0.4)
+            FC_Pitch = math.clamp(FC_Pitch - math.rad(input.Delta.Y * 0.4), -math.rad(89), math.rad(89))
         end
     end
 end)
@@ -384,30 +421,10 @@ RunService.RenderStepped:Connect(function(dt)
         local mv = Controls:GetMoveVector()
         moveX, moveZ = mv.X, mv.Z
     end
-
-    -- [[ FLY ]]
-    if State.Fly and not State.Freecam and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-        local HRP = LP.Character.HumanoidRootPart
-        local camLook = Camera.CFrame.LookVector
-        local right = Camera.CFrame.RightVector
-        local speed = Config.FlySpeed
-        local velocityPrediction = HRP.AssemblyLinearVelocity * dt
-
-        local cf = HRP.CFrame
-        cf += camLook * (-moveZ * speed * dt * 0.92)  
-        cf += right * (moveX * speed * dt * 0.88)     
-        
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then cf += Vector3.new(0, speed * dt, 0) end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then cf -= Vector3.new(0, speed * dt, 0) end
-
-        HRP.CFrame = cf:Lerp(HRP.CFrame + velocityPrediction, 0.35)
-        HRP.AssemblyLinearVelocity = Vector3.new(0,0,0) 
-
-        local downRay = Ray.new(HRP.Position, Vector3.new(0, -9, 0))
-        local hit, pos = Workspace:FindPartOnRayWithIgnoreList(downRay, {LP.Character})
-        if not hit then
-            HRP.CFrame = HRP.CFrame + Vector3.new(0, 0.08 + math.random(-3,3)/100, 0)
-        end
+    -- ФІКС: Повертаємо WASD сюди для Freecam, щоб він міг літати на ПК
+    if not IsMobile then
+        if UIS:IsKeyDown(Enum.KeyCode.W) then moveZ = -1 end; if UIS:IsKeyDown(Enum.KeyCode.S) then moveZ = 1 end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then moveX = -1 end; if UIS:IsKeyDown(Enum.KeyCode.D) then moveX = 1 end
     end
 
     if State.Freecam then
@@ -418,7 +435,8 @@ RunService.RenderStepped:Connect(function(dt)
         if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) then camMove += Camera.CFrame.UpVector end  
         if UIS:IsKeyDown(Enum.KeyCode.Q) or UIS:IsKeyDown(Enum.KeyCode.LeftControl) then camMove -= Camera.CFrame.UpVector end  
         
-        local speed = Config.FlySpeed / 25
+        local currentFPS = #FrameLog > 0 and #FrameLog or 60
+        local speed = (Config.FlySpeed / 25) * (60 / currentFPS)
         local newPos = Camera.CFrame.Position + (camMove * speed)
         Camera.CFrame = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(FC_Pitch, FC_Yaw, 0)
     end
@@ -429,14 +447,12 @@ RunService.RenderStepped:Connect(function(dt)
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then 
                 local head = p.Character:FindFirstChild("Head")
                 if head and head:IsA("BasePart") then 
-                    -- Замість точної перевірки 18, дивимось чи голова стандартного розміру (< 15)
-                    -- Якщо так, генеруємо унікальний розмір від 17.5 до 18.5
                     if head.Size.X < 15 then 
                         local rSize = math.random(175, 185) / 10
                         head.Size = Vector3.new(rSize, rSize, rSize) 
-                        head.Transparency = 0.5 -- Зроблено напівпрозорим для видимості розміру
+                        head.Transparency = 0.5
                         head.Material = Enum.Material.ForceField
-                        head.Color = Color3.new(1, 0, 0) -- Червоний колір для візуалізації
+                        head.Color = Color3.new(1, 0, 0)
                         head.CanTouch = true 
                         head.CanQuery = true 
                         head.Massless = true 
@@ -497,9 +513,7 @@ RunService.RenderStepped:Connect(function(dt)
                         local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") 
                         local dist = root and math.floor((root.Position - head.Position).Magnitude) or 0 
                         
-                        -- Відображення розміру хітбоксу в ESP
                         local hbSizeText = (State.Hitbox and head.Size.X > 15) and string.format("%.2f", head.Size.X) or "Standard"
-                        
                         tagLabel.Text = p.Name .. "\nHP: " .. health .. " | Dist: " .. dist .. "m\nHitbox Size: " .. hbSizeText 
                     end
                 end 
@@ -517,14 +531,13 @@ RunService.RenderStepped:Connect(function(dt)
         
         if LockedTarget and LockedTarget:FindFirstChild("HumanoidRootPart") then 
             local targetHRP = LockedTarget.HumanoidRootPart
-            local clampedPing = math.clamp(safePing, 0, 0.25) -- Макс 250мс передбачення
+            local clampedPing = math.clamp(safePing, 0, 0.25)
             local predictionVector = targetHRP.AssemblyLinearVelocity * clampedPing
             
             local goalCFrame = CFrame.new(targetHRP.Position + predictionVector) * targetHRP.CFrame.Rotation * CFrame.new(0, 0, 3) 
             HRP.CFrame = HRP.CFrame:Lerp(goalCFrame, 0.45) 
             
             HRP.AssemblyLinearVelocity = targetHRP.AssemblyLinearVelocity
-            HRP.AssemblyAngularVelocity = Vector3.zero
         end 
     end 
 
@@ -540,7 +553,6 @@ RunService.RenderStepped:Connect(function(dt)
 end) 
 
 -- [[ 7. HEARTBEAT LOOP ]] 
-local lastAntiAfkTick = 0
 local lastJump = 0 
 local lastJitterTime = 0
 local JITTER_INTERVAL_MIN = 5
@@ -550,63 +562,80 @@ RunService.Heartbeat:Connect(function(deltaTime)
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
     
-    if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
-    
-    if State.Speed and not State.Fly and not State.Freecam then
-        Hum.WalkSpeed = Config.WalkSpeed 
+    local moveX, moveZ = 0, 0
+    if Controls then
+        local mv = Controls:GetMoveVector()
+        moveX, moveZ = mv.X, mv.Z
+    end
+
+    -- [[ FLY ENGINE ]]
+    if State.Fly and not State.Freecam then
+        Hum.PlatformStand = false 
         
+        local camLook = Camera.CFrame.LookVector
+        local right = Camera.CFrame.RightVector
+        
+        if not IsMobile then
+            if UIS:IsKeyDown(Enum.KeyCode.W) then moveZ = -1 end; if UIS:IsKeyDown(Enum.KeyCode.S) then moveZ = 1 end
+            if UIS:IsKeyDown(Enum.KeyCode.A) then moveX = -1 end; if UIS:IsKeyDown(Enum.KeyCode.D) then moveX = 1 end
+        end
+        
+        local move = (camLook * -moveZ) + (right * moveX)
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0, 1, 0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then move -= Vector3.new(0, 1, 0) end
+        
+        local currentFPS = #FrameLog > 0 and #FrameLog or 60
+        local speed = Config.FlySpeed * (60 / currentFPS)
+        
+        local JitterX = math.noise(tick()*20)*1.5
+        local JitterY = math.sin(tick()*50)*0.7 + math.noise(tick()*15)*0.4
+        local JitterZ = math.noise(tick()*25)*1.2
+        
+        local Velocity = (move * speed) + Vector3.new(JitterX, JitterY, JitterZ)
+        
+        if HRP.Position.Y > 200 then
+            Velocity = Velocity - Vector3.new(0, 30, 0)
+        end
+        
+        HRP.AssemblyLinearVelocity = Velocity
+        
+        if not State.Spin then
+            HRP.AssemblyAngularVelocity = Vector3.zero
+        end
+    end
+
+    -- [[ SPEED (Da Hood CFrame Bypass) ]]
+    if State.Speed and not State.Fly and not State.Freecam then
         if Hum.MoveDirection.Magnitude > 0 and Hum.FloorMaterial ~= Enum.Material.Air then
-            local targetSpeed = Config.WalkSpeed
-            local jitter = Vector3.new(
-                math.random(-4, 4) / 10,
-                0,
-                math.random(-4, 4) / 10
-            )
-            local jitterDir = jitter.Magnitude > 0 and jitter.Unit or Vector3.zero
-            local wishVel = (Hum.MoveDirection + jitterDir * 0.15) * targetSpeed
+            local currentFPS = #FrameLog > 0 and #FrameLog or 60
+            local speedBoost = (Config.WalkSpeed - 16) / 120 
+            local pushVector = Hum.MoveDirection * (speedBoost * (60 / currentFPS))
             
-            local current = HRP.AssemblyLinearVelocity
-            
-            local ping = LP:GetNetworkPing() * 1000
-            local alpha = 0.18 - (ping / 2000)  
-            alpha = math.clamp(alpha, 0.09, 0.22)
-            
-            local newVel = current:Lerp(Vector3.new(wishVel.X, current.Y, wishVel.Z), alpha)
-            HRP.AssemblyLinearVelocity = newVel
+            HRP.CFrame = HRP.CFrame + pushVector
         end
     end
     
+    -- HighJump
     if State.HighJump and not State.Fly then
-        Hum.UseJumpPower = true
-        Hum.JumpPower = Config.JumpPower
-    elseif not State.HighJump and Hum.JumpPower == Config.JumpPower then
-        Hum.UseJumpPower = true
-        Hum.JumpPower = 50
+        if Hum:GetState() == Enum.HumanoidStateType.Jumping or UIS:IsKeyDown(Enum.KeyCode.Space) then
+            HRP.AssemblyLinearVelocity = Vector3.new(HRP.AssemblyLinearVelocity.X, Config.JumpPower * 0.8, HRP.AssemblyLinearVelocity.Z)
+        end
     end
-    
+
+    -- Bhop
     if State.Bhop and not State.Fly and not State.Freecam and Hum.FloorMaterial ~= Enum.Material.Air and Hum.MoveDirection.Magnitude > 0 then
-        if tick() - lastJump > 0.085 + math.random(-10, 10) / 1000 then
+        if tick() - lastJump > 0.07 + math.random(-5,5)/1000 then
             Hum.Jump = true
+            HRP.AssemblyLinearVelocity = Vector3.new(HRP.AssemblyLinearVelocity.X, 65 + math.random(-10,10), HRP.AssemblyLinearVelocity.Z)  
             lastJump = tick()
         end
     end
     
+    -- [[ NO FALL DAMAGE ]]
     if State.NoFallDamage then
-        if Hum:GetState() == Enum.HumanoidStateType.Freefall then
-            if HRP.AssemblyLinearVelocity.Y < -45 then
-                HRP.AssemblyLinearVelocity = Vector3.new(
-                    HRP.AssemblyLinearVelocity.X,
-                    -5,  
-                    HRP.AssemblyLinearVelocity.Z
-                )
-            end
-        end
-    end
-
-    if State.AntiAFK and Hum.MoveDirection.Magnitude == 0 then
-        if tick() - lastAntiAfkTick > 1 then
-            Hum:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)))
-            lastAntiAfkTick = tick()
+        if Hum:GetState() == Enum.HumanoidStateType.Freefall and HRP.AssemblyLinearVelocity.Y < -30 then
+            Hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+            HRP.AssemblyLinearVelocity = Vector3.new(HRP.AssemblyLinearVelocity.X, -5, HRP.AssemblyLinearVelocity.Z)
         end
     end
 
@@ -620,7 +649,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
                     local head = p.Character:FindFirstChild("Head")
                     if head and head:IsA("BasePart") and head.Size.X >= 15 then 
                         local baseSize = 18 
-                        local jitterAmount = math.random(-50, 50) / 100 -- Від -0.5 до +0.5
+                        local jitterAmount = math.random(-50, 50) / 100
                         local newSize = math.clamp(baseSize + jitterAmount, 17.5, 18.5)
                         head.Size = Vector3.new(newSize, newSize, newSize)
                     end
@@ -630,59 +659,57 @@ RunService.Heartbeat:Connect(function(deltaTime)
     end
 end) 
 
--- [[ 📶 SOFT VELOCITY SPOOFING FAKE LAG ]]
+-- [[ 📶 TRUE FAKE LAG ]]
 task.spawn(function()
     while true do
-        if State.FakeLag then
-            local Char = LP.Character
-            local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
-            local Hum = Char and Char:FindFirstChild("Humanoid")
+        local Char = LP.Character
+        local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        
+        if State.FakeLag and HRP and Hum and Hum.MoveDirection.Magnitude > 0 and not State.Fly then
+            pcall(function() HRP.Anchored = true end)
+            task.wait(math.random(40, 90) / 1000) 
             
-            if HRP and Hum and Hum.MoveDirection.Magnitude > 0 then
-                local realVel = HRP.AssemblyLinearVelocity
-                
-                -- Soft spoof: не різкий стоп на -150, а м'який глайд в протилежну сторону або сповільнення
-                -- Це виглядає як типова втрата пакетів, а не очевидний експлоїт
-                local spoofVector = Hum.MoveDirection * -math.random(15, 30) 
-                HRP.AssemblyLinearVelocity = spoofVector
-                
-                -- Зменшений час спуфінгу (50-60% uptime замість 100%)
-                task.wait(math.random(30, 60) / 1000) 
-                
-                if HRP then HRP.AssemblyLinearVelocity = realVel end
-                
-                -- Нормальний рух між лагами
-                task.wait(math.random(100, 200) / 1000) 
-            else
-                task.wait(0.1)
-            end
+            pcall(function() HRP.Anchored = false end)
+            task.wait(math.random(100, 250) / 1000) 
         else
-            task.wait(0.5) 
+            task.wait(0.2)
         end
     end
 end)
 
--- [[ ⚙️ ФІЗИЧНИЙ ЦИКЛ (ВИРІШЕННЯ ПРОБЛЕМИ З ПАРАЛІЧЕМ) ]]
+-- [[ ⚙️ SMART NOCLIP WITH COLLISION GROUPS ]]
 local lastPos = Vector3.zero
 RunService.Stepped:Connect(function() 
     local Char = LP.Character
+    local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
+    local Hum = Char and Char:FindFirstChild("Humanoid")
     
-    if State.Noclip and Char then 
-        local HRP = Char:FindFirstChild("HumanoidRootPart")
-        local Hum = Char:FindFirstChild("Humanoid")
+    if State.Noclip and Char and HRP and Hum then 
+        local moving = Hum.MoveDirection.Magnitude > 0 or (HRP.AssemblyLinearVelocity.Magnitude > 5)
         
         for _, v in pairs(Char:GetDescendants()) do 
-            if v:IsA("BasePart") then v.CanCollide = false end 
+            if v:IsA("BasePart") and v.CanCollide then 
+                if moving then
+                    v.CanCollide = false
+                    v.CollisionGroup = SafeGroup
+                else
+                    task.delay(0.1, function() 
+                        if v and v.Parent then 
+                            v.CanCollide = true 
+                            v.CollisionGroup = "Default"
+                        end 
+                    end)
+                end
+            end 
         end 
         
-        if HRP and Hum then
-            if (HRP.Position - lastPos).Magnitude < 0.1 and Hum.MoveDirection.Magnitude > 0 then
-                HRP.CFrame = HRP.CFrame + Hum.MoveDirection * 0.4
-            end
-            lastPos = HRP.Position
+        if (HRP.Position - lastPos).Magnitude < 0.05 and moving then
+            HRP.CFrame += Hum.MoveDirection * 0.3 + Vector3.new(0, 0.1, 0)
         end
-    elseif Char and Char:FindFirstChild("HumanoidRootPart") then
-        lastPos = Char.HumanoidRootPart.Position
+        lastPos = HRP.Position
+    elseif Char and HRP then
+        lastPos = HRP.Position
     end 
     
     if State.Hitbox then
