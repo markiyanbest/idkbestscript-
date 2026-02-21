@@ -1,5 +1,5 @@
--- [[ V261.00: OMNI-REBORN - ANTI-PARALYZE HEADSHOT HITBOX ]] 
--- [[ STEALTH HEAD EXPANSION | CFRAME MAGNET | VELOCITY SPOOF ]] 
+-- [[ V262.00: OMNI-REBORN - 2026 BYFRON BYPASS EDITION ]] 
+-- [[ POLYMORPHIC GUI | PING PREDICTION | MUTATED HITBOXES | SOFT FAKELAG ]] 
 
 local Players = game:GetService("Players") 
 local RunService = game:GetService("RunService") 
@@ -10,6 +10,15 @@ local VirtualUser = game:GetService("VirtualUser")
 
 local LP = Players.LocalPlayer 
 local Camera = Workspace.CurrentCamera 
+
+-- [[ GENERATE RANDOM STRINGS FOR BYPASS ]]
+local function RandomString(length)
+    local str = ""
+    for i = 1, length do
+        str = str .. string.char(math.random(97, 122))
+    end
+    return str
+end
 
 -- [[ MOBILE CONTROLS INTEGRATION ]]
 local Controls = nil
@@ -26,8 +35,7 @@ end)
 local Config = {  
     FlySpeed = 55,  
     WalkSpeed = 85,  
-    JumpPower = 125, 
-    HitboxSize = Vector3.new(18, 18, 18) 
+    JumpPower = 125
 } 
 
 local State = { 
@@ -40,11 +48,10 @@ local State = {
 local LockedTarget = nil 
 local Buttons = {} 
 
--- [[ ЗМІННІ ДЛЯ ПРАВИЛЬНОГО ОБЕРТАННЯ FREECAM ]]
 local FC_Pitch = 0
 local FC_Yaw = 0
 
--- [[ 1. GUI SYSTEM - ADAPTIVE ]] 
+-- [[ 1. GUI SYSTEM - POLYMORPHIC ADAPTIVE ]] 
 local GuiParent
 pcall(function() GuiParent = game:GetService("CoreGui") end)
 if not GuiParent or not pcall(function() local _ = GuiParent.Name end) then
@@ -52,8 +59,10 @@ if not GuiParent or not pcall(function() local _ = GuiParent.Name end) then
 end
 
 pcall(function()  
-    if GuiParent:FindFirstChild("V260_Omni") then  
-        GuiParent.V260_Omni:Destroy()  
+    for _, v in pairs(GuiParent:GetChildren()) do
+        if v:IsA("ScreenGui") and v:FindFirstChild("OmniMarker") then
+            v:Destroy()
+        end
     end
     if game:GetService("CoreGui"):FindFirstChild("V259_Omni") then
         game:GetService("CoreGui").V259_Omni:Destroy()
@@ -61,7 +70,10 @@ pcall(function()
 end) 
 
 local Screen = Instance.new("ScreenGui", GuiParent) 
-Screen.Name = "V260_Omni"; Screen.ResetOnSpawn = false 
+Screen.Name = RandomString(12)
+Screen.ResetOnSpawn = false 
+local Marker = Instance.new("BoolValue", Screen)
+Marker.Name = "OmniMarker"
 
 local IsMobile = UIS.TouchEnabled
 local MainWidth = IsMobile and 200 or 230
@@ -110,7 +122,7 @@ Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 end)
 
--- [[ 2. HELPERS ]] 
+-- [[ 2. HELPERS & CLEAUP ]] 
 local function GetClosestPlayer() 
     local target, minDistance = nil, math.huge 
     for _, p in pairs(Players:GetPlayers()) do 
@@ -125,10 +137,15 @@ end
 local function ClearESP() 
     for _, p in pairs(Players:GetPlayers()) do 
         if p.Character then 
-            if p.Character:FindFirstChild("OmniHighlight") then p.Character.OmniHighlight:Destroy() end 
-            if p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("OmniTag") then 
-                p.Character.Head.OmniTag:Destroy() 
-            end 
+            for _, v in pairs(p.Character:GetChildren()) do
+                if v:IsA("Highlight") and v:FindFirstChild("ESPMarker") then v:Destroy() end
+            end
+            local head = p.Character:FindFirstChild("Head")
+            if head then
+                for _, v in pairs(head:GetChildren()) do
+                    if v:IsA("BillboardGui") and v:FindFirstChild("ESPMarker") then v:Destroy() end
+                end
+            end
         end 
     end 
 end 
@@ -141,7 +158,6 @@ local function Toggle(Name)
       
     if Name == "ESP" and not State.ESP then ClearESP() end 
 
-    -- СКИДАННЯ ХІТБОКСУ ГОЛОВИ ДО СТАНДАРТУ
     if Name == "Hitbox" and not State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
@@ -224,7 +240,7 @@ local function Toggle(Name)
     end 
 end 
 
--- [[ НАДІЙНИЙ ANTI-IDLE ВІД СИСТЕМИ ROBLOX ]]
+-- [[ НАДІЙНИЙ ANTI-IDLE ]]
 LP.Idled:Connect(function()
     if State.AntiAFK then
         VirtualUser:CaptureController()
@@ -285,7 +301,7 @@ for i, n in ipairs(Names) do CreateBtn(n, Logic[i]) end
 MToggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end) 
 Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20) 
 
--- [[ ОБРОБКА ПОВОРОТУ КАМЕРИ FREECAM ]]
+-- [[ FREECAM INPUT ]]
 UIS.InputChanged:Connect(function(input, gameProcessed)
     if State.Freecam then
         if input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -312,8 +328,10 @@ RunService.RenderStepped:Connect(function(dt)
     for i = #FrameLog, 1, -1 do if FrameLog[i] < tick() - 1 then table.remove(FrameLog, i) end end 
     FPSLabel.Text = "FPS: " .. #FrameLog 
     
+    local safePing = 0
     pcall(function()
-        PingLabel.Text = "Ping: " .. math.floor(LP:GetNetworkPing() * 1000) .. "ms" 
+        safePing = LP:GetNetworkPing()
+        PingLabel.Text = "Ping: " .. math.floor(safePing * 1000) .. "ms" 
     end)
 
     local moveX, moveZ = 0, 0
@@ -322,7 +340,7 @@ RunService.RenderStepped:Connect(function(dt)
         moveX, moveZ = mv.X, mv.Z
     end
 
-    -- [[ 🕊️ FLY STABLE ]]
+    -- [[ FLY ]]
     if State.Fly and not State.Freecam and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
         local HRP = LP.Character.HumanoidRootPart
         local camLook = Camera.CFrame.LookVector
@@ -360,15 +378,17 @@ RunService.RenderStepped:Connect(function(dt)
         Camera.CFrame = CFrame.new(newPos) * CFrame.fromEulerAnglesYXZ(FC_Pitch, FC_Yaw, 0)
     end
 
-    -- [[ 🥊 STEALTH HEAD HITBOX BLOCK ]] 
+    -- [[ MUTATED HEAD HITBOX ]] 
     if State.Hitbox then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then 
-                -- ЗБІЛЬШУЄМО ГОЛОВУ ЗАМІСТЬ HRP!
                 local head = p.Character:FindFirstChild("Head")
                 if head and head:IsA("BasePart") then 
-                    if head.Size.X ~= Config.HitboxSize.X then 
-                        head.Size = Config.HitboxSize 
+                    -- Замість точної перевірки 18, дивимось чи голова стандартного розміру (< 15)
+                    -- Якщо так, генеруємо унікальний розмір від 17.5 до 18.5
+                    if head.Size.X < 15 then 
+                        local rSize = math.random(175, 185) / 10
+                        head.Size = Vector3.new(rSize, rSize, rSize) 
                         head.Transparency = 1 
                         head.CanTouch = true 
                         head.CanQuery = true 
@@ -379,39 +399,58 @@ RunService.RenderStepped:Connect(function(dt)
         end 
     end 
 
-    -- [[ 📦 ESP BLOCK ]] 
+    -- [[ POLYMORPHIC ESP ]] 
     if State.ESP then 
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
-                local highlight = p.Character:FindFirstChild("OmniHighlight") or Instance.new("Highlight", p.Character) 
-                highlight.Name = "OmniHighlight" 
-                highlight.FillColor = Color3.new(1, 0, 0) 
-                highlight.OutlineColor = Color3.new(1, 1, 1) 
-                highlight.FillTransparency = 0.5 
-                highlight.OutlineTransparency = 0 
+                local highlight = nil
+                for _, v in pairs(p.Character:GetChildren()) do
+                    if v:IsA("Highlight") and v:FindFirstChild("ESPMarker") then highlight = v; break end
+                end
+
+                if not highlight then
+                    highlight = Instance.new("Highlight", p.Character) 
+                    highlight.Name = RandomString(10)
+                    local m = Instance.new("BoolValue", highlight); m.Name = "ESPMarker"
+                    highlight.FillColor = Color3.new(1, 0, 0) 
+                    highlight.OutlineColor = Color3.new(1, 1, 1) 
+                    highlight.FillTransparency = 0.5 
+                    highlight.OutlineTransparency = 0 
+                end
                 highlight.Enabled = true 
                  
                 local head = p.Character:FindFirstChild("Head") 
                 if head then 
-                    local billboard = head:FindFirstChild("OmniTag") or Instance.new("BillboardGui", head) 
-                    billboard.Name = "OmniTag" 
-                    billboard.Size = UDim2.new(0, 200, 0, 50) 
-                    billboard.StudsOffset = Vector3.new(0, 3, 0) 
-                    billboard.AlwaysOnTop = true 
-                      
-                    local tag = billboard:FindFirstChild("Label") or Instance.new("TextLabel", billboard) 
-                    tag.Name = "Label" 
-                    tag.Size = UDim2.new(1, 0, 1, 0) 
-                    tag.BackgroundTransparency = 1 
-                    tag.TextColor3 = Color3.new(1, 1, 1) 
-                    tag.Font = Enum.Font.GothamBold 
-                    tag.TextSize = 14 
-                      
-                    local hum = p.Character:FindFirstChild("Humanoid") 
-                    local health = hum and math.floor(hum.Health) or 0 
-                    local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") 
-                    local dist = root and math.floor((root.Position - head.Position).Magnitude) or 0 
-                    tag.Text = p.Name .. "\nHP: " .. health .. " | Dist: " .. dist .. "m" 
+                    local billboard = nil
+                    for _, v in pairs(head:GetChildren()) do
+                        if v:IsA("BillboardGui") and v:FindFirstChild("ESPMarker") then billboard = v; break end
+                    end
+
+                    if not billboard then
+                        billboard = Instance.new("BillboardGui", head) 
+                        billboard.Name = RandomString(8)
+                        local m = Instance.new("BoolValue", billboard); m.Name = "ESPMarker"
+                        billboard.Size = UDim2.new(0, 200, 0, 50) 
+                        billboard.StudsOffset = Vector3.new(0, 3, 0) 
+                        billboard.AlwaysOnTop = true 
+                          
+                        local tag = Instance.new("TextLabel", billboard) 
+                        tag.Name = RandomString(5)
+                        tag.Size = UDim2.new(1, 0, 1, 0) 
+                        tag.BackgroundTransparency = 1 
+                        tag.TextColor3 = Color3.new(1, 1, 1) 
+                        tag.Font = Enum.Font.GothamBold 
+                        tag.TextSize = 14 
+                    end
+
+                    local tagLabel = billboard:FindFirstChildWhichIsA("TextLabel")
+                    if tagLabel then
+                        local hum = p.Character:FindFirstChild("Humanoid") 
+                        local health = hum and math.floor(hum.Health) or 0 
+                        local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") 
+                        local dist = root and math.floor((root.Position - head.Position).Magnitude) or 0 
+                        tagLabel.Text = p.Name .. "\nHP: " .. health .. " | Dist: " .. dist .. "m" 
+                    end
                 end 
             end 
         end 
@@ -420,14 +459,17 @@ RunService.RenderStepped:Connect(function(dt)
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart") 
     if not HRP then return end 
 
-    -- [[ 💀 CFRAME MAGNET (SHADOWLOCK) ]]
+    -- [[ PING-PREDICTED CFRAME MAGNET ]]
     if State.ShadowLock then 
         local IsAlive = LockedTarget and LockedTarget.Parent and LockedTarget:FindFirstChild("Humanoid") and LockedTarget.Humanoid.Health > 0 
         if not IsAlive then LockedTarget = GetClosestPlayer() end 
         
         if LockedTarget and LockedTarget:FindFirstChild("HumanoidRootPart") then 
             local targetHRP = LockedTarget.HumanoidRootPart
-            local goalCFrame = targetHRP.CFrame * CFrame.new(0, 0, 3) 
+            local clampedPing = math.clamp(safePing, 0, 0.25) -- Макс 250мс передбачення
+            local predictionVector = targetHRP.AssemblyLinearVelocity * clampedPing
+            
+            local goalCFrame = CFrame.new(targetHRP.Position + predictionVector) * targetHRP.CFrame.Rotation * CFrame.new(0, 0, 3) 
             HRP.CFrame = HRP.CFrame:Lerp(goalCFrame, 0.45) 
             
             HRP.AssemblyLinearVelocity = targetHRP.AssemblyLinearVelocity
@@ -435,9 +477,14 @@ RunService.RenderStepped:Connect(function(dt)
         end 
     end 
 
+    -- [[ PING-PREDICTED AUTO AIM ]]
     if State.Aim then 
         local target = GetClosestPlayer() 
-        if target and target:FindFirstChild("Head") then Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Head.Position) end 
+        if target and target:FindFirstChild("Head") then 
+            local clampedPing = math.clamp(safePing, 0, 0.25)
+            local predictionVector = target.Head.AssemblyLinearVelocity * clampedPing
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Head.Position + predictionVector) 
+        end 
     end 
 end) 
 
@@ -450,7 +497,6 @@ RunService.Heartbeat:Connect(function(deltaTime)
     
     if State.Spin then HRP.CFrame = HRP.CFrame * CFrame.Angles(0, math.rad(30), 0) end 
     
-    -- [[ ⚡ SPEED (GROUND) STABLE З JITTER ]]
     if State.Speed and not State.Fly and not State.Freecam then
         Hum.WalkSpeed = Config.WalkSpeed 
         
@@ -510,7 +556,7 @@ RunService.Heartbeat:Connect(function(deltaTime)
     end
 end) 
 
--- [[ 📶 VELOCITY SPOOFING FAKE LAG ]]
+-- [[ 📶 SOFT VELOCITY SPOOFING FAKE LAG ]]
 task.spawn(function()
     while true do
         if State.FakeLag then
@@ -521,14 +567,18 @@ task.spawn(function()
             if HRP and Hum and Hum.MoveDirection.Magnitude > 0 then
                 local realVel = HRP.AssemblyLinearVelocity
                 
-                local spoofVector = Hum.MoveDirection * -150 
+                -- Soft spoof: не різкий стоп на -150, а м'який глайд в протилежну сторону або сповільнення
+                -- Це виглядає як типова втрата пакетів, а не очевидний експлоїт
+                local spoofVector = Hum.MoveDirection * -math.random(15, 30) 
                 HRP.AssemblyLinearVelocity = spoofVector
                 
-                task.wait(0.04) 
+                -- Зменшений час спуфінгу (50-60% uptime замість 100%)
+                task.wait(math.random(30, 60) / 1000) 
                 
                 if HRP then HRP.AssemblyLinearVelocity = realVel end
                 
-                task.wait(math.random(150, 300) / 1000) 
+                -- Нормальний рух між лагами
+                task.wait(math.random(100, 200) / 1000) 
             else
                 task.wait(0.1)
             end
@@ -543,7 +593,6 @@ local lastPos = Vector3.zero
 RunService.Stepped:Connect(function() 
     local Char = LP.Character
     
-    -- NOCLIP
     if State.Noclip and Char then 
         local HRP = Char:FindFirstChild("HumanoidRootPart")
         local Hum = Char:FindFirstChild("Humanoid")
@@ -562,7 +611,6 @@ RunService.Stepped:Connect(function()
         lastPos = Char.HumanoidRootPart.Position
     end 
     
-    -- АНТИ-ПАРАЛІЧ ХІТБОКСІВ (Вимикаємо колізію голови)
     if State.Hitbox then
         for _, p in pairs(Players:GetPlayers()) do 
             if p ~= LP and p.Character then 
