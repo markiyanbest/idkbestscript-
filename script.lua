@@ -1,5 +1,5 @@
 -- [[ V262.00: OMNI-REBORN - 2026 BYFRON BYPASS EDITION ]] 
--- [[ POLYMORPHIC GUI | PING PREDICTION | MUTATED HITBOXES | SOFT FAKELAG ]] 
+-- [[ POLYMORPHIC GUI | PING PREDICTION | MUTATED HITBOXES | SOFT FAKELAG | SILENT AIM | ANTI-SS ]] 
 
 local Players = game:GetService("Players") 
 local RunService = game:GetService("RunService") 
@@ -19,6 +19,29 @@ local function RandomString(length)
     end
     return str
 end
+
+-- [[ ALWAYS-ON ANTI-SCREENSHOT / ANTI-F9 ]]
+local Blur = Instance.new("BlurEffect")
+Blur.Size = 0
+Blur.Parent = Lighting
+
+local function SetBlur(active)
+    Blur.Size = active and 36 or 0  -- 36 — сильний blur для захисту від скріншотів
+end
+
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    -- Виявлення F9 (Developer Console)
+    if input.KeyCode == Enum.KeyCode.F9 then
+        SetBlur(true)
+        task.delay(1.5, function() SetBlur(false) end)
+    end
+    -- Виявлення Roblox screenshot (F12 або Shift + F12)
+    if input.KeyCode == Enum.KeyCode.F12 or (input.KeyCode == Enum.KeyCode.LeftShift and UIS:IsKeyDown(Enum.KeyCode.F12)) then
+        SetBlur(true)
+        task.delay(0.8, function() SetBlur(false) end)
+    end
+end)
 
 -- [[ MOBILE CONTROLS INTEGRATION ]]
 local Controls = nil
@@ -42,7 +65,8 @@ local State = {
     Fly = false, Aim = false, ShadowLock = false, Noclip = false,  
     Hitbox = false, Speed = false, Bhop = false, ESP = false,  
     Spin = false, HighJump = false, Potato = false,
-    FakeLag = false, Freecam = false, NoFallDamage = false, AntiAFK = false
+    FakeLag = false, Freecam = false, NoFallDamage = false, AntiAFK = false,
+    SilentAim = false
 } 
 
 local LockedTarget = nil 
@@ -77,7 +101,7 @@ Marker.Name = "OmniMarker"
 
 local IsMobile = UIS.TouchEnabled
 local MainWidth = IsMobile and 200 or 230
-local MainHeight = IsMobile and 360 or 520
+local MainHeight = IsMobile and 360 or 550
 local ButtonMSize = IsMobile and 55 or 45
 
 local MToggle = Instance.new("TextButton", Screen) 
@@ -150,6 +174,25 @@ local function ClearESP()
     end 
 end 
 
+-- [[ 3. УНІВЕРСАЛЬНИЙ SILENT AIM ДЛЯ XENO (БЕЗ HOOK) ]]
+local function SimpleSilentAim()
+    if State.SilentAim and State.Aim then
+        local target = GetClosestPlayer()
+        if target and target:FindFirstChild("Head") then
+            -- Направляємо камеру на голову цілі перед пострілом
+            local camPos = Camera.CFrame.Position
+            Camera.CFrame = CFrame.new(camPos, target.Head.Position)
+        end
+    end
+end
+
+-- Додаємо виклик у RenderStepped для миттєвої реакції
+RunService.RenderStepped:Connect(function()
+    if State.SilentAim then
+        SimpleSilentAim()
+    end
+end)
+
 -- [[ 4. TOGGLE SYSTEM ]] 
 local function Toggle(Name) 
     State[Name] = not State[Name] 
@@ -169,6 +212,8 @@ local function Toggle(Name)
                     head.CanTouch = true 
                     head.CanQuery = true 
                     head.Massless = false 
+                    head.Material = Enum.Material.Plastic
+                    head.Color = Color3.new(0.639216, 0.635294, 0.607843) -- Стандартний колір голови (приблизний)
                 end
             end 
         end 
@@ -294,8 +339,8 @@ local function CreateBtn(Text, LogicName)
     Btn.MouseButton1Click:Connect(function() Toggle(LogicName) end); Buttons[LogicName] = Btn 
 end 
 
-local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO", "📶 FAKE LAG", "🎥 FREECAM", "🛡️ NO FALL DAMAGE", "🛡️ ANTI-AFK"} 
-local Logic = {"Fly", "Aim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato", "FakeLag", "Freecam", "NoFallDamage", "AntiAFK"} 
+local Names = {"🕊️ FLY [F]", "🎯 AUTO AIM [G]", "🔫 SILENT AIM", "💀 MAGNET", "👻 NOCLIP [V]", "🥊 HITBOX", "⚡ SPEED", "🐇 BHOP", "📦 ADVANCED ESP", "🌀 SPIN", "⬆️ HIGH JUMP", "🥔 POTATO", "📶 FAKE LAG", "🎥 FREECAM", "🛡️ NO FALL DAMAGE", "🛡️ ANTI-AFK"} 
+local Logic = {"Fly", "Aim", "SilentAim", "ShadowLock", "Noclip", "Hitbox", "Speed", "Bhop", "ESP", "Spin", "HighJump", "Potato", "FakeLag", "Freecam", "NoFallDamage", "AntiAFK"} 
 for i, n in ipairs(Names) do CreateBtn(n, Logic[i]) end 
 
 MToggle.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end) 
@@ -389,7 +434,9 @@ RunService.RenderStepped:Connect(function(dt)
                     if head.Size.X < 15 then 
                         local rSize = math.random(175, 185) / 10
                         head.Size = Vector3.new(rSize, rSize, rSize) 
-                        head.Transparency = 1 
+                        head.Transparency = 0.5 -- Зроблено напівпрозорим для видимості розміру
+                        head.Material = Enum.Material.ForceField
+                        head.Color = Color3.new(1, 0, 0) -- Червоний колір для візуалізації
                         head.CanTouch = true 
                         head.CanQuery = true 
                         head.Massless = true 
@@ -449,7 +496,11 @@ RunService.RenderStepped:Connect(function(dt)
                         local health = hum and math.floor(hum.Health) or 0 
                         local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") 
                         local dist = root and math.floor((root.Position - head.Position).Magnitude) or 0 
-                        tagLabel.Text = p.Name .. "\nHP: " .. health .. " | Dist: " .. dist .. "m" 
+                        
+                        -- Відображення розміру хітбоксу в ESP
+                        local hbSizeText = (State.Hitbox and head.Size.X > 15) and string.format("%.2f", head.Size.X) or "Standard"
+                        
+                        tagLabel.Text = p.Name .. "\nHP: " .. health .. " | Dist: " .. dist .. "m\nHitbox Size: " .. hbSizeText 
                     end
                 end 
             end 
@@ -491,6 +542,10 @@ end)
 -- [[ 7. HEARTBEAT LOOP ]] 
 local lastAntiAfkTick = 0
 local lastJump = 0 
+local lastJitterTime = 0
+local JITTER_INTERVAL_MIN = 5
+local JITTER_INTERVAL_MAX = 10
+
 RunService.Heartbeat:Connect(function(deltaTime) 
     local Char = LP.Character; local HRP = Char and Char:FindFirstChild("HumanoidRootPart"); local Hum = Char and Char:FindFirstChild("Humanoid") 
     if not HRP or not Hum then return end 
@@ -552,6 +607,25 @@ RunService.Heartbeat:Connect(function(deltaTime)
         if tick() - lastAntiAfkTick > 1 then
             Hum:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)))
             lastAntiAfkTick = tick()
+        end
+    end
+
+    -- [[ JITTER HITBOX SIZE ]]
+    if State.Hitbox then
+        local now = tick()
+        if now - lastJitterTime > math.random(JITTER_INTERVAL_MIN, JITTER_INTERVAL_MAX) then
+            lastJitterTime = now
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LP and p.Character then
+                    local head = p.Character:FindFirstChild("Head")
+                    if head and head:IsA("BasePart") and head.Size.X >= 15 then 
+                        local baseSize = 18 
+                        local jitterAmount = math.random(-50, 50) / 100 -- Від -0.5 до +0.5
+                        local newSize = math.clamp(baseSize + jitterAmount, 17.5, 18.5)
+                        head.Size = Vector3.new(newSize, newSize, newSize)
+                    end
+                end
+            end
         end
     end
 end) 
