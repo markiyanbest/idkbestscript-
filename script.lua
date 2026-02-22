@@ -152,6 +152,12 @@ Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
 end)
 
+-- ГАРАНТІЯ ТОГО ЩО КНОПКИ НЕ ПРОПАДУТЬ ПРИ ЗАПУСКУ
+task.spawn(function()
+    task.wait(0.2)
+    Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
+end)
+
 -- [[ 2. HELPERS & CLEAUP ]] 
 local function ForceRestore()
     local Char = LP.Character
@@ -203,7 +209,7 @@ end
 
 -- [[ 3. УНІВЕРСАЛЬНИЙ SILENT AIM ]]
 local function SimpleSilentAim()
-    if State.SilentAim and State.Aim then
+    if State.SilentAim and State.Aim and not State.Freecam then
         local target = GetClosestPlayer()
         if target and target:FindFirstChild("Head") then
             local camPos = Camera.CFrame.Position
@@ -297,25 +303,27 @@ local function Toggle(Name)
         end
     end 
 
-    if Name == "Potato" and State.Potato then 
-        Lighting.GlobalShadows = false
-        local hrpPos = HRP and HRP.Position or Vector3.zero
-        
-        for _, v in pairs(Workspace:GetDescendants()) do
-            if v:IsA("BasePart") then
-                if (v.Position - hrpPos).Magnitude > 75 then
-                    v.Material = Enum.Material.Plastic
+    if Name == "Potato" then 
+        if State.Potato then
+            Lighting.GlobalShadows = false
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Material = Enum.Material.SmoothPlastic
                     v.Reflectance = 0
+                    v.CastShadow = false
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Decal") or v:IsA("Texture") then
+                    pcall(function() v:Destroy() end)
                 end
-            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-                v:Destroy() 
-            elseif (v:IsA("Decal") or v:IsA("Texture")) then
-                 if v.Parent and v.Parent:IsA("BasePart") and (v.Parent.Position - hrpPos).Magnitude > 75 then
-                    v:Destroy()
-                 end
+            end
+        else
+            Lighting.GlobalShadows = true
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Material = Enum.Material.Plastic
+                    v.CastShadow = true
+                end
             end
         end
-        State.Potato = false 
     end 
     
     if Buttons[Name] then 
@@ -542,7 +550,7 @@ RunService.RenderStepped:Connect(function(dt)
     end 
 
     -- [[ PING-PREDICTED AUTO AIM ]]
-    if State.Aim then 
+    if State.Aim and not State.Freecam then 
         local target = GetClosestPlayer() 
         if target and target:FindFirstChild("Head") then 
             local clampedPing = math.clamp(safePing, 0, 0.25)
@@ -666,7 +674,7 @@ task.spawn(function()
         local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
         local Hum = Char and Char:FindFirstChild("Humanoid")
         
-        if State.FakeLag and HRP and Hum and Hum.MoveDirection.Magnitude > 0 and not State.Fly then
+        if State.FakeLag and HRP and Hum and Hum.MoveDirection.Magnitude > 0 and not State.Fly and not State.Freecam then
             pcall(function() HRP.Anchored = true end)
             task.wait(math.random(40, 90) / 1000) 
             
