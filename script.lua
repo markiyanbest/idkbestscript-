@@ -217,7 +217,7 @@ local function ScreenDist(part)
 end
 
 -- ============================================================
--- FIND NEW BEST TARGET (без рекурсії)
+-- FIND NEW BEST TARGET
 -- ============================================================
 local function FindNewTarget()
 	local fov  = Config.AimFOV
@@ -240,13 +240,12 @@ local function FindNewTarget()
 end
 
 -- ============================================================
--- GET BEST AIM TARGET (повертає Character або nil)
+-- GET BEST AIM TARGET
 -- ============================================================
 local function GetBestAimTarget()
 	local now = tick()
 	local fov = Config.AimFOV
 
-	-- Перевіряємо поточну залочену ціль
 	if aimTarget and aimLocked then
 		local char = aimTarget.Character
 		if IsAlive(char) then
@@ -260,7 +259,6 @@ local function GetBestAimTarget()
 					return char
 				end
 
-				-- Гістерезис — тримаємо ціль кілька кадрів
 				if not vis then
 					aimLostFrames = aimLostFrames + 1
 					if aimLostFrames < 15 then return char end
@@ -270,16 +268,13 @@ local function GetBestAimTarget()
 				end
 			end
 		end
-		-- Ціль втрачена
 		aimTarget     = nil
 		aimLocked     = false
 		aimLostFrames = 0
 	end
 
-	-- Кулдаун переключення
 	if now - aimLastSwitch < aimSwitchCD then return nil end
 
-	-- Шукаємо нову ціль
 	local best = FindNewTarget()
 	if best then
 		aimTarget     = best
@@ -292,7 +287,6 @@ local function GetBestAimTarget()
 	return nil
 end
 
--- Silent aim використовує ту саму функцію
 function _GetBestTargetSilent()
 	return GetBestAimTarget()
 end
@@ -707,7 +701,7 @@ local FS  = IsMob and 12 or 11
 local MBS = IsMob and 54 or 48
 
 -- ============================================================
--- FOV CIRCLE (без хрестика)
+-- FOV CIRCLE
 -- ============================================================
 local fovCircle = Instance.new("Frame", Scr)
 fovCircle.Size                 = UDim2.new(0, Config.AimFOV*2, 0, Config.AimFOV*2)
@@ -722,7 +716,6 @@ fovStroke.Color       = Color3.fromRGB(0, 200, 100)
 fovStroke.Thickness   = 1.5
 fovStroke.Transparency = 0.3
 
--- Target info
 local tgtInfo = Instance.new("TextLabel", Scr)
 tgtInfo.Size                    = UDim2.new(0, 200, 0, 22)
 tgtInfo.Position                = UDim2.new(0.5, -100, 0.5, -Config.AimFOV - 32)
@@ -942,7 +935,7 @@ for _, n in ipairs(tNames) do
 	TabPages[n] = s
 end
 
--- DRAGGABLE
+-- DRAGGABLE MAIN
 do
 	local dr, ds, dp = false, nil, nil
 	TB.InputBegan:Connect(function(inp)
@@ -967,9 +960,11 @@ do
 	end)
 end
 
--- EXT STATS
+-- ============================================================
+-- EXT STATS (DRAGGABLE FPS/PING PANEL)
+-- ============================================================
 local exS = Instance.new("Frame", Scr)
-exS.Size                 = UDim2.new(0, 110, 0, 40)
+exS.Size                 = UDim2.new(0, 110, 0, 44)
 exS.Position             = UDim2.new(1, -122, 0, 10)
 exS.BackgroundColor3     = P.bg
 exS.BackgroundTransparency = 0.08
@@ -977,22 +972,78 @@ exS.BorderSizePixel      = 0
 Instance.new("UICorner", exS).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", exS).Color        = P.brd
 
+-- Drag icon label
+local exDragIcon = Instance.new("TextLabel", exS)
+exDragIcon.Size                 = UDim2.new(0, 14, 0, 14)
+exDragIcon.Position             = UDim2.new(1, -16, 0, 2)
+exDragIcon.BackgroundTransparency = 1
+exDragIcon.Text                 = "⠿"
+exDragIcon.TextSize             = 10
+exDragIcon.Font                 = Enum.Font.GothamBold
+exDragIcon.TextColor3           = P.dim
+exDragIcon.ZIndex               = 12
+
 local eF = Instance.new("TextLabel", exS)
-eF.Size                 = UDim2.new(1, 0, 0.5, 0)
+eF.Size                 = UDim2.new(1, -4, 0.5, 0)
+eF.Position             = UDim2.new(0, 4, 0, 0)
 eF.BackgroundTransparency = 1
 eF.TextColor3           = P.wht
 eF.Font                 = Enum.Font.GothamBold
 eF.TextSize             = 10
 eF.Text                 = "FPS: ..."
+eF.TextXAlignment       = Enum.TextXAlignment.Left
+eF.ZIndex               = 11
 
 local eP = Instance.new("TextLabel", exS)
-eP.Size                 = UDim2.new(1, 0, 0.5, 0)
-eP.Position             = UDim2.new(0, 0, 0.5, 0)
+eP.Size                 = UDim2.new(1, -4, 0.5, 0)
+eP.Position             = UDim2.new(0, 4, 0.5, 0)
 eP.BackgroundTransparency = 1
 eP.TextColor3           = P.wht
 eP.Font                 = Enum.Font.GothamBold
 eP.TextSize             = 10
 eP.Text                 = "Ping: ..."
+eP.TextXAlignment       = Enum.TextXAlignment.Left
+eP.ZIndex               = 11
+
+-- Невидима кнопка для drag
+local exDragBtn = Instance.new("TextButton", exS)
+exDragBtn.Size                 = UDim2.new(1, 0, 1, 0)
+exDragBtn.BackgroundTransparency = 1
+exDragBtn.Text                 = ""
+exDragBtn.ZIndex               = 10
+exDragBtn.AutoButtonColor      = false
+
+-- Drag логіка для панелі статистики
+do
+	local exDr, exDs, exDp = false, nil, nil
+	exDragBtn.InputBegan:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1
+			or inp.UserInputType == Enum.UserInputType.Touch then
+			exDr = true
+			exDs = inp.Position
+			exDp = exS.Position
+		end
+	end)
+	UIS.InputChanged:Connect(function(inp)
+		if not exDr then return end
+		if inp.UserInputType == Enum.UserInputType.MouseMovement
+			or inp.UserInputType == Enum.UserInputType.Touch then
+			local d   = inp.Position - exDs
+			local newX = exDp.X.Offset + d.X
+			local newY = exDp.Y.Offset + d.Y
+			local vp   = Camera.ViewportSize
+			newX = math.clamp(newX, 0, vp.X - exS.AbsoluteSize.X)
+			newY = math.clamp(newY, 0, vp.Y - exS.AbsoluteSize.Y)
+			exS.Position = UDim2.new(exDp.X.Scale, newX, exDp.Y.Scale, newY)
+		end
+	end)
+	UIS.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1
+			or inp.UserInputType == Enum.UserInputType.Touch then
+			exDr = false
+		end
+	end)
+end
 
 -- M BUTTON
 local mB = Instance.new("TextButton", Scr)
@@ -1544,7 +1595,6 @@ task.spawn(function()
 		for nm, d in pairs(AllRows) do
 			if State[nm] and d.accent then d.accent.BackgroundColor3 = acol end
 		end
-		-- FOV circle color animation
 		if State.Aim or State.SilentAim then
 			if not (aimLocked and aimTarget) then
 				fovStroke.Color = Color3.fromRGB(180, 180, 200)
@@ -1583,12 +1633,10 @@ RunService.RenderStepped:Connect(function(dt)
 	local HRP  = Char and Char:FindFirstChild("HumanoidRootPart")
 	local Hum  = Char and Char:FindFirstChildOfClass("Humanoid")
 
-	-- FOV CIRCLE VISIBILITY
 	local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
 	fovCircle.Visible = showFOV
-	tgtInfo.Visible   = false  -- reset, буде виставлено нижче якщо треба
+	tgtInfo.Visible   = false
 
-	-- FLY
 	if State.Fly and not State.Freecam and HRP and Hum then
 		Hum.PlatformStand = false
 		local mx, mz = GetDir()
@@ -1605,7 +1653,6 @@ RunService.RenderStepped:Connect(function(dt)
 		if HRP.Position.Y > 2000 then HRP.CFrame -= Vector3.new(0, 2, 0) end
 	end
 
-	-- FREECAM
 	if State.Freecam then
 		local mx, mz = GetDir()
 		local dir    = Camera.CFrame.LookVector * -mz + Camera.CFrame.RightVector * mx
@@ -1616,7 +1663,6 @@ RunService.RenderStepped:Connect(function(dt)
 			* CFrame.fromEulerAnglesYXZ(FC_P, FC_Y, 0)
 	end
 
-	-- AUTO AIM
 	if State.Aim and not State.Freecam and Char and HRP then
 		local target = GetBestAimTarget()
 		local part   = target and FindAimPart(target)
@@ -1661,7 +1707,6 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
-	-- SILENT AIM VISUAL
 	if State.SilentAim and not State.Aim and not State.Freecam then
 		local tgt  = GetBestAimTarget()
 		local part = tgt and FindAimPart(tgt)
@@ -1683,7 +1728,6 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
--- FREECAM MOUSE
 UIS.InputChanged:Connect(function(inp, gpe)
 	if gpe or not State.Freecam then return end
 	if inp.UserInputType == Enum.UserInputType.MouseMovement then
@@ -1833,4 +1877,4 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
-Notify("OMNI V265.4", "✅ Fixed: No crosshair · Clean AimBot · Wall Check ✓", 5)
+Notify("OMNI V265.4", "✅ Draggable FPS/Ping panel · Clean AimBot · Wall Check ✓", 5)
