@@ -102,7 +102,6 @@ local TabPages      = {}
 local TabBtns       = {}
 local CurTab        = "Combat"
 
--- AIM VARIABLES
 local aimTarget     = nil
 local aimLastSwitch = 0
 local aimLocked     = false
@@ -183,9 +182,6 @@ local function FindAimPart(char)
 	return nil
 end
 
--- ============================================================
--- WALL CHECK
--- ============================================================
 local function IsVisible(char)
 	if not char then return false end
 	local myChar = LP.Character
@@ -205,9 +201,6 @@ local function IsVisible(char)
 	return false
 end
 
--- ============================================================
--- SCREEN DISTANCE
--- ============================================================
 local function ScreenDist(part)
 	if not part then return math.huge end
 	local pos, on = Camera:WorldToViewportPoint(part.Position)
@@ -216,9 +209,6 @@ local function ScreenDist(part)
 	return (Vector2.new(pos.X, pos.Y) - center).Magnitude
 end
 
--- ============================================================
--- FIND NEW BEST TARGET
--- ============================================================
 local function FindNewTarget()
 	local fov  = Config.AimFOV
 	local best, bestDist = nil, math.huge
@@ -231,21 +221,14 @@ local function FindNewTarget()
 		local sd = ScreenDist(part)
 		if sd > fov then continue end
 		if not IsVisible(char) then continue end
-		if sd < bestDist then
-			bestDist = sd
-			best     = p
-		end
+		if sd < bestDist then bestDist = sd; best = p end
 	end
 	return best
 end
 
--- ============================================================
--- GET BEST AIM TARGET
--- ============================================================
 local function GetBestAimTarget()
 	local now = tick()
 	local fov = Config.AimFOV
-
 	if aimTarget and aimLocked then
 		local char = aimTarget.Character
 		if IsAlive(char) then
@@ -253,12 +236,10 @@ local function GetBestAimTarget()
 			if part then
 				local sd  = ScreenDist(part)
 				local vis = IsVisible(char)
-
 				if sd <= fov * 1.8 and vis then
 					aimLostFrames = 0
 					return char
 				end
-
 				if not vis then
 					aimLostFrames = aimLostFrames + 1
 					if aimLostFrames < 15 then return char end
@@ -268,22 +249,15 @@ local function GetBestAimTarget()
 				end
 			end
 		end
-		aimTarget     = nil
-		aimLocked     = false
-		aimLostFrames = 0
+		aimTarget = nil; aimLocked = false; aimLostFrames = 0
 	end
-
 	if now - aimLastSwitch < aimSwitchCD then return nil end
-
 	local best = FindNewTarget()
 	if best then
-		aimTarget     = best
-		aimLocked     = true
-		aimLostFrames = 0
-		aimLastSwitch = now
+		aimTarget = best; aimLocked = true
+		aimLostFrames = 0; aimLastSwitch = now
 		return best.Character
 	end
-
 	return nil
 end
 
@@ -291,9 +265,6 @@ function _GetBestTargetSilent()
 	return GetBestAimTarget()
 end
 
--- ============================================================
--- CLOSEST (для ShadowLock)
--- ============================================================
 local function GetClosestDist()
 	local my = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 	if not my then return nil end
@@ -340,8 +311,8 @@ task.spawn(function()
 			if not ca or not ca.hl or not ca.hl.Parent or not ca.bb or not ca.bb.Parent then
 				if ca then pcall(function() ca.hl:Destroy(); ca.bb:Destroy() end) end
 				local hl = Instance.new("Highlight", c)
-				hl.FillColor       = Color3.fromRGB(220, 40, 40)
-				hl.OutlineColor    = Color3.fromRGB(255, 255, 255)
+				hl.FillColor        = Color3.fromRGB(220, 40, 40)
+				hl.OutlineColor     = Color3.fromRGB(255, 255, 255)
 				hl.FillTransparency = 0.5
 				local bb = Instance.new("BillboardGui", hd)
 				bb.Size        = UDim2.new(0, 170, 0, 46)
@@ -349,10 +320,10 @@ task.spawn(function()
 				bb.AlwaysOnTop = true
 				bb.MaxDistance = 500
 				local bg = Instance.new("Frame", bb)
-				bg.Size                 = UDim2.new(1, 0, 1, 0)
-				bg.BackgroundColor3     = Color3.fromRGB(10, 10, 16)
+				bg.Size                   = UDim2.new(1, 0, 1, 0)
+				bg.BackgroundColor3       = Color3.fromRGB(10, 10, 16)
 				bg.BackgroundTransparency = 0.2
-				bg.BorderSizePixel      = 0
+				bg.BorderSizePixel        = 0
 				Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 7)
 				Instance.new("UIStroke", bg).Color        = Color3.fromRGB(60, 60, 75)
 				local lb = Instance.new("TextLabel", bg)
@@ -397,19 +368,19 @@ local function ApplyHB(part)
 		hbParts[part] = {S=part.Size, T=part.Transparency, C=part.CanCollide, M=part.Massless}
 	end
 	local s = Config.HitboxSize
-	part.Size        = Vector3.new(s, s, s)
+	part.Size         = Vector3.new(s, s, s)
 	part.Transparency = 0.7
-	part.CanCollide  = false
-	part.Massless    = true
+	part.CanCollide   = false
+	part.Massless     = true
 end
 local function RestoreHB()
 	for p, o in pairs(hbParts) do
 		pcall(function()
 			if p and p.Parent then
-				p.Size        = o.S
+				p.Size         = o.S
 				p.Transparency = o.T
-				p.CanCollide  = o.C
-				p.Massless    = o.M
+				p.CanCollide   = o.C
+				p.Massless     = o.M
 			end
 		end)
 	end
@@ -492,7 +463,7 @@ local function ForceRestore()
 	end
 	for _, v in pairs(C:GetDescendants()) do
 		if v:IsA("BasePart") then
-			v.CanCollide    = true
+			v.CanCollide     = true
 			v.CollisionGroup = "Default"
 		end
 	end
@@ -542,9 +513,9 @@ local function Toggle(nm)
 			pcall(function() H.UseJumpPower = true; H.JumpPower = 50; H.JumpHeight = 7.2 end)
 		end
 		if nm == "Noclip" or nm == "ShadowLock" then ForceRestore() end
-		if nm == "ESP"      then ClearESP() end
-		if nm == "Hitbox"   then RestoreHB() end
-		if nm == "Potato"   then UndoPotato() end
+		if nm == "ESP"       then ClearESP() end
+		if nm == "Hitbox"    then RestoreHB() end
+		if nm == "Potato"    then UndoPotato() end
 		if nm == "SilentAim" then silentActive = false end
 		if nm == "AntiKick"  then akOn = false end
 		if nm == "Freecam" then
@@ -584,10 +555,10 @@ local function Toggle(nm)
 		end
 		if nm == "Spin" and R then
 			local av = Instance.new("BodyAngularVelocity", R)
-			av.Name           = "SpinAV"
-			av.MaxTorque      = Vector3.new(0, math.huge, 0)
+			av.Name            = "SpinAV"
+			av.MaxTorque       = Vector3.new(0, math.huge, 0)
 			av.AngularVelocity = Vector3.new(0, 22, 0)
-			av.P              = 1500
+			av.P               = 1500
 		end
 		if nm == "Freecam" then
 			Camera.CameraSubject = nil
@@ -704,30 +675,30 @@ local MBS = IsMob and 54 or 48
 -- FOV CIRCLE
 -- ============================================================
 local fovCircle = Instance.new("Frame", Scr)
-fovCircle.Size                 = UDim2.new(0, Config.AimFOV*2, 0, Config.AimFOV*2)
-fovCircle.Position             = UDim2.new(0.5, -Config.AimFOV, 0.5, -Config.AimFOV)
+fovCircle.Size                   = UDim2.new(0, Config.AimFOV*2, 0, Config.AimFOV*2)
+fovCircle.Position               = UDim2.new(0.5, -Config.AimFOV, 0.5, -Config.AimFOV)
 fovCircle.BackgroundTransparency = 1
-fovCircle.BorderSizePixel      = 0
-fovCircle.Visible              = false
-fovCircle.ZIndex               = 10
+fovCircle.BorderSizePixel        = 0
+fovCircle.Visible                = false
+fovCircle.ZIndex                 = 10
 Instance.new("UICorner", fovCircle).CornerRadius = UDim.new(1, 0)
 local fovStroke = Instance.new("UIStroke", fovCircle)
-fovStroke.Color       = Color3.fromRGB(0, 200, 100)
-fovStroke.Thickness   = 1.5
+fovStroke.Color        = Color3.fromRGB(0, 200, 100)
+fovStroke.Thickness    = 1.5
 fovStroke.Transparency = 0.3
 
 local tgtInfo = Instance.new("TextLabel", Scr)
-tgtInfo.Size                    = UDim2.new(0, 200, 0, 22)
-tgtInfo.Position                = UDim2.new(0.5, -100, 0.5, -Config.AimFOV - 32)
-tgtInfo.BackgroundColor3        = Color3.fromRGB(10, 10, 16)
-tgtInfo.BackgroundTransparency  = 0.2
-tgtInfo.BorderSizePixel         = 0
-tgtInfo.TextColor3              = P.grn
-tgtInfo.Font                    = Enum.Font.GothamBold
-tgtInfo.TextSize                = 11
-tgtInfo.Text                    = ""
-tgtInfo.Visible                 = false
-tgtInfo.ZIndex                  = 12
+tgtInfo.Size                   = UDim2.new(0, 200, 0, 22)
+tgtInfo.Position               = UDim2.new(0.5, -100, 0.5, -Config.AimFOV - 32)
+tgtInfo.BackgroundColor3       = Color3.fromRGB(10, 10, 16)
+tgtInfo.BackgroundTransparency = 0.2
+tgtInfo.BorderSizePixel        = 0
+tgtInfo.TextColor3             = P.grn
+tgtInfo.Font                   = Enum.Font.GothamBold
+tgtInfo.TextSize               = 11
+tgtInfo.Text                   = ""
+tgtInfo.Visible                = false
+tgtInfo.ZIndex                 = 12
 Instance.new("UICorner", tgtInfo).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", tgtInfo).Color        = P.brd
 
@@ -885,7 +856,7 @@ local function SwitchTab(name)
 	for n, bt in pairs(TabBtns) do
 		local a = (n == name)
 		TweenService:Create(bt, TweenInfo.new(0.12), {
-			BackgroundColor3    = a and P.tabA or Color3.fromRGB(0, 0, 0),
+			BackgroundColor3       = a and P.tabA or Color3.fromRGB(0, 0, 0),
 			BackgroundTransparency = a and 0 or 1,
 		}):Play()
 		bt.TextColor3 = a and P.acc or P.dim
@@ -894,16 +865,16 @@ end
 
 for i, n in ipairs(tNames) do
 	local b = Instance.new("TextButton", tabFr)
-	b.Size                 = UDim2.new(tW, -2, 1, -4)
-	b.Position             = UDim2.new((i-1)*tW, 1, 0, 2)
-	b.BackgroundColor3     = P.tabA
+	b.Size                   = UDim2.new(tW, -2, 1, -4)
+	b.Position               = UDim2.new((i-1)*tW, 1, 0, 2)
+	b.BackgroundColor3       = P.tabA
 	b.BackgroundTransparency = i == 1 and 0 or 1
-	b.Text                 = tIcons[i] .. " " .. n
-	b.TextColor3           = i == 1 and P.acc or P.dim
-	b.Font                 = Enum.Font.GothamBold
-	b.TextSize             = IsMob and 10 or 9
-	b.BorderSizePixel      = 0
-	b.AutoButtonColor      = false
+	b.Text                   = tIcons[i] .. " " .. n
+	b.TextColor3             = i == 1 and P.acc or P.dim
+	b.Font                   = Enum.Font.GothamBold
+	b.TextSize               = IsMob and 10 or 9
+	b.BorderSizePixel        = 0
+	b.AutoButtonColor        = false
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
 	b.MouseButton1Click:Connect(function() SwitchTab(n) end)
 	TabBtns[n] = b
@@ -913,19 +884,19 @@ local cY = tabY + 30
 local cH = MH - cY - 4
 for _, n in ipairs(tNames) do
 	local s = Instance.new("ScrollingFrame", Main)
-	s.Name                 = n
-	s.Size                 = UDim2.new(1, -6, 0, cH)
-	s.Position             = UDim2.new(0, 3, 0, cY)
+	s.Name                   = n
+	s.Size                   = UDim2.new(1, -6, 0, cH)
+	s.Position               = UDim2.new(0, 3, 0, cY)
 	s.BackgroundTransparency = 1
-	s.ScrollBarThickness   = IsMob and 0 or 3
-	s.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
-	s.BorderSizePixel      = 0
-	s.CanvasSize           = UDim2.new(0, 0, 0, 0)
-	s.ScrollingDirection   = Enum.ScrollingDirection.Y
-	s.Visible              = (n == "Combat")
+	s.ScrollBarThickness     = IsMob and 0 or 3
+	s.ScrollBarImageColor3   = Color3.fromRGB(100, 100, 120)
+	s.BorderSizePixel        = 0
+	s.CanvasSize             = UDim2.new(0, 0, 0, 0)
+	s.ScrollingDirection     = Enum.ScrollingDirection.Y
+	s.Visible                = (n == "Combat")
 	local ly = Instance.new("UIListLayout", s)
-	ly.Padding              = UDim.new(0, 3)
-	ly.HorizontalAlignment  = Enum.HorizontalAlignment.Center
+	ly.Padding             = UDim.new(0, 3)
+	ly.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	local pd = Instance.new("UIPadding", s)
 	pd.PaddingTop    = UDim.new(0, 4)
 	pd.PaddingBottom = UDim.new(0, 8)
@@ -944,12 +915,18 @@ do
 			dr = true; ds = inp.Position; dp = Main.Position
 		end
 	end)
-	UIS.InputChanged:Connect(function(inp)
+	TB.InputChanged:Connect(function(inp)
 		if not dr then return end
 		if inp.UserInputType == Enum.UserInputType.MouseMovement
 			or inp.UserInputType == Enum.UserInputType.Touch then
 			local d = inp.Position - ds
 			Main.Position = UDim2.new(dp.X.Scale, dp.X.Offset + d.X, dp.Y.Scale, dp.Y.Offset + d.Y)
+		end
+	end)
+	TB.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1
+			or inp.UserInputType == Enum.UserInputType.Touch then
+			dr = false
 		end
 	end)
 	UIS.InputEnded:Connect(function(inp)
@@ -961,62 +938,135 @@ do
 end
 
 -- ============================================================
--- EXT STATS (DRAGGABLE FPS/PING PANEL)
+-- EXT STATS — КРАСИВА ПЕРЕТЯГУВАНА ПАНЕЛЬ FPS/PING
 -- ============================================================
 local exS = Instance.new("Frame", Scr)
-exS.Size                 = UDim2.new(0, 110, 0, 44)
-exS.Position             = UDim2.new(1, -122, 0, 10)
-exS.BackgroundColor3     = P.bg
-exS.BackgroundTransparency = 0.08
-exS.BorderSizePixel      = 0
-Instance.new("UICorner", exS).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", exS).Color        = P.brd
+exS.Size                   = UDim2.new(0, 130, 0, 58)
+exS.Position               = UDim2.new(1, -142, 0, 10)
+exS.BackgroundColor3       = Color3.fromRGB(10, 10, 16)
+exS.BackgroundTransparency = 0
+exS.BorderSizePixel        = 0
+exS.ZIndex                 = 20
+Instance.new("UICorner", exS).CornerRadius = UDim.new(0, 10)
 
--- Drag icon label
-local exDragIcon = Instance.new("TextLabel", exS)
-exDragIcon.Size                 = UDim2.new(0, 14, 0, 14)
-exDragIcon.Position             = UDim2.new(1, -16, 0, 2)
-exDragIcon.BackgroundTransparency = 1
-exDragIcon.Text                 = "⠿"
-exDragIcon.TextSize             = 10
-exDragIcon.Font                 = Enum.Font.GothamBold
-exDragIcon.TextColor3           = P.dim
-exDragIcon.ZIndex               = 12
+-- Градієнт фону
+local exGrad = Instance.new("UIGradient", exS)
+exGrad.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,   Color3.fromRGB(16, 16, 28)),
+	ColorSequenceKeypoint.new(1,   Color3.fromRGB(8,  8,  16)),
+})
+exGrad.Rotation = 135
 
-local eF = Instance.new("TextLabel", exS)
-eF.Size                 = UDim2.new(1, -4, 0.5, 0)
-eF.Position             = UDim2.new(0, 4, 0, 0)
+local exStroke = Instance.new("UIStroke", exS)
+exStroke.Color     = Color3.fromRGB(0, 200, 100)
+exStroke.Thickness = 1.5
+exStroke.Transparency = 0.4
+
+-- Верхній рядок — FPS
+local exFpsRow = Instance.new("Frame", exS)
+exFpsRow.Size             = UDim2.new(1, -16, 0, 24)
+exFpsRow.Position         = UDim2.new(0, 8, 0, 6)
+exFpsRow.BackgroundTransparency = 1
+exFpsRow.ZIndex           = 21
+
+local exFpsIco = Instance.new("TextLabel", exFpsRow)
+exFpsIco.Size                 = UDim2.new(0, 18, 1, 0)
+exFpsIco.BackgroundTransparency = 1
+exFpsIco.Text                 = "🖥"
+exFpsIco.TextSize             = 12
+exFpsIco.Font                 = Enum.Font.Gotham
+exFpsIco.TextColor3           = Color3.fromRGB(100, 200, 255)
+exFpsIco.ZIndex               = 22
+
+local exFpsLbl = Instance.new("TextLabel", exFpsRow)
+exFpsLbl.Size                 = UDim2.new(0, 42, 1, 0)
+exFpsLbl.Position             = UDim2.new(0, 20, 0, 0)
+exFpsLbl.BackgroundTransparency = 1
+exFpsLbl.Text                 = "FPS"
+exFpsLbl.TextSize             = 10
+exFpsLbl.Font                 = Enum.Font.GothamBold
+exFpsLbl.TextColor3           = Color3.fromRGB(160, 160, 180)
+exFpsLbl.TextXAlignment       = Enum.TextXAlignment.Left
+exFpsLbl.ZIndex               = 22
+
+local eF = Instance.new("TextLabel", exFpsRow)
+eF.Size                 = UDim2.new(1, -64, 1, 0)
+eF.Position             = UDim2.new(0, 62, 0, 0)
 eF.BackgroundTransparency = 1
-eF.TextColor3           = P.wht
-eF.Font                 = Enum.Font.GothamBold
-eF.TextSize             = 10
-eF.Text                 = "FPS: ..."
-eF.TextXAlignment       = Enum.TextXAlignment.Left
-eF.ZIndex               = 11
+eF.Text                 = "..."
+eF.TextSize             = 12
+eF.Font                 = Enum.Font.GothamBlack
+eF.TextColor3           = Color3.fromRGB(130, 255, 170)
+eF.TextXAlignment       = Enum.TextXAlignment.Right
+eF.ZIndex               = 22
 
-local eP = Instance.new("TextLabel", exS)
-eP.Size                 = UDim2.new(1, -4, 0.5, 0)
-eP.Position             = UDim2.new(0, 4, 0.5, 0)
+-- Роздільник
+local exDiv = Instance.new("Frame", exS)
+exDiv.Size             = UDim2.new(1, -16, 0, 1)
+exDiv.Position         = UDim2.new(0, 8, 0, 31)
+exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+exDiv.BorderSizePixel  = 0
+exDiv.ZIndex           = 21
+
+-- Нижній рядок — Ping
+local exPingRow = Instance.new("Frame", exS)
+exPingRow.Size             = UDim2.new(1, -16, 0, 22)
+exPingRow.Position         = UDim2.new(0, 8, 0, 33)
+exPingRow.BackgroundTransparency = 1
+exPingRow.ZIndex           = 21
+
+local exPingIco = Instance.new("TextLabel", exPingRow)
+exPingIco.Size                 = UDim2.new(0, 18, 1, 0)
+exPingIco.BackgroundTransparency = 1
+exPingIco.Text                 = "📶"
+exPingIco.TextSize             = 11
+exPingIco.Font                 = Enum.Font.Gotham
+exPingIco.TextColor3           = Color3.fromRGB(255, 200, 80)
+exPingIco.ZIndex               = 22
+
+local exPingLbl = Instance.new("TextLabel", exPingRow)
+exPingLbl.Size                 = UDim2.new(0, 42, 1, 0)
+exPingLbl.Position             = UDim2.new(0, 20, 0, 0)
+exPingLbl.BackgroundTransparency = 1
+exPingLbl.Text                 = "PING"
+exPingLbl.TextSize             = 10
+exPingLbl.Font                 = Enum.Font.GothamBold
+exPingLbl.TextColor3           = Color3.fromRGB(160, 160, 180)
+exPingLbl.TextXAlignment       = Enum.TextXAlignment.Left
+exPingLbl.ZIndex               = 22
+
+local eP = Instance.new("TextLabel", exPingRow)
+eP.Size                 = UDim2.new(1, -64, 1, 0)
+eP.Position             = UDim2.new(0, 62, 0, 0)
 eP.BackgroundTransparency = 1
-eP.TextColor3           = P.wht
-eP.Font                 = Enum.Font.GothamBold
-eP.TextSize             = 10
-eP.Text                 = "Ping: ..."
-eP.TextXAlignment       = Enum.TextXAlignment.Left
-eP.ZIndex               = 11
+eP.Text                 = "..."
+eP.TextSize             = 12
+eP.Font                 = Enum.Font.GothamBlack
+eP.TextColor3           = Color3.fromRGB(130, 255, 170)
+eP.TextXAlignment       = Enum.TextXAlignment.Right
+eP.ZIndex               = 22
 
--- Невидима кнопка для drag
-local exDragBtn = Instance.new("TextButton", exS)
-exDragBtn.Size                 = UDim2.new(1, 0, 1, 0)
-exDragBtn.BackgroundTransparency = 1
-exDragBtn.Text                 = ""
-exDragBtn.ZIndex               = 10
-exDragBtn.AutoButtonColor      = false
+-- Drag іконка (⠿)
+local exDragIco = Instance.new("TextLabel", exS)
+exDragIco.Size                 = UDim2.new(0, 12, 0, 12)
+exDragIco.Position             = UDim2.new(1, -14, 0, 2)
+exDragIco.BackgroundTransparency = 1
+exDragIco.Text                 = "⠿"
+exDragIco.TextSize             = 9
+exDragIco.Font                 = Enum.Font.GothamBold
+exDragIco.TextColor3           = Color3.fromRGB(60, 60, 80)
+exDragIco.ZIndex               = 22
 
--- Drag логіка для панелі статистики
+-- ============================================================
+-- DRAG ЛОГІКА — ПОВНІСТЮ ЛОКАЛЬНА (не залежить від UIS global)
+-- ============================================================
 do
-	local exDr, exDs, exDp = false, nil, nil
-	exDragBtn.InputBegan:Connect(function(inp)
+	local exDr  = false
+	local exDs  = nil
+	local exDp  = nil
+
+	-- Використовуємо InputBegan/Changed/Ended на самому фреймі
+	exS.InputBegan:Connect(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1
 			or inp.UserInputType == Enum.UserInputType.Touch then
 			exDr = true
@@ -1024,19 +1074,29 @@ do
 			exDp = exS.Position
 		end
 	end)
-	UIS.InputChanged:Connect(function(inp)
+
+	exS.InputChanged:Connect(function(inp)
 		if not exDr then return end
 		if inp.UserInputType == Enum.UserInputType.MouseMovement
 			or inp.UserInputType == Enum.UserInputType.Touch then
-			local d   = inp.Position - exDs
+			local d    = inp.Position - exDs
 			local newX = exDp.X.Offset + d.X
 			local newY = exDp.Y.Offset + d.Y
 			local vp   = Camera.ViewportSize
-			newX = math.clamp(newX, 0, vp.X - exS.AbsoluteSize.X)
-			newY = math.clamp(newY, 0, vp.Y - exS.AbsoluteSize.Y)
+			newX = math.clamp(newX, -exDp.X.Scale * vp.X, vp.X * (1 - exDp.X.Scale) - exS.AbsoluteSize.X)
+			newY = math.clamp(newY, -exDp.Y.Scale * vp.Y, vp.Y * (1 - exDp.Y.Scale) - exS.AbsoluteSize.Y)
 			exS.Position = UDim2.new(exDp.X.Scale, newX, exDp.Y.Scale, newY)
 		end
 	end)
+
+	exS.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1
+			or inp.UserInputType == Enum.UserInputType.Touch then
+			exDr = false
+		end
+	end)
+
+	-- Запасний — щоб drag не завис
 	UIS.InputEnded:Connect(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1
 			or inp.UserInputType == Enum.UserInputType.Touch then
@@ -1045,7 +1105,9 @@ do
 	end)
 end
 
+-- ============================================================
 -- M BUTTON
+-- ============================================================
 local mB = Instance.new("TextButton", Scr)
 mB.Size             = UDim2.new(0, MBS, 0, MBS)
 mB.Position         = UDim2.new(0, 10, 0.45, 0)
@@ -1085,7 +1147,7 @@ do
 			dr = true; ds = inp.Position; dp = mB.Position; mv = false; mt = tick()
 		end
 	end)
-	UIS.InputChanged:Connect(function(inp)
+	mB.InputChanged:Connect(function(inp)
 		if not dr then return end
 		if inp.UserInputType == Enum.UserInputType.MouseMovement
 			or inp.UserInputType == Enum.UserInputType.Touch then
@@ -1094,7 +1156,7 @@ do
 			mB.Position = UDim2.new(dp.X.Scale, dp.X.Offset + d.X, dp.Y.Scale, dp.Y.Offset + d.Y)
 		end
 	end)
-	UIS.InputEnded:Connect(function(inp)
+	mB.InputEnded:Connect(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1
 			or inp.UserInputType == Enum.UserInputType.Touch then
 			if dr and not mv and (tick() - mt) < 0.35 then
@@ -1103,15 +1165,21 @@ do
 			dr = false
 		end
 	end)
+	UIS.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1
+			or inp.UserInputType == Enum.UserInputType.Touch then
+			dr = false
+		end
+	end)
 end
 
 -- MOBILE FLY BUTTONS
 local flyH = Instance.new("Frame", Scr)
-flyH.Size                 = UDim2.new(0, 134, 0, 60)
-flyH.Position             = UDim2.new(1, -148, 1, -76)
+flyH.Size                   = UDim2.new(0, 134, 0, 60)
+flyH.Position               = UDim2.new(1, -148, 1, -76)
 flyH.BackgroundTransparency = 1
-flyH.Visible              = false
-flyH.ZIndex               = 50
+flyH.Visible                = false
+flyH.ZIndex                 = 50
 
 local function MkFlyB(t, x, cb)
 	local b = Instance.new("TextButton", flyH)
@@ -1140,17 +1208,17 @@ local function MkFlyB(t, x, cb)
 		end
 	end)
 end
-MkFlyB("▲", 0, function(v) MobUp = v end)
+MkFlyB("▲", 0,  function(v) MobUp = v end)
 MkFlyB("▼", 70, function(v) MobDn = v end)
 local function UpdFly() flyH.Visible = State.Fly and IsTab end
 
 local fcZ = Instance.new("TextButton", Scr)
-fcZ.Size                 = UDim2.new(0.5, 0, 1, -100)
-fcZ.Position             = UDim2.new(0.5, 0, 0, 0)
+fcZ.Size                   = UDim2.new(0.5, 0, 1, -100)
+fcZ.Position               = UDim2.new(0.5, 0, 0, 0)
 fcZ.BackgroundTransparency = 1
-fcZ.Text                 = ""
-fcZ.ZIndex               = 5
-fcZ.Visible              = false
+fcZ.Text                   = ""
+fcZ.ZIndex                 = 5
+fcZ.Visible                = false
 local fcL = nil
 fcZ.InputBegan:Connect(function(i)
 	if i.UserInputType == Enum.UserInputType.Touch then fcL = i.Position end
@@ -1257,7 +1325,7 @@ local function MkToggle(tab, icon, text, logicName)
 	row.MouseButton1Click:Connect(function()
 		if waitingBind then return end
 		Toggle(logicName)
-		if logicName == "Fly" then UpdFly() end
+		if logicName == "Fly"     then UpdFly() end
 		if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
 	end)
 	AllRows[logicName] = {row=row, accent=accent, swBG=swBG, swDot=swDot}
@@ -1316,9 +1384,9 @@ local function MkToggleBind(tab, icon, text, logicName)
 	Instance.new("UICorner", bindB).CornerRadius = UDim.new(0, 4)
 	bindB.MouseButton1Click:Connect(function()
 		if waitingBind then return end
-		waitingBind  = logicName
-		bindB.Text   = "..."
-		bindB.TextColor3 = Color3.fromRGB(255, 230, 80)
+		waitingBind       = logicName
+		bindB.Text        = "..."
+		bindB.TextColor3  = Color3.fromRGB(255, 230, 80)
 		Notify("BIND", "Натисни клавішу: " .. text, 3)
 	end)
 
@@ -1344,7 +1412,7 @@ local function MkToggleBind(tab, icon, text, logicName)
 	tBtn.MouseButton1Click:Connect(function()
 		if waitingBind == logicName then return end
 		Toggle(logicName)
-		if logicName == "Fly" then UpdFly() end
+		if logicName == "Fly"     then UpdFly() end
 		if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
 	end)
 
@@ -1396,12 +1464,12 @@ local function MkSlider(tab, icon, text, mn, mx, def, cb)
 
 	local tY    = IsMob and 32 or 28
 	local track = Instance.new("TextButton", ct)
-	track.Text            = ""
-	track.AutoButtonColor = false
-	track.Size            = UDim2.new(0.88, 0, 0, 8)
-	track.Position        = UDim2.new(0.06, 0, 0, tY)
+	track.Text             = ""
+	track.AutoButtonColor  = false
+	track.Size             = UDim2.new(0.88, 0, 0, 8)
+	track.Position         = UDim2.new(0.06, 0, 0, tY)
 	track.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-	track.BorderSizePixel = 0
+	track.BorderSizePixel  = 0
 	Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
 
 	local fill = Instance.new("Frame", track)
@@ -1433,9 +1501,9 @@ local function MkSlider(tab, icon, text, mn, mx, def, cb)
 		local val = math.floor(mn + rel * (mx - mn))
 		if val == curVal then return end
 		curVal = val
-		fill.Size       = UDim2.new(rel, 0, 1, 0)
-		knob.Position   = UDim2.new(rel, -KS/2, 0.5, -KS/2)
-		vLbl.Text       = tostring(val)
+		fill.Size     = UDim2.new(rel, 0, 1, 0)
+		knob.Position = UDim2.new(rel, -KS/2, 0.5, -KS/2)
+		vLbl.Text     = tostring(val)
 		cb(val)
 	end
 	track.InputBegan:Connect(function(inp)
@@ -1533,7 +1601,7 @@ UIS.InputBegan:Connect(function(inp, gpe)
 			Binds[nm] = key
 			local d   = AllRows[nm]
 			if d and d.bindBtn then
-				d.bindBtn.Text      = tostring(key):gsub("Enum.KeyCode.", "")
+				d.bindBtn.Text       = tostring(key):gsub("Enum.KeyCode.", "")
 				d.bindBtn.TextColor3 = P.dim
 			end
 			Notify("BIND", nm .. " → " .. tostring(key):gsub("Enum.KeyCode.", ""), 2)
@@ -1565,8 +1633,8 @@ UIS.JumpRequest:Connect(function()
 	local R = C and C:FindFirstChild("HumanoidRootPart")
 	if not H or not R or H.Health <= 0 or State.Fly or State.Freecam then return end
 	H:ChangeState(Enum.HumanoidStateType.Jumping)
-	local pw  = State.HighJump and Config.JumpPower or 50
-	local v   = R.AssemblyLinearVelocity
+	local pw = State.HighJump and Config.JumpPower or 50
+	local v  = R.AssemblyLinearVelocity
 	R.AssemblyLinearVelocity = Vector3.new(v.X, math.max(pw * 0.82, 42) + math.random(-2, 2), v.Z)
 end)
 
@@ -1577,16 +1645,19 @@ task.spawn(function()
 	local t = 0
 	while true do
 		task.wait(0.033); t += 0.02
-		local pulse  = (math.sin(t * 2) + 1) / 2
-		local aR     = math.floor(0  + pulse * 15)
-		local aG     = math.floor(180 + pulse * 30)
-		local aB     = math.floor(95  + pulse * 20)
-		local acol   = Color3.fromRGB(aR, aG, aB)
-		mSt.Color         = acol
-		mB.TextColor3     = acol
-		tGrad.Rotation    = (t * 15) % 360
+		local pulse = (math.sin(t * 2) + 1) / 2
+		local aR    = math.floor(0   + pulse * 15)
+		local aG    = math.floor(180 + pulse * 30)
+		local aB    = math.floor(95  + pulse * 20)
+		local acol  = Color3.fromRGB(aR, aG, aB)
+
+		mSt.Color             = acol
+		mB.TextColor3         = acol
+		tGrad.Rotation        = (t * 15) % 360
 		tAcc.BackgroundColor3 = acol
-		tIco.TextColor3   = acol
+		tIco.TextColor3       = acol
+		exStroke.Color        = acol
+
 		mainS.Color = Color3.fromRGB(
 			math.floor(38 + pulse * 20),
 			math.floor(38 + pulse * 20),
@@ -1616,18 +1687,22 @@ RunService.RenderStepped:Connect(function(dt)
 		pingTk = now
 		pcall(function() lastPing = LP:GetNetworkPing() end)
 	end
-	local pm  = math.floor(lastPing * 1000)
-	local fc  = fps >= 55 and Color3.fromRGB(130, 255, 170)
+	local pm = math.floor(lastPing * 1000)
+
+	local fc = fps >= 55 and Color3.fromRGB(130, 255, 170)
 		or fps >= 30 and Color3.fromRGB(255, 220, 80)
 		or Color3.fromRGB(255, 90, 90)
-	local pc  = pm <= 80 and Color3.fromRGB(130, 255, 170)
+	local pc = pm <= 80 and Color3.fromRGB(130, 255, 170)
 		or pm <= 150 and Color3.fromRGB(255, 220, 80)
 		or Color3.fromRGB(255, 90, 90)
 
-	fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
-	pngL.Text = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
-	eF.Text   = "FPS: " .. fps; eF.TextColor3   = fc
-	eP.Text   = "Ping: " .. pm .. "ms"; eP.TextColor3   = pc
+	-- Внутрішня панель меню
+	fpsL.Text       = "FPS: " .. fps;       fpsL.TextColor3 = fc
+	pngL.Text       = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
+
+	-- Зовнішня панель
+	eF.Text         = tostring(fps);        eF.TextColor3   = fc
+	eP.Text         = pm .. " ms";          eP.TextColor3   = pc
 
 	local Char = LP.Character
 	local HRP  = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -1637,6 +1712,7 @@ RunService.RenderStepped:Connect(function(dt)
 	fovCircle.Visible = showFOV
 	tgtInfo.Visible   = false
 
+	-- FLY
 	if State.Fly and not State.Freecam and HRP and Hum then
 		Hum.PlatformStand = false
 		local mx, mz = GetDir()
@@ -1653,6 +1729,7 @@ RunService.RenderStepped:Connect(function(dt)
 		if HRP.Position.Y > 2000 then HRP.CFrame -= Vector3.new(0, 2, 0) end
 	end
 
+	-- FREECAM
 	if State.Freecam then
 		local mx, mz = GetDir()
 		local dir    = Camera.CFrame.LookVector * -mz + Camera.CFrame.RightVector * mx
@@ -1663,50 +1740,44 @@ RunService.RenderStepped:Connect(function(dt)
 			* CFrame.fromEulerAnglesYXZ(FC_P, FC_Y, 0)
 	end
 
+	-- AUTO AIM
 	if State.Aim and not State.Freecam and Char and HRP then
 		local target = GetBestAimTarget()
 		local part   = target and FindAimPart(target)
-
 		if part then
-			local predTime = math.clamp(lastPing, 0.01, 0.25)
-			local vel      = part.AssemblyLinearVelocity
-			local dist     = (Camera.CFrame.Position - part.Position).Magnitude
-			local predMul  = math.clamp(dist / 100, 0.3, 1.5)
+			local predTime     = math.clamp(lastPing, 0.01, 0.25)
+			local vel          = part.AssemblyLinearVelocity
+			local dist         = (Camera.CFrame.Position - part.Position).Magnitude
+			local predMul      = math.clamp(dist / 100, 0.3, 1.5)
 			local predictedPos = part.Position + vel * predTime * predMul
-
 			if vel.Y < -5 then
 				predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0)
 			end
-
 			local smooth = Config.AimSmooth
 			local sd     = ScreenDist(part)
-			if sd < 30 then
-				smooth = smooth * 0.3
-			elseif sd < 80 then
-				smooth = smooth * 0.6
-			end
-
+			if sd < 30 then smooth = smooth * 0.3
+			elseif sd < 80 then smooth = smooth * 0.6 end
 			local targetCF = CFrame.new(Camera.CFrame.Position, predictedPos)
 			Camera.CFrame  = Camera.CFrame:Lerp(targetCF, smooth)
-
-			local plr  = Players:GetPlayerFromCharacter(target)
+			local plr   = Players:GetPlayerFromCharacter(target)
 			local dist2 = math.floor(dist)
-			tgtInfo.Text      = "🔒 " .. (plr and plr.Name or "?") .. " [" .. dist2 .. "m]"
+			tgtInfo.Text       = "🔒 " .. (plr and plr.Name or "?") .. " [" .. dist2 .. "m]"
 			tgtInfo.TextColor3 = Color3.fromRGB(0, 230, 120)
-			tgtInfo.Visible   = true
-			fovStroke.Color   = Color3.fromRGB(0, 230, 100)
+			tgtInfo.Visible    = true
+			fovStroke.Color    = Color3.fromRGB(0, 230, 100)
 			fovStroke.Thickness = 2
 		else
 			if showFOV then
-				tgtInfo.Text      = "No target"
+				tgtInfo.Text       = "No target"
 				tgtInfo.TextColor3 = P.dim
-				tgtInfo.Visible   = true
+				tgtInfo.Visible    = true
 			end
 			fovStroke.Color     = Color3.fromRGB(180, 180, 200)
 			fovStroke.Thickness = 1.5
 		end
 	end
 
+	-- SILENT AIM VISUAL
 	if State.SilentAim and not State.Aim and not State.Freecam then
 		local tgt  = GetBestAimTarget()
 		local part = tgt and FindAimPart(tgt)
@@ -1719,9 +1790,9 @@ RunService.RenderStepped:Connect(function(dt)
 			fovStroke.Color    = Color3.fromRGB(255, 200, 50)
 		else
 			if showFOV then
-				tgtInfo.Text      = "No target"
+				tgtInfo.Text       = "No target"
 				tgtInfo.TextColor3 = P.dim
-				tgtInfo.Visible   = true
+				tgtInfo.Visible    = true
 			end
 			fovStroke.Color = Color3.fromRGB(180, 180, 200)
 		end
@@ -1877,4 +1948,4 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
-Notify("OMNI V265.4", "✅ Draggable FPS/Ping panel · Clean AimBot · Wall Check ✓", 5)
+Notify("OMNI V265.4", "✅ Drag FPS panel (local events) · AimBot · Wall Check ✓", 5)
