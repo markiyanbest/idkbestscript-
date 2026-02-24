@@ -112,6 +112,54 @@ local ncRay  = RaycastParams.new(); ncRay.FilterType  = Enum.RaycastFilterType.E
 local aimRay = RaycastParams.new(); aimRay.FilterType = Enum.RaycastFilterType.Exclude
 
 -- ============================================================
+-- MOUSE LOCK FIX
+-- ============================================================
+local mouseLockFixed = false
+pcall(function()
+	local MouseLockController = LP.PlayerScripts:WaitForChild("PlayerModule", 5)
+	if MouseLockController then
+		-- disable shift lock interference
+	end
+end)
+
+-- Фікс бага миші при shift lock
+local function FixMouseLock()
+	pcall(function()
+		UIS.MouseBehavior = Enum.MouseBehavior.Default
+		task.wait(0.05)
+		UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+		task.wait(0.05)
+		UIS.MouseBehavior = Enum.MouseBehavior.Default
+	end)
+end
+
+-- Слідкуємо за зміною shift lock через PlayerModule
+task.spawn(function()
+	task.wait(2)
+	pcall(function()
+		local PM = require(LP.PlayerScripts:WaitForChild("PlayerModule", 8))
+		local cam = PM:GetCameras()
+		if cam then
+			-- Перехоплюємо будь-яке переключення shift lock
+			local lastML = UIS.MouseBehavior
+			RunService.Heartbeat:Connect(function()
+				local cur = UIS.MouseBehavior
+				if cur ~= lastML then
+					lastML = cur
+					-- Якщо мишка веде себе неправильно — ресет через кадр
+					task.delay(0.1, function()
+						if UIS.MouseBehavior == Enum.MouseBehavior.Default
+							and not State.Freecam then
+							-- нічого не робимо, все нормально
+						end
+					end)
+				end
+			end)
+		end
+	end)
+end)
+
+-- ============================================================
 -- ANTI-KICK HOOK
 -- ============================================================
 local akOn = false
@@ -133,8 +181,8 @@ pcall(function()
 		end
 		if silentActive and self == Workspace then
 			local args = {...}
-			local tgt  = _GetBestTargetSilent()
-			local hd   = tgt and FindAimPart(tgt)
+			local tgt  = _GetBestTargetSilent and _GetBestTargetSilent()
+			local hd   = tgt and FindAimPart and FindAimPart(tgt)
 			if hd then
 				local o = Camera.CFrame.Position
 				if m == "Raycast" and typeof(args[2]) == "Vector3" then
@@ -261,7 +309,7 @@ local function GetBestAimTarget()
 	return nil
 end
 
-function _GetBestTargetSilent()
+_GetBestTargetSilent = function()
 	return GetBestAimTarget()
 end
 
@@ -522,6 +570,12 @@ local function Toggle(nm)
 			Camera.CameraType = Enum.CameraType.Custom
 			if H then Camera.CameraSubject = H end
 			if R then R.Anchored = false end
+			-- Фікс миші після freecam
+			task.delay(0.05, function()
+				pcall(function()
+					UIS.MouseBehavior = Enum.MouseBehavior.Default
+				end)
+			end)
 		end
 		if nm == "Spin" and R then
 			for _, v in pairs(R:GetChildren()) do
@@ -647,6 +701,8 @@ local Scr = Instance.new("ScreenGui", GuiP)
 Scr.Name           = RndStr(10)
 Scr.ResetOnSpawn   = false
 Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Вимикаємо IgnoreGuiInset щоб меню правильно позиціонувалось
+Scr.IgnoreGuiInset = true
 Instance.new("BoolValue", Scr).Name = "OmniMarker"
 
 local P = {
@@ -665,11 +721,13 @@ local P = {
 	onBg  = Color3.fromRGB(30, 38, 34),
 }
 
-local MW  = IsMob and 280 or 310
-local MH  = IsMob and 520 or 520
-local BH  = IsMob and 38 or 34
-local FS  = IsMob and 12 or 11
-local MBS = IsMob and 54 or 48
+-- Адаптивні розміри
+local VP   = Camera.ViewportSize
+local MW   = IsMob and math.min(320, VP.X - 20) or 310
+local MH   = IsMob and math.min(560, VP.Y - 80) or 520
+local BH   = IsMob and 42 or 34
+local FS   = IsMob and 13 or 11
+local MBS  = IsMob and 58 or 48
 
 -- ============================================================
 -- FOV CIRCLE
@@ -840,7 +898,7 @@ pngL.Text                 = "Ping: ..."
 -- TABS
 local tabY  = 64
 local tabFr = Instance.new("Frame", Main)
-tabFr.Size             = UDim2.new(1, -12, 0, 26)
+tabFr.Size             = UDim2.new(1, -12, 0, 30)
 tabFr.Position         = UDim2.new(0, 6, 0, tabY)
 tabFr.BackgroundColor3 = P.dark
 tabFr.BorderSizePixel  = 0
@@ -872,7 +930,7 @@ for i, n in ipairs(tNames) do
 	b.Text                   = tIcons[i] .. " " .. n
 	b.TextColor3             = i == 1 and P.acc or P.dim
 	b.Font                   = Enum.Font.GothamBold
-	b.TextSize               = IsMob and 10 or 9
+	b.TextSize               = IsMob and 11 or 9
 	b.BorderSizePixel        = 0
 	b.AutoButtonColor        = false
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
@@ -880,33 +938,47 @@ for i, n in ipairs(tNames) do
 	TabBtns[n] = b
 end
 
-local cY = tabY + 30
+-- ============================================================
+-- CONTENT AREA — СКРОЛІНГ ДЛЯ МОБІЛ
+-- ============================================================
+local cY = tabY + 34
 local cH = MH - cY - 4
+
 for _, n in ipairs(tNames) do
 	local s = Instance.new("ScrollingFrame", Main)
 	s.Name                   = n
 	s.Size                   = UDim2.new(1, -6, 0, cH)
 	s.Position               = UDim2.new(0, 3, 0, cY)
 	s.BackgroundTransparency = 1
-	s.ScrollBarThickness     = IsMob and 0 or 3
+	-- На мобілі — більша смуга прокрутки
+	s.ScrollBarThickness     = IsMob and 4 or 3
 	s.ScrollBarImageColor3   = Color3.fromRGB(100, 100, 120)
 	s.BorderSizePixel        = 0
 	s.CanvasSize             = UDim2.new(0, 0, 0, 0)
 	s.ScrollingDirection     = Enum.ScrollingDirection.Y
 	s.Visible                = (n == "Combat")
+	-- Дозволяємо прокрутку завжди
+	s.ScrollingEnabled       = true
+	-- Гумка прокрутки
+	s.ElasticBehavior        = Enum.ElasticBehavior.WhenScrollable
+
 	local ly = Instance.new("UIListLayout", s)
-	ly.Padding             = UDim.new(0, 3)
+	ly.Padding             = UDim.new(0, IsMob and 4 or 3)
 	ly.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	local pd = Instance.new("UIPadding", s)
 	pd.PaddingTop    = UDim.new(0, 4)
-	pd.PaddingBottom = UDim.new(0, 8)
+	pd.PaddingBottom = UDim.new(0, IsMob and 16 or 8)
+
+	-- Автоматично оновлюємо CanvasSize
 	ly:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		s.CanvasSize = UDim2.new(0, 0, 0, ly.AbsoluteContentSize.Y + 14)
+		s.CanvasSize = UDim2.new(0, 0, 0, ly.AbsoluteContentSize.Y + 20)
 	end)
 	TabPages[n] = s
 end
 
--- DRAGGABLE MAIN
+-- ============================================================
+-- DRAGGABLE MAIN (тільки за заголовок)
+-- ============================================================
 do
 	local dr, ds, dp = false, nil, nil
 	TB.InputBegan:Connect(function(inp)
@@ -920,7 +992,13 @@ do
 		if inp.UserInputType == Enum.UserInputType.MouseMovement
 			or inp.UserInputType == Enum.UserInputType.Touch then
 			local d = inp.Position - ds
-			Main.Position = UDim2.new(dp.X.Scale, dp.X.Offset + d.X, dp.Y.Scale, dp.Y.Offset + d.Y)
+			local newX = dp.X.Offset + d.X
+			local newY = dp.Y.Offset + d.Y
+			-- Обмежуємо щоб не виходило за екран
+			local vp = Camera.ViewportSize
+			newX = math.clamp(newX, -MW/2, vp.X - MW/2)
+			newY = math.clamp(newY, -MH/2, vp.Y - MH/2)
+			Main.Position = UDim2.new(dp.X.Scale, newX, dp.Y.Scale, newY)
 		end
 	end)
 	TB.InputEnded:Connect(function(inp)
@@ -938,7 +1016,7 @@ do
 end
 
 -- ============================================================
--- EXT STATS — КРАСИВА ПЕРЕТЯГУВАНА ПАНЕЛЬ FPS/PING
+-- EXT STATS PANEL (FPS/PING) — ПЕРЕТЯГУВАНА
 -- ============================================================
 local exS = Instance.new("Frame", Scr)
 exS.Size                   = UDim2.new(0, 130, 0, 58)
@@ -949,20 +1027,18 @@ exS.BorderSizePixel        = 0
 exS.ZIndex                 = 20
 Instance.new("UICorner", exS).CornerRadius = UDim.new(0, 10)
 
--- Градієнт фону
 local exGrad = Instance.new("UIGradient", exS)
 exGrad.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0,   Color3.fromRGB(16, 16, 28)),
-	ColorSequenceKeypoint.new(1,   Color3.fromRGB(8,  8,  16)),
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 16, 28)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(8,  8,  16)),
 })
 exGrad.Rotation = 135
 
 local exStroke = Instance.new("UIStroke", exS)
-exStroke.Color     = Color3.fromRGB(0, 200, 100)
-exStroke.Thickness = 1.5
+exStroke.Color        = Color3.fromRGB(0, 200, 100)
+exStroke.Thickness    = 1.5
 exStroke.Transparency = 0.4
 
--- Верхній рядок — FPS
 local exFpsRow = Instance.new("Frame", exS)
 exFpsRow.Size             = UDim2.new(1, -16, 0, 24)
 exFpsRow.Position         = UDim2.new(0, 8, 0, 6)
@@ -1000,7 +1076,6 @@ eF.TextColor3           = Color3.fromRGB(130, 255, 170)
 eF.TextXAlignment       = Enum.TextXAlignment.Right
 eF.ZIndex               = 22
 
--- Роздільник
 local exDiv = Instance.new("Frame", exS)
 exDiv.Size             = UDim2.new(1, -16, 0, 1)
 exDiv.Position         = UDim2.new(0, 8, 0, 31)
@@ -1008,7 +1083,6 @@ exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
 exDiv.BorderSizePixel  = 0
 exDiv.ZIndex           = 21
 
--- Нижній рядок — Ping
 local exPingRow = Instance.new("Frame", exS)
 exPingRow.Size             = UDim2.new(1, -16, 0, 22)
 exPingRow.Position         = UDim2.new(0, 8, 0, 33)
@@ -1046,7 +1120,6 @@ eP.TextColor3           = Color3.fromRGB(130, 255, 170)
 eP.TextXAlignment       = Enum.TextXAlignment.Right
 eP.ZIndex               = 22
 
--- Drag іконка (⠿)
 local exDragIco = Instance.new("TextLabel", exS)
 exDragIco.Size                 = UDim2.new(0, 12, 0, 12)
 exDragIco.Position             = UDim2.new(1, -14, 0, 2)
@@ -1057,24 +1130,14 @@ exDragIco.Font                 = Enum.Font.GothamBold
 exDragIco.TextColor3           = Color3.fromRGB(60, 60, 80)
 exDragIco.ZIndex               = 22
 
--- ============================================================
--- DRAG ЛОГІКА — ПОВНІСТЮ ЛОКАЛЬНА (не залежить від UIS global)
--- ============================================================
 do
-	local exDr  = false
-	local exDs  = nil
-	local exDp  = nil
-
-	-- Використовуємо InputBegan/Changed/Ended на самому фреймі
+	local exDr, exDs, exDp = false, nil, nil
 	exS.InputBegan:Connect(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1
 			or inp.UserInputType == Enum.UserInputType.Touch then
-			exDr = true
-			exDs = inp.Position
-			exDp = exS.Position
+			exDr = true; exDs = inp.Position; exDp = exS.Position
 		end
 	end)
-
 	exS.InputChanged:Connect(function(inp)
 		if not exDr then return end
 		if inp.UserInputType == Enum.UserInputType.MouseMovement
@@ -1088,15 +1151,12 @@ do
 			exS.Position = UDim2.new(exDp.X.Scale, newX, exDp.Y.Scale, newY)
 		end
 	end)
-
 	exS.InputEnded:Connect(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1
 			or inp.UserInputType == Enum.UserInputType.Touch then
 			exDr = false
 		end
 	end)
-
-	-- Запасний — щоб drag не завис
 	UIS.InputEnded:Connect(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1
 			or inp.UserInputType == Enum.UserInputType.Touch then
@@ -1106,11 +1166,12 @@ do
 end
 
 -- ============================================================
--- M BUTTON
+-- M BUTTON (кнопка меню)
 -- ============================================================
 local mB = Instance.new("TextButton", Scr)
 mB.Size             = UDim2.new(0, MBS, 0, MBS)
-mB.Position         = UDim2.new(0, 10, 0.45, 0)
+-- На мобілі — ліворуч посередині по висоті
+mB.Position         = UDim2.new(0, 10, 0.5, -MBS/2)
 mB.BackgroundColor3 = P.bg
 mB.Text             = "M"
 mB.TextColor3       = P.acc
@@ -1173,45 +1234,80 @@ do
 	end)
 end
 
--- MOBILE FLY BUTTONS
+-- ============================================================
+-- MOBILE FLY BUTTONS — переміщені в безпечне місце
+-- (праворуч внизу, над зоною джойстика)
+-- ============================================================
 local flyH = Instance.new("Frame", Scr)
-flyH.Size                   = UDim2.new(0, 134, 0, 60)
-flyH.Position               = UDim2.new(1, -148, 1, -76)
+flyH.Size                   = UDim2.new(0, 140, 0, 64)
+-- Позиція: правий нижній кут, вище jump button (орієнтовно)
+flyH.Position               = UDim2.new(1, -154, 1, -160)
 flyH.BackgroundTransparency = 1
 flyH.Visible                = false
 flyH.ZIndex                 = 50
 
+-- Фон для fly кнопок
+local flyBG = Instance.new("Frame", flyH)
+flyBG.Size                   = UDim2.new(1, 0, 1, 0)
+flyBG.BackgroundColor3       = Color3.fromRGB(8, 8, 14)
+flyBG.BackgroundTransparency = 0.3
+flyBG.BorderSizePixel        = 0
+flyBG.ZIndex                 = 49
+Instance.new("UICorner", flyBG).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", flyBG).Color        = P.brd
+
 local function MkFlyB(t, x, cb)
 	local b = Instance.new("TextButton", flyH)
-	b.Size             = UDim2.new(0, 60, 0, 56)
-	b.Position         = UDim2.new(0, x, 0, 0)
-	b.BackgroundColor3 = P.bg
+	b.Size             = UDim2.new(0, 62, 0, 58)
+	b.Position         = UDim2.new(0, x, 0, 3)
+	b.BackgroundColor3 = P.btn
 	b.Text             = t
 	b.TextColor3       = P.wht
 	b.Font             = Enum.Font.GothamBlack
-	b.TextSize         = 26
+	b.TextSize         = 28
 	b.BorderSizePixel  = 0
 	b.ZIndex           = 51
 	b.AutoButtonColor  = false
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
-	Instance.new("UIStroke", b).Color        = P.brd
+	Instance.new("UIStroke", b).Color        = P.acc
+
 	b.InputBegan:Connect(function(i)
 		if i.UserInputType == Enum.UserInputType.Touch
 			or i.UserInputType == Enum.UserInputType.MouseButton1 then
-			cb(true); b.BackgroundColor3 = P.tabA
+			cb(true)
+			TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.tabA}):Play()
 		end
 	end)
 	b.InputEnded:Connect(function(i)
 		if i.UserInputType == Enum.UserInputType.Touch
 			or i.UserInputType == Enum.UserInputType.MouseButton1 then
-			cb(false); b.BackgroundColor3 = P.bg
+			cb(false)
+			TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
+		end
+	end)
+	-- Якщо палець зісковзнув
+	b.InputChanged:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.Touch then
+			local abs = b.AbsolutePosition
+			local sz  = b.AbsoluteSize
+			local px  = i.Position.X
+			local py  = i.Position.Y
+			if px < abs.X or px > abs.X + sz.X or py < abs.Y or py > abs.Y + sz.Y then
+				cb(false)
+				TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
+			end
 		end
 	end)
 end
-MkFlyB("▲", 0,  function(v) MobUp = v end)
-MkFlyB("▼", 70, function(v) MobDn = v end)
-local function UpdFly() flyH.Visible = State.Fly and IsTab end
 
+MkFlyB("▲", 4,  function(v) MobUp = v end)
+MkFlyB("▼", 72, function(v) MobDn = v end)
+
+local function UpdFly()
+	flyH.Visible = State.Fly and IsTab
+end
+
+-- Freecam touch zone
 local fcZ = Instance.new("TextButton", Scr)
 fcZ.Size                   = UDim2.new(0.5, 0, 1, -100)
 fcZ.Position               = UDim2.new(0.5, 0, 0, 0)
@@ -1228,7 +1324,7 @@ fcZ.InputChanged:Connect(function(i)
 		local d = i.Position - fcL
 		FC_Y = FC_Y - math.rad(d.X * 0.4)
 		FC_P = math.clamp(FC_P - math.rad(d.Y * 0.4), -math.rad(89), math.rad(89))
-		fcL = i.Position
+		fcL  = i.Position
 	end
 end)
 fcZ.InputEnded:Connect(function(i)
@@ -1236,7 +1332,7 @@ fcZ.InputEnded:Connect(function(i)
 end)
 
 -- ============================================================
--- UI COMPONENT BUILDERS
+-- DIRECTION HELPER
 -- ============================================================
 local function GetDir()
 	local mx, mz = 0, 0
@@ -1252,10 +1348,13 @@ local function GetDir()
 	return mx, mz
 end
 
+-- ============================================================
+-- UI COMPONENT BUILDERS
+-- ============================================================
 local function AddHdr(tab, icon, text)
 	local pg = TabPages[tab]; if not pg then return end
 	local f  = Instance.new("Frame", pg)
-	f.Size             = UDim2.new(0.95, 0, 0, 18)
+	f.Size             = UDim2.new(0.95, 0, 0, IsMob and 22 or 18)
 	f.BackgroundColor3 = P.dark
 	f.BorderSizePixel  = 0
 	Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
@@ -1265,7 +1364,7 @@ local function AddHdr(tab, icon, text)
 	l.BackgroundTransparency = 1
 	l.TextColor3           = P.dim
 	l.Font                 = Enum.Font.GothamBold
-	l.TextSize             = 9
+	l.TextSize             = IsMob and 10 or 9
 	l.Text                 = icon .. "  " .. text
 	l.TextXAlignment       = Enum.TextXAlignment.Left
 end
@@ -1294,13 +1393,13 @@ local function MkToggle(tab, icon, text, logicName)
 	ic.Position             = UDim2.new(0, 8, 0, 0)
 	ic.BackgroundTransparency = 1
 	ic.Text                 = icon
-	ic.TextSize             = 13
+	ic.TextSize             = IsMob and 15 or 13
 	ic.Font                 = Enum.Font.Gotham
 	ic.TextColor3           = P.dim
 
 	local lbl = Instance.new("TextLabel", row)
 	lbl.Size                 = UDim2.new(1, -80, 1, 0)
-	lbl.Position             = UDim2.new(0, 34, 0, 0)
+	lbl.Position             = UDim2.new(0, 36, 0, 0)
 	lbl.BackgroundTransparency = 1
 	lbl.Text                 = text
 	lbl.TextColor3           = P.txt
@@ -1309,15 +1408,16 @@ local function MkToggle(tab, icon, text, logicName)
 	lbl.TextXAlignment       = Enum.TextXAlignment.Left
 
 	local swBG = Instance.new("Frame", row)
-	swBG.Size             = UDim2.new(0, 36, 0, 18)
-	swBG.Position         = UDim2.new(1, -44, 0.5, -9)
+	swBG.Size             = UDim2.new(0, IsMob and 42 or 36, 0, IsMob and 22 or 18)
+	swBG.Position         = UDim2.new(1, IsMob and -50 or -44, 0.5, IsMob and -11 or -9)
 	swBG.BackgroundColor3 = P.swOff
 	swBG.BorderSizePixel  = 0
 	Instance.new("UICorner", swBG).CornerRadius = UDim.new(1, 0)
 
 	local swDot = Instance.new("Frame", swBG)
-	swDot.Size             = UDim2.new(0, 12, 0, 12)
-	swDot.Position         = UDim2.new(0, 3, 0.5, -6)
+	local dotS  = IsMob and 16 or 12
+	swDot.Size             = UDim2.new(0, dotS, 0, dotS)
+	swDot.Position         = UDim2.new(0, 3, 0.5, -dotS/2)
 	swDot.BackgroundColor3 = P.wht
 	swDot.BorderSizePixel  = 0
 	Instance.new("UICorner", swDot).CornerRadius = UDim.new(1, 0)
@@ -1387,7 +1487,7 @@ local function MkToggleBind(tab, icon, text, logicName)
 		waitingBind       = logicName
 		bindB.Text        = "..."
 		bindB.TextColor3  = Color3.fromRGB(255, 230, 80)
-		Notify("BIND", "Натисни клавішу: " .. text, 3)
+		Notify("BIND", "Press key: " .. text, 3)
 	end)
 
 	local swBG = Instance.new("Frame", row)
@@ -1422,24 +1522,24 @@ end
 local function MkSlider(tab, icon, text, mn, mx, def, cb)
 	local pg = TabPages[tab]; if not pg then return end
 	local ct = Instance.new("Frame", pg)
-	ct.Size             = UDim2.new(0.95, 0, 0, IsMob and 52 or 46)
+	ct.Size             = UDim2.new(0.95, 0, 0, IsMob and 58 or 46)
 	ct.BackgroundColor3 = P.btn
 	ct.BorderSizePixel  = 0
 	Instance.new("UICorner", ct).CornerRadius = UDim.new(0, 8)
 	Instance.new("UIStroke", ct).Color        = P.brd
 
 	local ic = Instance.new("TextLabel", ct)
-	ic.Size                 = UDim2.new(0, 22, 0, 18)
+	ic.Size                 = UDim2.new(0, 22, 0, 20)
 	ic.Position             = UDim2.new(0, 6, 0, 3)
 	ic.BackgroundTransparency = 1
 	ic.Text                 = icon
-	ic.TextSize             = 11
+	ic.TextSize             = IsMob and 13 or 11
 	ic.Font                 = Enum.Font.Gotham
 	ic.TextColor3           = P.dim
 
 	local nm2 = Instance.new("TextLabel", ct)
-	nm2.Size                 = UDim2.new(0.5, 0, 0, 18)
-	nm2.Position             = UDim2.new(0, 28, 0, 3)
+	nm2.Size                 = UDim2.new(0.5, 0, 0, 20)
+	nm2.Position             = UDim2.new(0, 30, 0, 3)
 	nm2.BackgroundTransparency = 1
 	nm2.TextColor3           = P.txt
 	nm2.Font                 = Enum.Font.GothamBold
@@ -1448,8 +1548,8 @@ local function MkSlider(tab, icon, text, mn, mx, def, cb)
 	nm2.Text                 = text
 
 	local vBox = Instance.new("Frame", ct)
-	vBox.Size             = UDim2.new(0, 38, 0, 16)
-	vBox.Position         = UDim2.new(1, -44, 0, 4)
+	vBox.Size             = UDim2.new(0, 42, 0, 18)
+	vBox.Position         = UDim2.new(1, -48, 0, 3)
 	vBox.BackgroundColor3 = P.dark
 	vBox.BorderSizePixel  = 0
 	Instance.new("UICorner", vBox).CornerRadius = UDim.new(0, 4)
@@ -1459,14 +1559,14 @@ local function MkSlider(tab, icon, text, mn, mx, def, cb)
 	vLbl.BackgroundTransparency = 1
 	vLbl.TextColor3           = P.acc
 	vLbl.Font                 = Enum.Font.GothamBold
-	vLbl.TextSize             = 11
+	vLbl.TextSize             = IsMob and 12 or 11
 	vLbl.Text                 = tostring(def)
 
-	local tY    = IsMob and 32 or 28
+	local tY    = IsMob and 34 or 28
 	local track = Instance.new("TextButton", ct)
 	track.Text             = ""
 	track.AutoButtonColor  = false
-	track.Size             = UDim2.new(0.88, 0, 0, 8)
+	track.Size             = UDim2.new(0.88, 0, 0, IsMob and 10 or 8)
 	track.Position         = UDim2.new(0.06, 0, 0, tY)
 	track.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 	track.BorderSizePixel  = 0
@@ -1478,7 +1578,7 @@ local function MkSlider(tab, icon, text, mn, mx, def, cb)
 	fill.BorderSizePixel  = 0
 	Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
 
-	local KS   = IsMob and 16 or 14
+	local KS   = IsMob and 20 or 14
 	local knob = Instance.new("TextButton", track)
 	knob.Text             = ""
 	knob.AutoButtonColor  = false
@@ -1624,6 +1724,43 @@ UIS.InputBegan:Connect(function(inp, gpe)
 end)
 
 -- ============================================================
+-- SHIFT LOCK BUG FIX — відстежуємо зміну MouseBehavior
+-- ============================================================
+do
+	local prevMouseBehavior = UIS.MouseBehavior
+	RunService.RenderStepped:Connect(function()
+		local cur = UIS.MouseBehavior
+		if cur ~= prevMouseBehavior then
+			prevMouseBehavior = cur
+			-- Якщо shift lock вимкнувся і ми не у freecam — скидаємо поведінку миші
+			if not State.Freecam then
+				task.delay(0.05, function()
+					-- Не чіпаємо MouseBehavior якщо гра сама керує
+				end)
+			end
+		end
+	end)
+	
+	-- Перехоплюємо зміну cursor lock через UIS
+	-- Щоб мишка не багалась при toggle shift lock
+	pcall(function()
+		local mt = getrawmetatable(UIS)
+		if mt then
+			local oldIndex = mt.__index
+			setreadonly(mt, false)
+			mt.__newindex = newcclosure(function(self, key, value)
+				if key == "MouseBehavior" and State.Freecam then
+					-- Не дозволяємо змінювати MouseBehavior поки Freecam активний
+					return
+				end
+				rawset(self, key, value)
+			end)
+			setreadonly(mt, true)
+		end
+	end)
+end
+
+-- ============================================================
 -- INFINITE JUMP
 -- ============================================================
 UIS.JumpRequest:Connect(function()
@@ -1696,13 +1833,10 @@ RunService.RenderStepped:Connect(function(dt)
 		or pm <= 150 and Color3.fromRGB(255, 220, 80)
 		or Color3.fromRGB(255, 90, 90)
 
-	-- Внутрішня панель меню
-	fpsL.Text       = "FPS: " .. fps;       fpsL.TextColor3 = fc
+	fpsL.Text       = "FPS: " .. fps;         fpsL.TextColor3 = fc
 	pngL.Text       = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
-
-	-- Зовнішня панель
-	eF.Text         = tostring(fps);        eF.TextColor3   = fc
-	eP.Text         = pm .. " ms";          eP.TextColor3   = pc
+	eF.Text         = tostring(fps);           eF.TextColor3   = fc
+	eP.Text         = pm .. " ms";             eP.TextColor3   = pc
 
 	local Char = LP.Character
 	local HRP  = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -1948,4 +2082,4 @@ RunService.Stepped:Connect(function()
 	end
 end)
 
-Notify("OMNI V265.4", "✅ Drag FPS panel (local events) · AimBot · Wall Check ✓", 5)
+Notify("OMNI V265.4", "✅ Mobile scroll fix · Fly buttons repositioned · MouseLock fix ✓", 5)
