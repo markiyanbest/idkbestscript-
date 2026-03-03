@@ -156,7 +156,7 @@ local function SaveConfig()
         Notify("Config", "❌ writefile недоступний", 3); return false
     end
     local data = {
-        version = "v303",
+        version = "v304",
         config  = {
             FlySpeed=Config.FlySpeed, WalkSpeed=Config.WalkSpeed,
             JumpPower=Config.JumpPower, BhopPower=Config.BhopPower,
@@ -658,24 +658,6 @@ local function RestoreMouse()
     end)
 end
 
--- FIX: Shift Lock відновлення миші
--- Коли Roblox Shift Lock вимикається, він встановлює MouseBehavior=Default
--- але після Freecam/скриптів миша може залишитись заблокованою
--- Моніторимо зміну MouseBehavior і відновлюємо якщо треба
-local _lastMouseBehavior = UIS.MouseBehavior
-UIS:GetPropertyChangedSignal("MouseBehavior"):Connect(function()
-    local cur = UIS.MouseBehavior
-    -- Якщо MouseBehavior змінився на LockCenter (ShiftLock увімкнувся)
-    -- і потім назад на Default (ShiftLock вимкнувся) — миша має бути вільна
-    if cur == Enum.MouseBehavior.Default and not State.Freecam then
-        -- Переконуємось що іконка миші видима
-        task.delay(0.05, function()
-            pcall(function() UIS.MouseIconEnabled = true end)
-        end)
-    end
-    _lastMouseBehavior = cur
-end)
-
 local function Toggle(nm)
     State[nm] = not State[nm]
     local C = LP.Character
@@ -761,14 +743,23 @@ local function Toggle(nm)
                     local cr=LP.Character
                     local rp=cr and cr:FindFirstChild("HumanoidRootPart")
                     local hm=cr and cr:FindFirstChildOfClass("Humanoid")
+                    
+                    local inAir = false
+                    if hm then
+                        inAir = (hm.FloorMaterial == Enum.Material.Air) or (hm:GetState() == Enum.HumanoidStateType.Jumping) or (hm:GetState() == Enum.HumanoidStateType.Freefall)
+                    end
+                    local isJumping = UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp
+                    
                     if rp and hm and hm.MoveDirection.Magnitude>0
+                        and not inAir and not isJumping
                         and not State.Fly and not State.Freecam then
                         pcall(function() rp.Anchored=true end)
                         task.wait(math.random(35,80)/1000)
                         pcall(function() rp.Anchored=false end)
                         task.wait(math.random(90,200)/1000)
                     else
-                        task.wait(0.15)
+                        if rp then pcall(function() rp.Anchored=false end) end
+                        task.wait(0.1)
                     end
                 end
                 fakeLagThr = nil
@@ -795,7 +786,6 @@ end
 
 -- ============================================================
 -- HIGH JUMP: StateChanged + velocity force
--- Оголошуємо ДО CharacterAdded щоб функція була доступна
 -- ============================================================
 local _hjConn = nil
 local _hjFired = false
@@ -805,7 +795,6 @@ function SetupHJDetector()
     local C=LP.Character; if not C then return end
     local H=C:FindFirstChildOfClass("Humanoid"); if not H then return end
     _hjConn = H.StateChanged:Connect(function(_, newState)
-        -- скидаємо при приземленні
         if newState==Enum.HumanoidStateType.Landed
             or newState==Enum.HumanoidStateType.Running
             or newState==Enum.HumanoidStateType.RunningNoPhysics then
@@ -885,7 +874,6 @@ LP.CharacterAdded:Connect(function(char)
                 hum.JumpHeight=Config.JumpPower*0.35
             end)
         end
-        -- FIX v303: Переналаштовуємо HighJump detector для нового персонажа
         task.spawn(function()
             task.wait(0.3)
             SetupHJDetector()
@@ -1786,16 +1774,20 @@ end)
 
 -- ============================================================
 -- ============================================================
--- INFINITE JUMP + HIGHJUMP JumpRequest
+-- INFINITE JUMP + HIGHJUMP + FAKELAG JumpRequest FIX
 -- ============================================================
 UIS.JumpRequest:Connect(function()
     local C=LP.Character
     local H=C and C:FindFirstChildOfClass("Humanoid")
     local R=C and C:FindFirstChild("HumanoidRootPart")
     if not H or not R or H.Health<=0 or State.Fly or State.Freecam then return end
+    
+    -- МИТТЄВЕ ЗНЯТТЯ ЯКОРЯ ДЛЯ СТРИБКА ПРИ ФЕЙК ЛАГАХ
+    if State.FakeLag then
+        pcall(function() R.Anchored = false end)
+    end
 
     if State.HighJump then
-        -- Тільки встановлюємо JumpPower — velocity форсує SetupHJDetector
         pcall(function()
             H.UseJumpPower=true
             H.JumpPower=Config.JumpPower
@@ -1998,9 +1990,10 @@ RunService.Heartbeat:Connect(function(dt)
             local targetSpd=GetSafeSpeed()
             Hum.WalkSpeed=targetSpd
             if Hum.MoveDirection.Magnitude>0.1 then
-                local md=Hum.MoveDirection
+                local md=Hum.MoveDirection.Unit
                 local vel=HRP.AssemblyLinearVelocity
-                local hs=Vector3.new(vel.X,0,vel.Z).Magnitude
+                local flatVel = Vector3.new(vel.X, 0, vel.Z)
+                
                 if State.SafeSpeedMode then
                     local now2=tick()
                     local cycle=now2%0.60
@@ -2012,27 +2005,21 @@ RunService.Heartbeat:Connect(function(dt)
                             vel.X+(want.X-vel.X)*0.30, vel.Y, vel.Z+(want.Z-vel.Z)*0.30
                         )
                     else
-                        if hs<targetSpd*0.92 then
+                        if flatVel.Magnitude < targetSpd * 0.9 then
                             local want=md*targetSpd
-                            HRP.AssemblyLinearVelocity=Vector3.new(
-                                vel.X+(want.X-vel.X)*0.50, vel.Y, vel.Z+(want.Z-vel.Z)*0.50
-                            )
+                            HRP.AssemblyLinearVelocity=Vector3.new(want.X, vel.Y, want.Z)
                         end
                     end
                 else
-                    if hs<targetSpd*0.92 then
+                    if flatVel.Magnitude < targetSpd * 0.9 then
                         local want=md*targetSpd
-                        HRP.AssemblyLinearVelocity=Vector3.new(
-                            vel.X+(want.X-vel.X)*0.45, vel.Y, vel.Z+(want.Z-vel.Z)*0.45
-                        )
+                        HRP.AssemblyLinearVelocity=Vector3.new(want.X, vel.Y, want.Z)
                     end
                 end
             end
         end)
     end
 
-    -- HighJump: тільки підтримуємо JumpPower/JumpHeight
-    -- Velocity форсується одноразово в SetupHJDetector (StateChanged)
     if State.HighJump and not State.Fly then
         pcall(function()
             Hum.UseJumpPower=true
@@ -2043,7 +2030,7 @@ RunService.Heartbeat:Connect(function(dt)
 
     if State.Bhop and not State.Fly and not State.Freecam then
         pcall(function()
-            if Hum.MoveDirection.Magnitude>0.1 then
+            if Hum.MoveDirection.Magnitude>0.1 and (UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp) then
                 local now2=tick()
                 if Hum.FloorMaterial~=Enum.Material.Air and now2-lastBhop>0.06 then
                     Hum:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -2132,4 +2119,4 @@ task.spawn(function()
     Notify("OMNI","📂 Конфіг завантажено ✓",3)
 end)
 
-Notify("OMNI V304","✅ HighJump Fix · Anti-Ban · Server Hop · Config Save",5)
+Notify("OMNI V304","✅ Speed Fixed · FakeLag Jump Fixed · Anti-Ban",5)
