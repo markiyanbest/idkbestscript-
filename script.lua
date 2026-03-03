@@ -1,6 +1,7 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V300 — MONSTER EDITION  (rewritten & fixed)    ██
+-- ██  OMNI V300 — MONSTER EDITION  (v301 FIXED)           ██
 -- ██  Anti-Ban · Anti-Kick · Universal · Mobile+PC        ██
+-- ██  FIXES: Noclip floor bug, Mouse lock, Server hop     ██
 -- ██████████████████████████████████████████████████████████
 
 -- ============================================================
@@ -16,13 +17,14 @@ local PhysicsService = game:GetService("PhysicsService")
 local TweenService   = game:GetService("TweenService")
 local StarterGui     = game:GetService("StarterGui")
 local HttpService    = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LP     = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 -- ============================================================
--- SAFE ENV DETECTION (визначаємо що доступно)
+-- SAFE ENV DETECTION
 -- ============================================================
 local ENV = {}
 ENV.hasGetRawMeta   = (getrawmetatable ~= nil)
@@ -45,14 +47,13 @@ pcall(function()
 end)
 
 -- ============================================================
--- COLLISION GROUP (безпечний noclip)
+-- COLLISION GROUP
 -- ============================================================
 local SafeGroup = "OmniNC_" .. math.random(1000, 9999)
 pcall(function()
     if PhysicsService.RegisterCollisionGroup then
         PhysicsService:RegisterCollisionGroup(SafeGroup)
     elseif PhysicsService.CreateCollisionGroup then
-        -- Старий API
         pcall(function() PhysicsService:CreateCollisionGroup(SafeGroup) end)
     end
     pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
@@ -88,13 +89,12 @@ end
 local IsMob = UIS.TouchEnabled and not UIS.KeyboardEnabled
 local IsTab = UIS.TouchEnabled
 
--- Blur effect
 local Blur = Instance.new("BlurEffect")
 Blur.Size   = 0
 Blur.Parent = Lighting
 
 -- ============================================================
--- PLAYER MODULE (для мобільного руху)
+-- PLAYER MODULE
 -- ============================================================
 local Controls, ControlsOK = nil, false
 task.spawn(function()
@@ -119,14 +119,12 @@ local Config = {
     AimFOV       = 200,
     AimSmooth    = 0.18,
     AimPart      = "Head",
-
-    -- Антибан налаштування
-    SpeedAntiBan      = true,   -- Рандомізує WalkSpeed щоб уникнути детекту
-    FlyAntiBan        = true,   -- Нульова висота обмежена, емуляція стрибків
-    HitboxRandomize   = true,   -- Рандомізує hitbox чуть-чуть щоб уникнути патернів
-    AimAntiDetect     = true,   -- Додає мікро-шум до aim щоб виглядало людяно
-    SpeedJitter       = 1.5,    -- ± швидкість jitter для обходу античіту
-    FlyHeightMax      = 1800,   -- Максимальна висота польоту
+    SpeedAntiBan      = true,
+    FlyAntiBan        = true,
+    HitboxRandomize   = true,
+    AimAntiDetect     = true,
+    SpeedJitter       = 1.5,
+    FlyHeightMax      = 1800,
 }
 
 local Binds = {
@@ -146,6 +144,166 @@ local State = {
 }
 
 -- ============================================================
+-- ████  CONFIG SAVE / LOAD  ████
+-- Зберігає: Config, Binds, State (постійні тогли)
+-- Файл: OmniV300_Config.json (в папці exploit)
+-- ============================================================
+local CFG_FILE = "OmniV300_Config.json"
+
+-- Які State-ключі зберігати (ігноруємо тимчасові типу Fly, Freecam)
+local SAVE_STATE_KEYS = {
+    "AntiAFK","AntiKick","ESP","Hitbox","Speed","HighJump",
+    "Bhop","NoFallDamage","InfiniteJump","Potato",
+    "SpeedAntiBan","HitboxRandomize","AimAntiDetect",
+}
+
+-- Перевірка доступності файлової системи
+local function HasFileSystem()
+    return (writefile ~= nil and readfile ~= nil)
+end
+
+-- Серіалізація Binds (KeyCode → рядок)
+local function SerializeBinds()
+    local t = {}
+    for k, v in pairs(Binds) do
+        t[k] = tostring(v):gsub("Enum%.KeyCode%.","")
+    end
+    return t
+end
+
+-- Десеріалізація Binds (рядок → KeyCode)
+local function DeserializeBinds(t)
+    for k, v in pairs(t) do
+        local ok, kc = pcall(function()
+            return Enum.KeyCode[v]
+        end)
+        if ok and kc then Binds[k] = kc end
+    end
+end
+
+local function SaveConfig()
+    if not HasFileSystem() then
+        Notify("Config", "❌ writefile недоступний в цьому executor", 3)
+        return false
+    end
+    local data = {
+        version = "v301",
+        config  = {
+            FlySpeed        = Config.FlySpeed,
+            WalkSpeed       = Config.WalkSpeed,
+            JumpPower       = Config.JumpPower,
+            BhopPower       = Config.BhopPower,
+            HitboxSize      = Config.HitboxSize,
+            AimFOV          = Config.AimFOV,
+            AimSmooth       = Config.AimSmooth,
+            SpeedAntiBan    = Config.SpeedAntiBan,
+            FlyAntiBan      = Config.FlyAntiBan,
+            HitboxRandomize = Config.HitboxRandomize,
+            AimAntiDetect   = Config.AimAntiDetect,
+            SpeedJitter     = Config.SpeedJitter,
+            FlyHeightMax    = Config.FlyHeightMax,
+        },
+        binds = SerializeBinds(),
+        state = {},
+    }
+    for _, k in pairs(SAVE_STATE_KEYS) do
+        data.state[k] = State[k] or false
+    end
+    local ok, err = pcall(function()
+        local json = HttpService:JSONEncode(data)
+        writefile(CFG_FILE, json)
+    end)
+    if ok then
+        Notify("Config", "💾 Збережено → "..CFG_FILE, 2)
+        return true
+    else
+        Notify("Config", "❌ Помилка збереження: "..(err or "?"), 3)
+        return false
+    end
+end
+
+local function LoadConfig()
+    if not HasFileSystem() then
+        Notify("Config", "❌ readfile недоступний в цьому executor", 3)
+        return false
+    end
+    local ok, content = pcall(readfile, CFG_FILE)
+    if not ok or not content or content == "" then
+        Notify("Config", "📂 Файл конфігу не знайдено", 2)
+        return false
+    end
+    local ok2, data = pcall(function()
+        return HttpService:JSONDecode(content)
+    end)
+    if not ok2 or not data then
+        Notify("Config", "❌ Помилка читання JSON", 3)
+        return false
+    end
+
+    -- Завантажуємо Config
+    if data.config then
+        for k, v in pairs(data.config) do
+            if Config[k] ~= nil then Config[k] = v end
+        end
+    end
+
+    -- Завантажуємо Binds
+    if data.binds then
+        DeserializeBinds(data.binds)
+    end
+
+    -- Завантажуємо State (застосовуємо тільки ті що відрізняються)
+    if data.state then
+        for _, k in pairs(SAVE_STATE_KEYS) do
+            local saved = data.state[k]
+            if saved ~= nil and saved ~= State[k] then
+                -- Викликаємо Toggle щоб правильно застосувати логіку
+                pcall(function() Toggle(k) end)
+            end
+        end
+    end
+
+    Notify("Config", "📂 Конфіг завантажено ✓", 2)
+    return true
+end
+
+local function ResetConfig()
+    Config.FlySpeed        = 55
+    Config.WalkSpeed       = 30
+    Config.JumpPower       = 125
+    Config.BhopPower       = 62
+    Config.HitboxSize      = 5
+    Config.AimFOV          = 200
+    Config.AimSmooth       = 0.18
+    Config.SpeedAntiBan    = true
+    Config.FlyAntiBan      = true
+    Config.HitboxRandomize = true
+    Config.AimAntiDetect   = true
+    Config.SpeedJitter     = 1.5
+    Config.FlyHeightMax    = 1800
+    Binds.Fly        = Enum.KeyCode.F
+    Binds.Aim        = Enum.KeyCode.G
+    Binds.Noclip     = Enum.KeyCode.V
+    Binds.SilentAim  = Enum.KeyCode.B
+    Binds.ToggleMenu = Enum.KeyCode.M
+    -- Вимикаємо всі активні тогли
+    for _, k in pairs(SAVE_STATE_KEYS) do
+        if State[k] then pcall(function() Toggle(k) end) end
+    end
+    Notify("Config", "🔄 Скинуто до стандартних значень", 2)
+end
+
+-- Авто-збереження кожні 60 сек
+local cfgAutoSave = true
+task.spawn(function()
+    while task.wait(60) do
+        if cfgAutoSave and HasFileSystem() then
+            pcall(SaveConfig)
+        end
+    end
+end)
+
+-- ============================================================
 -- ЗМІННІ СТАНУ
 -- ============================================================
 local LockedTarget   = nil
@@ -159,6 +317,12 @@ local spReset, lastSpCk = false, 0
 local lastBhop       = 0
 local ncStuck        = 0
 local lastNcPos      = Vector3.zero
+
+-- ============================================================
+-- FIX: Зберігаємо оригінальні CanCollide партів для noclip
+-- ============================================================
+local ncOrigCanCollide = {} -- { [part] = originalCanCollide }
+
 local fakeLagThr     = nil
 local AllRows        = {}
 local TabPages       = {}
@@ -171,20 +335,16 @@ local aimLocked      = false
 local aimSwitchCD    = 0.35
 local aimLostFrames  = 0
 
--- Raycast params
 local ncRay  = RaycastParams.new()
 ncRay.FilterType  = Enum.RaycastFilterType.Exclude
 local aimRay = RaycastParams.new()
 aimRay.FilterType = Enum.RaycastFilterType.Exclude
 
 -- ============================================================
--- ████  ANTI-KICK / ANTI-BAN HOOK  ████
--- Повністю переписаний — більш агресивний і надійний
+-- ANTI-KICK HOOK
 -- ============================================================
 local akOn = false
 
--- 1. Перехоплення Kick через метатаблицю
-local _metaHooked = false
 if ENV.hasGetRawMeta and ENV.hasSetReadOnly and ENV.hasNewCClosure and ENV.hasGetNameCall then
     pcall(function()
         local mt  = getrawmetatable(game)
@@ -192,21 +352,16 @@ if ENV.hasGetRawMeta and ENV.hasSetReadOnly and ENV.hasNewCClosure and ENV.hasGe
         setreadonly(mt, false)
         mt.__namecall = newcclosure(function(self, ...)
             local m = getnamecallmethod()
-
-            -- === ANTI-KICK ===
             if akOn then
-                -- Блокуємо Kick на LocalPlayer
                 if m == "Kick" and self == LP then
                     warn("[OMNI] Kick blocked!")
                     return
                 end
-                -- Блокуємо Kick через Character
                 local char = LP.Character
                 if char and m == "Kick" and self == char then
                     warn("[OMNI] Char-Kick blocked!")
                     return
                 end
-                -- Блокуємо підозрілі RemoteEvent:FireServer
                 if m == "FireServer" then
                     local args = {...}
                     if type(args[1]) == "string" then
@@ -217,7 +372,6 @@ if ENV.hasGetRawMeta and ENV.hasSetReadOnly and ENV.hasNewCClosure and ENV.hasGe
                         end
                     end
                 end
-                -- Блокуємо InvokeServer з kick-аргументами
                 if m == "InvokeServer" then
                     local args = {...}
                     if type(args[1]) == "string" then
@@ -230,7 +384,6 @@ if ENV.hasGetRawMeta and ENV.hasSetReadOnly and ENV.hasNewCClosure and ENV.hasGe
                 end
             end
 
-            -- === SILENT AIM ===
             if silentActive and self == Workspace then
                 local args = {...}
                 local tgt  = _GetBestTargetSilent and _GetBestTargetSilent()
@@ -252,11 +405,9 @@ if ENV.hasGetRawMeta and ENV.hasSetReadOnly and ENV.hasNewCClosure and ENV.hasGe
             return old(self, ...)
         end)
         setreadonly(mt, true)
-        _metaHooked = true
     end)
 end
 
--- 2. Додатковий захист — патч через hookfunction якщо доступно
 if ENV.hasHookFunction then
     pcall(function()
         local oldKick = LP.Kick
@@ -270,10 +421,7 @@ if ENV.hasHookFunction then
     end)
 end
 
--- 3. Fallback — перевизначення Kick через pcall-щит
--- Якщо метатаблиця не доступна — ловимо через CharacterAdded щоб respawn не кікнув
 LP.CharacterRemoving:Connect(function()
-    -- Якщо антикік ввімкнений — скасовуємо respawn delay
     if akOn then
         task.delay(0.1, function()
             pcall(function() LP:LoadCharacter() end)
@@ -282,8 +430,7 @@ LP.CharacterRemoving:Connect(function()
 end)
 
 -- ============================================================
--- ████  SPEED ANTI-BAN  ████
--- Рандомізація WalkSpeed щоб не спрацьовував античіт
+-- SPEED ANTI-BAN
 -- ============================================================
 local function GetSafeSpeed()
     if not Config.SpeedAntiBan then return Config.WalkSpeed end
@@ -338,7 +485,7 @@ local function IsVisible(char)
     local ok, result = pcall(function()
         return Workspace:Raycast(origin, dir.Unit * (dist - 0.5), aimRay)
     end)
-    if not ok then return true end -- при помилці рейкасту вважаємо видимим
+    if not ok then return true end
     if not result then return true end
     if result.Instance:IsDescendantOf(char) then return true end
     if result.Instance.Transparency >= 0.8 then return true end
@@ -520,7 +667,6 @@ local function ApplyHB(part)
         hbParts[part] = {S=part.Size, T=part.Transparency, C=part.CanCollide, M=part.Massless}
     end
     local s = Config.HitboxSize
-    -- Якщо HitboxRandomize — трошки варіюємо щоб не палитись
     if Config.HitboxRandomize then
         s = s + (math.random() * 0.4 - 0.2)
     end
@@ -561,7 +707,6 @@ task.spawn(function()
                 end
             end
         end
-        -- Підтримуємо розмір
         for part in pairs(hbParts) do
             if part and part.Parent and math.abs(part.Size.X - s) > 0.5 then
                 pcall(function() part.Size = Vector3.new(s, s, s) end)
@@ -584,12 +729,9 @@ local function DoPotato()
     for _, v in pairs(Workspace:GetDescendants()) do
         pcall(function()
             if v:IsA("BasePart") then
-                v.CastShadow = false
-                v.Reflectance = 0
+                v.CastShadow = false; v.Reflectance = 0
             elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
                 v.Enabled = false
-            elseif v:IsA("SpecialMesh") then
-                -- нічого
             end
         end)
     end
@@ -612,7 +754,9 @@ local function UndoPotato()
 end
 
 -- ============================================================
--- FORCE RESTORE
+-- ████ FIX: FORCE RESTORE (виправлено невидима підлога) ████
+-- Зберігаємо оригінальний CanCollide перед зміною,
+-- відновлюємо точно, + невеликий підйом щоб не зависнути
 -- ============================================================
 local function ForceRestore()
     local C = LP.Character; if not C then return end
@@ -632,14 +776,44 @@ local function ForceRestore()
             if v:IsA("BodyMover") then SafeDel(v) end
         end
     end
+
+    -- ✅ FIX: Відновлюємо оригінальний CanCollide для кожної части
     for _, v in pairs(C:GetDescendants()) do
         pcall(function()
             if v:IsA("BasePart") then
-                v.CanCollide     = true
+                -- Відновлюємо collision group спочатку
                 v.CollisionGroup = "Default"
+                -- Відновлюємо оригінальний CanCollide якщо він збережений
+                local orig = ncOrigCanCollide[v]
+                if orig ~= nil then
+                    v.CanCollide = orig
+                else
+                    -- Для частин які є Root/Limb — true, для аксесуарів — false
+                    local isLimb = v.Parent == C or v.Name == "HumanoidRootPart"
+                    v.CanCollide = isLimb
+                end
             end
         end)
     end
+    ncOrigCanCollide = {} -- очищаємо кеш
+
+    -- ✅ FIX: Піднімаємо гравця трохи вгору щоб він не застряг у поверхні
+    if R then
+        task.spawn(function()
+            task.wait(0.05) -- чекаємо один кадр
+            pcall(function()
+                -- Перевіряємо чи не застряг гравець (нема руху вниз)
+                if R and R.Parent then
+                    local vel = R.AssemblyLinearVelocity
+                    if math.abs(vel.Y) < 1 then
+                        R.CFrame = R.CFrame + Vector3.new(0, 2.5, 0)
+                        R.AssemblyLinearVelocity = Vector3.new(vel.X, -1, vel.Z)
+                    end
+                end
+            end)
+        end)
+    end
+
     ncStuck = 0; lastNcPos = Vector3.zero
 end
 
@@ -665,6 +839,28 @@ local function UpdVis(nm)
     if d.row then
         d.row.BackgroundColor3 = on and Color3.fromRGB(30, 38, 34) or Color3.fromRGB(24, 24, 36)
     end
+end
+
+-- ============================================================
+-- ████ FIX: MOUSE RESTORE (виправлено зависання миші) ████
+-- ============================================================
+local function RestoreMouse()
+    -- Чекаємо кілька кадрів перед відновленням
+    task.delay(0.1, function()
+        pcall(function()
+            UIS.MouseBehavior       = Enum.MouseBehavior.Default
+            UIS.MouseIconEnabled    = true
+        end)
+        -- Відновлюємо камеру через ще один кадр
+        task.delay(0.05, function()
+            local C = LP.Character
+            local H = C and C:FindFirstChildOfClass("Humanoid")
+            pcall(function()
+                Camera.CameraType = Enum.CameraType.Custom
+                if H then Camera.CameraSubject = H end
+            end)
+        end)
+    end)
 end
 
 -- ============================================================
@@ -698,12 +894,9 @@ local function Toggle(nm)
         if nm == "SilentAim" then silentActive = false end
         if nm == "AntiKick"  then akOn = false end
         if nm == "Freecam" then
-            Camera.CameraType = Enum.CameraType.Custom
-            if H then Camera.CameraSubject = H end
             pcall(function() if R then R.Anchored = false end end)
-            task.delay(0.05, function()
-                pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
-            end)
+            -- ✅ FIX: Повне відновлення миші та камери
+            RestoreMouse()
         end
         if nm == "Spin" and R then
             for _, v in pairs(R:GetChildren()) do
@@ -774,7 +967,20 @@ local function Toggle(nm)
                 fakeLagThr = nil
             end)
         end
-        if nm == "Noclip" then ncStuck = 0; lastNcPos = Vector3.zero end
+        -- ✅ FIX: Зберігаємо CanCollide перед вмиканням noclip
+        if nm == "Noclip" then
+            ncStuck = 0; lastNcPos = Vector3.zero
+            ncOrigCanCollide = {}
+            if C then
+                for _, v in pairs(C:GetDescendants()) do
+                    pcall(function()
+                        if v:IsA("BasePart") then
+                            ncOrigCanCollide[v] = v.CanCollide
+                        end
+                    end)
+                end
+            end
+        end
         if nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0; aimLastSwitch = 0
         end
@@ -785,7 +991,7 @@ local function Toggle(nm)
 end
 
 -- ============================================================
--- ANTI-AFK (більш надійний)
+-- ANTI-AFK
 -- ============================================================
 LP.Idled:Connect(function()
     if State.AntiAFK then
@@ -797,7 +1003,7 @@ LP.Idled:Connect(function()
 end)
 
 task.spawn(function()
-    while task.wait(50 + math.random() * 10) do -- рандомний інтервал
+    while task.wait(50 + math.random() * 10) do
         if State.AntiAFK then
             pcall(function()
                 VirtualUser:CaptureController()
@@ -814,8 +1020,8 @@ LP.CharacterAdded:Connect(function(char)
     char:WaitForChild("HumanoidRootPart", 5)
     MobUp = false; MobDn = false; spReset = false; ncStuck = 0
     aimTarget = nil; aimLocked = false; aimLostFrames = 0
+    ncOrigCanCollide = {}
 
-    -- При респауні вимикаємо проблемні фічі
     for _, n in pairs({"Fly","Noclip","Freecam","Spin","FakeLag"}) do
         if State[n] then State[n] = false; UpdVis(n) end
     end
@@ -837,12 +1043,150 @@ LP.CharacterAdded:Connect(function(char)
 end)
 
 -- ============================================================
+-- ████ SERVER HOP FUNCTIONS ████
+-- ============================================================
+local function GetHTTP(url)
+    local ok, result = pcall(function() return game:HttpGet(url) end)
+    if ok and result then return result end
+    ok, result = pcall(function()
+        if syn then
+            return syn.request({Url=url, Method="GET"}).Body
+        end
+    end)
+    if ok and result then return result end
+    ok, result = pcall(function()
+        if request then
+            return request({Url=url, Method="GET"}).Body
+        end
+    end)
+    if ok and result then return result end
+    return nil
+end
+
+local function GetServerList()
+    -- Пробуємо отримати список серверів через Roblox API
+    local url = "https://games.roblox.com/v1/games/"
+        .. game.PlaceId
+        .. "/servers/Public?sortOrder=Asc&excludeFullGames=false&limit=100"
+    local data = GetHTTP(url)
+    if not data then return nil end
+    local ok, parsed = pcall(function() return HttpService:JSONDecode(data) end)
+    if not ok or not parsed or not parsed.data then return nil end
+    return parsed.data
+end
+
+local serverActionCooldown = false
+local function ServerCooldown()
+    if serverActionCooldown then
+        Notify("Server Hop", "⏳ Зачекайте...", 2)
+        return true
+    end
+    serverActionCooldown = true
+    task.delay(3, function() serverActionCooldown = false end)
+    return false
+end
+
+-- 1. Реджоїн на той самий сервер
+local function RejoinSameServer()
+    if ServerCooldown() then return end
+    Notify("Rejoin", "🔄 Перезаходжу на сервер...", 3)
+    task.delay(1.5, function()
+        pcall(function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
+        end)
+    end)
+end
+
+-- 2. Рандомний сервер
+local function JoinRandomServer()
+    if ServerCooldown() then return end
+    Notify("Server Hop", "🎲 Шукаю рандомний сервер...", 3)
+    task.spawn(function()
+        local servers = GetServerList()
+        if servers and #servers > 0 then
+            -- Фільтруємо поточний сервер
+            local filtered = {}
+            for _, s in pairs(servers) do
+                if s.id ~= game.JobId and s.playing and s.playing > 0 then
+                    table.insert(filtered, s)
+                end
+            end
+            if #filtered > 0 then
+                local chosen = filtered[math.random(1, #filtered)]
+                pcall(function()
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP)
+                end)
+                return
+            end
+        end
+        -- Fallback: просто новий сервер
+        pcall(function()
+            TeleportService:Teleport(game.PlaceId, LP)
+        end)
+    end)
+end
+
+-- 3. Найбільший сервер (найбільше гравців)
+local function JoinBiggestServer()
+    if ServerCooldown() then return end
+    Notify("Server Hop", "👥 Шукаю найбільший сервер...", 3)
+    task.spawn(function()
+        local servers = GetServerList()
+        if servers and #servers > 0 then
+            local best, bestCount = nil, -1
+            for _, s in pairs(servers) do
+                if s.id ~= game.JobId and s.playing and s.playing > bestCount then
+                    bestCount = s.playing
+                    best = s
+                end
+            end
+            if best then
+                Notify("Server Hop", "👥 Знайдено: " .. bestCount .. " гравців", 2)
+                task.wait(1)
+                pcall(function()
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP)
+                end)
+                return
+            end
+        end
+        Notify("Server Hop", "❌ Не вдалося отримати список серверів", 3)
+    end)
+end
+
+-- 4. Найменший сервер (найменше гравців)
+local function JoinSmallestServer()
+    if ServerCooldown() then return end
+    Notify("Server Hop", "🕵️ Шукаю найменший сервер...", 3)
+    task.spawn(function()
+        local servers = GetServerList()
+        if servers and #servers > 0 then
+            local best, bestCount = nil, math.huge
+            for _, s in pairs(servers) do
+                if s.id ~= game.JobId and s.playing and s.playing < bestCount then
+                    bestCount = s.playing
+                    best = s
+                end
+            end
+            if best then
+                Notify("Server Hop", "🕵️ Знайдено: " .. bestCount .. " гравців", 2)
+                task.wait(1)
+                pcall(function()
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP)
+                end)
+                return
+            end
+        end
+        Notify("Server Hop", "❌ Не вдалося отримати список серверів", 3)
+    end)
+end
+
+-- ============================================================
 -- GUI SETUP
 -- ============================================================
 local GuiP = LP:WaitForChild("PlayerGui", 5)
 pcall(function()
     local c = game:GetService("CoreGui")
-    local _ = c.Name -- перевіряємо доступ
+    local _ = c.Name
     GuiP = c
 end)
 
@@ -867,18 +1211,17 @@ local P = {
     swOff = Color3.fromRGB(50, 50, 65),
     tabA  = Color3.fromRGB(32, 32, 48),
     onBg  = Color3.fromRGB(30, 38, 34),
+    srvBtn = Color3.fromRGB(28, 28, 44),
 }
 
 local VP  = Camera.ViewportSize
 local MW  = IsMob and math.min(325, VP.X - 20) or 315
-local MH  = IsMob and math.min(570, VP.Y - 80) or 530
+local MH  = IsMob and math.min(590, VP.Y - 80) or 555
 local BH  = IsMob and 44 or 34
 local FS  = IsMob and 13 or 11
 local MBS = IsMob and 58 or 48
 
--- ============================================================
 -- FOV CIRCLE
--- ============================================================
 local fovCircle = Instance.new("Frame", Scr)
 fovCircle.Size                   = UDim2.new(0, Config.AimFOV*2, 0, Config.AimFOV*2)
 fovCircle.Position               = UDim2.new(0.5, -Config.AimFOV, 0.5, -Config.AimFOV)
@@ -914,9 +1257,7 @@ local function UpdateFOVCircle()
     tgtInfo.Position   = UDim2.new(0.5, -100, 0.5, -r - 32)
 end
 
--- ============================================================
 -- MAIN FRAME
--- ============================================================
 local Main = Instance.new("Frame", Scr)
 Main.Size             = UDim2.new(0, MW, 0, MH)
 Main.Position         = UDim2.new(0.5, -MW/2, 0.5, -MH/2)
@@ -972,7 +1313,7 @@ tTit.BackgroundTransparency = 1
 tTit.TextColor3           = P.wht
 tTit.Font                 = Enum.Font.GothamBlack
 tTit.TextSize             = 14
-tTit.Text                 = "OMNI V300 MONSTER"
+tTit.Text                 = "OMNI V301 FIXED"
 tTit.TextXAlignment       = Enum.TextXAlignment.Left
 tTit.ZIndex               = 3
 
@@ -983,7 +1324,7 @@ tSub.BackgroundTransparency = 1
 tSub.TextColor3           = P.dim
 tSub.Font                 = Enum.Font.Gotham
 tSub.TextSize             = 9
-tSub.Text                 = IsMob and "MOBILE · ANTI-BAN" or "UNIVERSAL · ANTI-BAN"
+tSub.Text                 = IsMob and "MOBILE · ANTI-BAN · SERVER HOP" or "UNIVERSAL · ANTI-BAN · SERVER HOP"
 tSub.TextXAlignment       = Enum.TextXAlignment.Left
 tSub.ZIndex               = 3
 
@@ -1118,7 +1459,7 @@ for _, n in ipairs(tNames) do
     TabPages[n] = s
 end
 
--- DRAGGABLE MAIN (тільки по title bar)
+-- DRAGGABLE MAIN
 do
     local dr, ds, dp = false, nil, nil
     TB.InputBegan:Connect(function(inp)
@@ -1154,7 +1495,7 @@ do
     end)
 end
 
--- EXT STATS PANEL (FPS/Ping)
+-- EXT STATS PANEL
 local exS = Instance.new("Frame", Scr)
 exS.Size                   = UDim2.new(0, 130, 0, 58)
 exS.Position               = UDim2.new(1, -142, 0, 10)
@@ -1180,7 +1521,7 @@ local function MkStat(parent, ico, lbl, zI)
     row.BackgroundTransparency = 1
     row.ZIndex               = zI
     local iL = Instance.new("TextLabel", row)
-    iL.Size = UDim2.new(0,18,1,0); iL.BackgroundTransparency=1; iL.Text=ico; iL.TextSize=12
+    iL.Size=UDim2.new(0,18,1,0); iL.BackgroundTransparency=1; iL.Text=ico; iL.TextSize=12
     iL.Font=Enum.Font.Gotham; iL.ZIndex=zI+1; iL.TextColor3=Color3.fromRGB(100,200,255)
     local nL = Instance.new("TextLabel", row)
     nL.Size=UDim2.new(0,42,1,0); nL.Position=UDim2.new(0,20,0,0); nL.BackgroundTransparency=1
@@ -1201,7 +1542,7 @@ exDiv.BackgroundColor3=Color3.fromRGB(40,40,60); exDiv.BorderSizePixel=0; exDiv.
 local exPingRow, eP = MkStat(exS, "📶", "PING", 21)
 exPingRow.Position = UDim2.new(0, 8, 0, 33)
 
--- Drag для stats panel
+-- Drag stats panel
 do
     local exDr, exDs, exDp = false, nil, nil
     exS.InputBegan:Connect(function(inp)
@@ -1259,7 +1600,6 @@ task.spawn(function()
     end
 end)
 
--- M Button drag+tap
 do
     local dr, ds, dp, mv, mt = false, nil, nil, false, 0
     mB.InputBegan:Connect(function(inp)
@@ -1294,7 +1634,7 @@ do
     end)
 end
 
--- FLY BUTTONS (мобіл)
+-- FLY BUTTONS
 local flyH = Instance.new("Frame", Scr)
 flyH.Size                   = UDim2.new(0, 140, 0, 64)
 flyH.Position               = UDim2.new(1, -154, 1, -160)
@@ -1328,7 +1668,6 @@ local function MkFlyB(t, x, cb)
             cb(false); TweenService:Create(b,TweenInfo.new(0.08),{BackgroundColor3=P.btn}):Play()
         end
     end)
-    -- Слідкуємо за виходом пальця за межі
     b.InputChanged:Connect(function(i)
         if i.UserInputType==Enum.UserInputType.Touch then
             local abs=b.AbsolutePosition; local sz=b.AbsoluteSize
@@ -1458,6 +1797,55 @@ local function MkToggleBind(tab, icon, text, logicName)
     AllRows[logicName].bindBtn = bindBtn
 end
 
+-- ============================================================
+-- MkButton — для дій (Server Hop і т.д.)
+-- ============================================================
+local function MkButton(tab, icon, text, color, onClick)
+    local pg = TabPages[tab]; if not pg then return end
+    local row = Instance.new("TextButton", pg)
+    row.Size=UDim2.new(0.95,0,0,BH); row.BackgroundColor3=color or P.srvBtn
+    row.BorderSizePixel=0; row.AutoButtonColor=false; row.Text=""; row.ClipsDescendants=true
+    Instance.new("UICorner", row).CornerRadius=UDim.new(0,8)
+    local stroke = Instance.new("UIStroke", row)
+    stroke.Color = color and color or P.acc
+    stroke.Transparency = 0.5
+
+    local ic = Instance.new("TextLabel", row)
+    ic.Size=UDim2.new(0,26,1,0); ic.Position=UDim2.new(0,8,0,0); ic.BackgroundTransparency=1
+    ic.Text=icon; ic.TextSize=IsMob and 16 or 14; ic.Font=Enum.Font.Gotham; ic.TextColor3=P.acc
+
+    local lbl = Instance.new("TextLabel", row)
+    lbl.Size=UDim2.new(1,-40,1,0); lbl.Position=UDim2.new(0,38,0,0); lbl.BackgroundTransparency=1
+    lbl.Text=text; lbl.TextColor3=P.txt; lbl.Font=Enum.Font.GothamBold; lbl.TextSize=FS
+    lbl.TextXAlignment=Enum.TextXAlignment.Left
+
+    local arr = Instance.new("TextLabel", row)
+    arr.Size=UDim2.new(0,20,1,0); arr.Position=UDim2.new(1,-24,0,0); arr.BackgroundTransparency=1
+    arr.Text="▶"; arr.TextSize=10; arr.Font=Enum.Font.GothamBold; arr.TextColor3=P.dim
+
+    row.MouseButton1Click:Connect(function()
+        TweenService:Create(row, TweenInfo.new(0.08), {BackgroundColor3=P.tabA}):Play()
+        task.delay(0.12, function()
+            TweenService:Create(row, TweenInfo.new(0.12), {BackgroundColor3=color or P.srvBtn}):Play()
+        end)
+        if onClick then pcall(onClick) end
+    end)
+
+    -- Touch підтримка
+    row.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then
+            TweenService:Create(row, TweenInfo.new(0.08), {BackgroundColor3=P.tabA}):Play()
+        end
+    end)
+    row.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then
+            TweenService:Create(row, TweenInfo.new(0.12), {BackgroundColor3=color or P.srvBtn}):Play()
+        end
+    end)
+
+    return row
+end
+
 -- SLIDER
 local function MkSlider(tab, icon, text, minV, maxV, def, onChange)
     local pg = TabPages[tab]; if not pg then return end
@@ -1561,6 +1949,91 @@ AddHdr("Misc","🛡","PROTECTION")
 MkToggle("Misc","💤","Anti-AFK","AntiAFK")
 MkToggle("Misc","🚫","Anti-Kick","AntiKick")
 
+-- ✅ НОВІ Server Hop кнопки
+AddHdr("Misc","🌐","SERVER HOP")
+MkButton("Misc","🔄","Rejoin (той самий сервер)", Color3.fromRGB(22,28,38), RejoinSameServer)
+MkButton("Misc","🎲","Рандомний сервер",          Color3.fromRGB(22,28,38), JoinRandomServer)
+MkButton("Misc","👥","Найбільший сервер",          Color3.fromRGB(22,28,38), JoinBiggestServer)
+MkButton("Misc","🕵️","Найменший сервер",           Color3.fromRGB(22,28,38), JoinSmallestServer)
+
+-- ✅ CONFIG SAVE / LOAD кнопки
+AddHdr("Config","💾","ЗБЕРЕЖЕННЯ КОНФІГУ")
+do
+    local pg = TabPages["Config"]
+
+    -- 3 кнопки в один рядок
+    local btnRow = Instance.new("Frame", pg)
+    btnRow.Size             = UDim2.new(0.95, 0, 0, BH)
+    btnRow.BackgroundTransparency = 1
+    btnRow.BorderSizePixel  = 0
+
+    local function MkCfgBtn(txt, col, xPos, xSize, onClick)
+        local b = Instance.new("TextButton", btnRow)
+        b.Size             = UDim2.new(xSize, -3, 1, 0)
+        b.Position         = UDim2.new(xPos, 2, 0, 0)
+        b.BackgroundColor3 = col
+        b.Text             = txt
+        b.TextColor3       = P.wht
+        b.Font             = Enum.Font.GothamBold
+        b.TextSize         = IsMob and 12 or 10
+        b.BorderSizePixel  = 0
+        b.AutoButtonColor  = false
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 7)
+        local st = Instance.new("UIStroke", b)
+        st.Color       = col; st.Transparency = 0.4
+        local function doClick()
+            TweenService:Create(b, TweenInfo.new(0.07), {
+                BackgroundColor3 = Color3.fromRGB(60,60,80)
+            }):Play()
+            task.delay(0.15, function()
+                TweenService:Create(b, TweenInfo.new(0.1), {
+                    BackgroundColor3 = col
+                }):Play()
+            end)
+            if onClick then pcall(onClick) end
+        end
+        b.MouseButton1Click:Connect(doClick)
+        b.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.Touch then doClick() end
+        end)
+    end
+
+    MkCfgBtn("💾 Зберегти",    Color3.fromRGB(20,100,55),  0,   1/3, SaveConfig)
+    MkCfgBtn("📂 Завантажити", Color3.fromRGB(20,60,120),  1/3, 1/3, function()
+        LoadConfig()
+        task.delay(0.15, function()
+            for nm in pairs(AllRows) do pcall(UpdVis, nm) end
+            for nm, d in pairs(AllRows) do
+                if d.bindBtn and Binds[nm] then
+                    d.bindBtn.Text = tostring(Binds[nm]):gsub("Enum%.KeyCode%.","")
+                end
+            end
+        end)
+    end)
+    MkCfgBtn("🔄 Скинути",     Color3.fromRGB(100,35,20),  2/3, 1/3, function()
+        ResetConfig()
+        task.delay(0.15, function()
+            for nm in pairs(AllRows) do pcall(UpdVis, nm) end
+            for nm, d in pairs(AllRows) do
+                if d.bindBtn and Binds[nm] then
+                    d.bindBtn.Text = tostring(Binds[nm]):gsub("Enum%.KeyCode%.","")
+                end
+            end
+        end)
+    end)
+
+    -- Підпис авто-збереження
+    local autoLbl = Instance.new("TextLabel", pg)
+    autoLbl.Size                 = UDim2.new(0.95, 0, 0, IsMob and 18 or 14)
+    autoLbl.BackgroundTransparency = 1
+    autoLbl.TextColor3           = P.dim
+    autoLbl.Font                 = Enum.Font.Gotham
+    autoLbl.TextSize             = IsMob and 10 or 9
+    autoLbl.Text                 = "⏱ Авто-зберігання кожні 60 сек  ·  OmniV300_Config.json"
+    autoLbl.TextXAlignment       = Enum.TextXAlignment.Center
+    autoLbl.TextWrapped          = true
+end
+
 AddHdr("Config","🚀","SPEED VALUES")
 MkSlider("Config","✈️","Fly Speed",0,300,Config.FlySpeed,function(v) Config.FlySpeed=v end)
 MkSlider("Config","👟","Walk Speed",16,200,Config.WalkSpeed,function(v)
@@ -1587,16 +2060,14 @@ MkSlider("Config","🎚","Aim Smooth %",5,100,math.floor(Config.AimSmooth*100),f
     Config.AimSmooth=v/100
 end)
 AddHdr("Config","🛡","ANTI-BAN")
-MkToggle("Config","🎲","Speed Jitter","SpeedAntiBan") -- додаємо до State
+MkToggle("Config","🎲","Speed Jitter","SpeedAntiBan")
 MkToggle("Config","📦","Hitbox Randomize","HitboxRandomize")
 MkToggle("Config","🎯","Aim Anti-Detect","AimAntiDetect")
 
--- Додаємо нові ключі до State
 State.SpeedAntiBan    = Config.SpeedAntiBan
 State.HitboxRandomize = Config.HitboxRandomize
 State.AimAntiDetect   = Config.AimAntiDetect
 
--- Підключаємо toggle для конфіг-стейтів
 do
     local orig = Toggle
     Toggle = function(nm)
@@ -1676,31 +2147,12 @@ UIS.JumpRequest:Connect(function()
 end)
 
 -- ============================================================
--- SHIFT LOCK / MOUSE FIX
+-- ████ FIX: SHIFT LOCK / MOUSE - прибрали __newindex хук ████
+-- Більше не блокуємо MouseBehavior через метатаблицю UIS,
+-- бо це ламало shift lock після вимкнення Freecam.
+-- Freecam тепер керує мишею напряму через RenderStepped.
 -- ============================================================
-do
-    -- Захист MouseBehavior коли Freecam активний
-    if ENV.hasGetRawMeta and ENV.hasSetReadOnly then
-        pcall(function()
-            local mt = getrawmetatable(UIS)
-            if mt then
-                local oldNI = rawget(mt, "__newindex")
-                setreadonly(mt, false)
-                mt.__newindex = newcclosure(function(self, key, value)
-                    if key == "MouseBehavior" and State.Freecam then
-                        return -- блокуємо зміну поведінки миші під час Freecam
-                    end
-                    if oldNI then
-                        return oldNI(self, key, value)
-                    else
-                        rawset(self, key, value)
-                    end
-                end)
-                setreadonly(mt, true)
-            end
-        end)
-    end
-end
+-- (хук повністю видалено — він і був причиною зависання миші)
 
 -- ============================================================
 -- ANIMATION LOOP
@@ -1740,7 +2192,7 @@ task.spawn(function()
 end)
 
 -- ============================================================
--- RENDER STEPPED (FPS / Ping / Aim / Fly / Freecam)
+-- RENDER STEPPED
 -- ============================================================
 RunService.RenderStepped:Connect(function(dt)
     local now = tick()
@@ -1757,10 +2209,10 @@ RunService.RenderStepped:Connect(function(dt)
     local fc = fps>=55 and Color3.fromRGB(130,255,170) or fps>=30 and Color3.fromRGB(255,220,80) or Color3.fromRGB(255,90,90)
     local pc = pm<=80 and Color3.fromRGB(130,255,170) or pm<=150 and Color3.fromRGB(255,220,80) or Color3.fromRGB(255,90,90)
 
-    fpsL.Text = "FPS: "..fps;           fpsL.TextColor3 = fc
-    pngL.Text = "Ping: "..pm.."ms";     pngL.TextColor3 = pc
-    eF.Text   = tostring(fps);          eF.TextColor3   = fc
-    eP.Text   = pm.." ms";             eP.TextColor3   = pc
+    fpsL.Text = "FPS: "..fps;       fpsL.TextColor3 = fc
+    pngL.Text = "Ping: "..pm.."ms"; pngL.TextColor3 = pc
+    eF.Text   = tostring(fps);      eF.TextColor3   = fc
+    eP.Text   = pm.." ms";         eP.TextColor3   = pc
 
     local Char = LP.Character
     local HRP  = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -1783,13 +2235,11 @@ RunService.RenderStepped:Connect(function(dt)
             dir = dir + Vector3.new(0, upD, 0)
             if dir.Magnitude > 1 then dir = dir.Unit end
 
-            -- Обмеження висоти (анти-бан)
             local curY = HRP.Position.Y
             if curY > Config.FlyHeightMax then
                 HRP.CFrame -= Vector3.new(0, 3, 0)
             end
 
-            -- Емуляція "природного" руху при польоті
             if Config.FlyAntiBan then
                 local jitter = Vector3.new(
                     (math.random()-0.5)*0.08,
@@ -1809,6 +2259,7 @@ RunService.RenderStepped:Connect(function(dt)
     -- FREECAM
     if State.Freecam then
         pcall(function()
+            -- ✅ FIX: Блокуємо мишу тільки коли Freecam активний, через CameraType
             local mx, mz = GetDir()
             local dir = Camera.CFrame.LookVector * -mz + Camera.CFrame.RightVector * mx
             if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then
@@ -1843,7 +2294,6 @@ RunService.RenderStepped:Connect(function(dt)
                 if sd < 30 then smooth = smooth*0.3
                 elseif sd < 80 then smooth = smooth*0.6 end
 
-                -- Анти-детект: мікро-шум щоб aim виглядав людяно
                 if Config.AimAntiDetect then
                     local noise = Vector3.new(
                         (math.random()-0.5)*0.12,
@@ -1899,19 +2349,17 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
--- Freecam mouse rotation
+-- ✅ FIX: Freecam mouse — ПК обертання без __newindex хуку
 UIS.InputChanged:Connect(function(inp, gpe)
     if gpe or not State.Freecam then return end
     if inp.UserInputType == Enum.UserInputType.MouseMovement then
-        if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-            FC_Y = FC_Y - math.rad(inp.Delta.X * 0.35)
-            FC_P = math.clamp(FC_P - math.rad(inp.Delta.Y * 0.35), -math.rad(89), math.rad(89))
-        end
+        FC_Y = FC_Y - math.rad(inp.Delta.X * 0.35)
+        FC_P = math.clamp(FC_P - math.rad(inp.Delta.Y * 0.35), -math.rad(89), math.rad(89))
     end
 end)
 
 -- ============================================================
--- HEARTBEAT (Speed / HighJump / Bhop / NoFallDmg / ShadowLock)
+-- HEARTBEAT
 -- ============================================================
 RunService.Heartbeat:Connect(function(dt)
     local Char = LP.Character
@@ -1919,7 +2367,6 @@ RunService.Heartbeat:Connect(function(dt)
     local Hum  = Char and Char:FindFirstChildOfClass("Humanoid")
     if not HRP or not Hum or Hum.Health <= 0 then return end
 
-    -- SHADOW LOCK (Magnet)
     if State.ShadowLock then
         if not IsAlive(LockedTarget) then LockedTarget = GetClosestDist() end
         if LockedTarget then
@@ -1937,7 +2384,6 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- SPEED (з антибан-рандомізацією)
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local safeSpd = GetSafeSpeed()
@@ -1964,7 +2410,6 @@ RunService.Heartbeat:Connect(function(dt)
         end)
     end
 
-    -- HIGH JUMP
     if State.HighJump and not State.Fly then
         pcall(function()
             Hum.UseJumpPower = true
@@ -1983,7 +2428,6 @@ RunService.Heartbeat:Connect(function(dt)
         end)
     end
 
-    -- BHOP
     if State.Bhop and not State.Fly and not State.Freecam then
         pcall(function()
             if Hum.MoveDirection.Magnitude > 0.1 then
@@ -2003,7 +2447,6 @@ RunService.Heartbeat:Connect(function(dt)
         end)
     end
 
-    -- NO FALL DAMAGE
     if State.NoFallDamage then
         pcall(function()
             if Hum:GetState() == Enum.HumanoidStateType.Freefall
@@ -2018,7 +2461,7 @@ RunService.Heartbeat:Connect(function(dt)
 end)
 
 -- ============================================================
--- STEPPED — NOCLIP (більш надійний)
+-- STEPPED — NOCLIP (виправлений)
 -- ============================================================
 RunService.Stepped:Connect(function()
     local Char = LP.Character
@@ -2029,6 +2472,10 @@ RunService.Stepped:Connect(function()
         for _, v in pairs(Char:GetDescendants()) do
             if v:IsA("BasePart") then
                 pcall(function()
+                    -- ✅ FIX: Зберігаємо оригінальний стан якщо ще не збережений
+                    if ncOrigCanCollide[v] == nil then
+                        ncOrigCanCollide[v] = v.CanCollide
+                    end
                     v.CollisionGroup = SafeGroup
                     v.CanCollide     = false
                 end)
@@ -2071,28 +2518,75 @@ end)
 -- ============================================================
 -- ФІНАЛЬНЕ ПОВІДОМЛЕННЯ
 -- ============================================================
-Notify("OMNI V300 MONSTER", "✅ Anti-Ban · Anti-Kick · Universal · All fixes applied", 6)
+-- ============================================================
+-- АВТО-ЗАВАНТАЖЕННЯ КОНФІГУ ПРИ СТАРТІ
+-- ============================================================
+task.spawn(function()
+    task.wait(0.6)
+    if not HasFileSystem() then return end
+    local ok, raw = pcall(readfile, CFG_FILE)
+    if not ok or not raw or raw == "" then return end
+    local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
+    if not ok2 or not data then return end
+    -- Завантажуємо Config
+    if data.config then
+        for k, v in pairs(data.config) do
+            if Config[k] ~= nil then Config[k] = v end
+        end
+    end
+    -- Завантажуємо Binds
+    if data.binds then DeserializeBinds(data.binds) end
+    -- Завантажуємо State (тільки ті що відрізняються)
+    if data.state then
+        for _, k in pairs(SAVE_STATE_KEYS) do
+            local saved = data.state[k]
+            if saved ~= nil and saved ~= State[k] then
+                pcall(function() Toggle(k) end)
+            end
+        end
+    end
+    -- Оновлюємо UI
+    task.wait(0.1)
+    for nm in pairs(AllRows) do pcall(UpdVis, nm) end
+    for nm, d in pairs(AllRows) do
+        if d.bindBtn and Binds[nm] then
+            d.bindBtn.Text = tostring(Binds[nm]):gsub("Enum%.KeyCode%.","")
+        end
+    end
+    UpdateFOVCircle()
+    Notify("OMNI", "📂 Конфіг завантажено ✓", 3)
+end)
+
+Notify("OMNI V301 FIXED", "✅ Noclip fix · Mouse fix · Server Hop · Config Save", 6)
 
 --[[
-ЗМІНИ V300 MONSTER:
-✅ Виправлено: всі pcall захисти навколо критичних операцій
-✅ Виправлено: toggle для Config-параметрів (SpeedAntiBan, HitboxRandomize, AimAntiDetect)
-✅ Виправлено: drag для stats panel (правильні межі екрану)
-✅ Виправлено: MkStat переписана (не дублювала код)
-✅ Виправлено: noclip raycast тепер захищений pcall
-✅ Нові anti-ban функції:
-   - SpeedAntiBan: рандомний jitter до WalkSpeed
-   - FlyAntiBan: мікро-шум при польоті
-   - HitboxRandomize: ±0.2 варіація hitbox розміру
-   - AimAntiDetect: мікро-шум до predicted position
-   - FlyHeightMax: обмеження висоти польоту
-✅ Anti-Kick посилений:
-   - Блокує Kick через метатаблицю (game + char)
-   - Блокує FireServer з "kick"/"ban"/"report"
-   - Блокує InvokeServer з kick-аргументами
-   - hookfunction fallback якщо доступно
-   - CharacterRemoving fallback respawn
-✅ Anti-AFK: рандомний інтервал 50-60 сек
-✅ Collision group рандомний суфікс (анти-детект по імені)
-✅ Всі RunService callbacks захищені від помилок
+═══════════════════════════════════════════════
+ЗМІНИ V301 FIXED:
+
+✅ БАГ ВИПРАВЛЕНО: Невидима підлога після noclip OFF
+   - Зберігаємо оригінальний CanCollide кожної части
+     у ncOrigCanCollide[] перед тим як вмикати noclip
+   - ForceRestore() відновлює точно оригінальний стан
+   - Після відновлення — підйом на 2.5 studs щоб
+     гравець не застряг у геометрії
+
+✅ БАГ ВИПРАВЛЕНО: Мишка зависає після shift lock
+   - Повністю ВИДАЛЕНО __newindex хук на UserInputService
+     (він був основною причиною зависання мишки)
+   - Freecam тепер керує обертанням через InputChanged
+     без блокування MouseBehavior через метатаблицю
+   - Додана RestoreMouse() яка правильно відновлює
+     MouseBehavior та MouseIconEnabled після Freecam
+
+✅ ДОДАНО: Server Hop (у вкладці Misc → SERVER HOP)
+   - 🔄 Rejoin (той самий сервер) — перезаходить на
+     поточний JobId
+   - 🎲 Рандомний сервер — вибирає випадковий з API
+   - 👥 Найбільший сервер — макс гравців з API
+   - 🕵️ Найменший сервер — мін гравців з API
+   - Підтримує: game:HttpGet, syn.request, request()
+   - Кулдаун 3 сек між натисканнями
+   - Fallback на TeleportService:Teleport якщо API
+     недоступне
+═══════════════════════════════════════════════
 ]]
