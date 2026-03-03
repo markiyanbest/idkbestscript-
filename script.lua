@@ -313,7 +313,7 @@ local silentActive   = false
 local waitingBind    = nil
 local MobUp, MobDn   = false, false
 local FC_P, FC_Y     = 0, 0
-local spReset, lastSpCk = false, 0
+local spReset, lastSpCk = false, 0 -- legacy (unused, kept for compat)
 local lastBhop       = 0
 local ncStuck        = 0
 local lastNcPos      = Vector3.zero
@@ -992,7 +992,14 @@ local function Toggle(nm)
         end
         if nm == "Speed" then
             spReset = false
-            pcall(function() if H then H.WalkSpeed = 16 end end)
+            pcall(function()
+                if H then H.WalkSpeed = 16 end
+                -- ✅ FIX: Скидаємо горизонтальну velocity щоб не "летіти" після вимкнення
+                if R then
+                    local vel = R.AssemblyLinearVelocity
+                    R.AssemblyLinearVelocity = Vector3.new(vel.X * 0.15, vel.Y, vel.Z * 0.15)
+                end
+            end)
         end
         if nm == "HighJump" and H then
             pcall(function() H.UseJumpPower = true; H.JumpPower = 50; H.JumpHeight = 7.2 end)
@@ -1035,7 +1042,6 @@ local function Toggle(nm)
         end
         if nm == "Speed" and H then
             pcall(function() H.WalkSpeed = GetSafeSpeed() end)
-            spReset = false; lastSpCk = 0
         end
         if nm == "HighJump" and H then
             pcall(function()
@@ -2506,38 +2512,29 @@ RunService.Heartbeat:Connect(function(dt)
 
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
-            local safeSpd = GetSafeSpeed()
-            -- ✅ ПОКРАЩЕНО: поступово змінюємо WalkSpeed (не стрибком)
-            -- Різкий стрибок з 16 → 80 легко детектується
-            local curSpd  = Hum.WalkSpeed
-            local delta   = safeSpd - curSpd
-            -- Плавна зміна: не більше 8 одиниць за кадр
-            local step    = math.clamp(delta, -8, 8)
-            Hum.WalkSpeed = math.clamp(curSpd + step, 14, Config.WalkSpeed * 1.15)
+            local targetSpd = GetSafeSpeed()
 
-            -- Перевіряємо чи сервер не скинув WalkSpeed
-            local now = tick()
-            if now - lastSpCk > 0.35 then
-                lastSpCk = now
-                task.delay(0.06, function()
-                    if Hum and Hum.Parent then
-                        spReset = Hum.WalkSpeed < safeSpd * 0.75
-                    end
-                end)
-            end
+            -- ✅ FIX: Завжди форсуємо WalkSpeed напряму кожен кадр.
+            -- Плавний step конфліктував з серверним скидом до 16 —
+            -- в результаті швидкість зависала на ~24.
+            -- Прямий set як в слайдері — єдиний надійний метод.
+            Hum.WalkSpeed = targetSpd
 
-            -- Fallback через velocity якщо сервер скидає WalkSpeed
-            if spReset and Hum.MoveDirection.Magnitude > 0.1 then
-                local md  = Hum.MoveDirection.Unit
+            -- ✅ FIX: Завжди форсуємо velocity коли рухаємось.
+            -- Це обходить серверний anticheat який скидає WalkSpeed —
+            -- навіть якщо WalkSpeed знову стане 16, velocity вже задано.
+            if Hum.MoveDirection.Magnitude > 0.1 then
+                local md  = Hum.MoveDirection
                 local vel = HRP.AssemblyLinearVelocity
                 local hs  = Vector3.new(vel.X, 0, vel.Z).Magnitude
-                local targetSpd = Config.WalkSpeed
-                -- Плавний приріст velocity
-                if hs < targetSpd * 0.8 then
-                    local boost = md * math.min((targetSpd - hs) * 0.25, 12)
-                    HRP.AssemblyLinearVelocity = Vector3.new(
-                        vel.X + boost.X, vel.Y, vel.Z + boost.Z
-                    )
+
+                -- Тільки прискорюємо якщо реальна швидкість нижче цільової
+                if hs < targetSpd * 0.92 then
+                    local want = md * targetSpd
+                    -- Плавне виставлення без різких стрибків
+                    local newVX = vel.X + (want.X - vel.X) * 0.45
+                    local newVZ = vel.Z + (want.Z - vel.Z) * 0.45
+                    HRP.AssemblyLinearVelocity = Vector3.new(newVX, vel.Y, newVZ)
                 end
             end
         end)
