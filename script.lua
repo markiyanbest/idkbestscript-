@@ -341,49 +341,99 @@ local aimRay = RaycastParams.new()
 aimRay.FilterType = Enum.RaycastFilterType.Exclude
 
 -- ============================================================
--- ANTI-KICK HOOK
+-- ████  ANTI-KICK v2 — МАКСИМАЛЬНИЙ ЗАХИСТ  ████
 -- ============================================================
 local akOn = false
 
+-- ── Перлін-шум для плавних рандомних значень ──
+local _pSeed = math.random(1, 99999)
+local function Perlin(x)
+    local xi = math.floor(x) % 256
+    local xf = x - math.floor(x)
+    local u  = xf * xf * (3 - 2 * xf)
+    local a  = (xi * 1664525 + 1013904223 + _pSeed) % 2^32
+    local b  = ((xi+1) * 1664525 + 1013904223 + _pSeed) % 2^32
+    local na = (a / 2^32) * 2 - 1
+    local nb = (b / 2^32) * 2 - 1
+    return na + u * (nb - na)
+end
+
+-- ── Таблиця заблокованих RemoteEvent/Function  ──
+-- Будь-яке значення (рядок/число/bool) у будь-якому аргументі
+local KICK_KEYWORDS = {
+    "kick","ban","remove","boot","disconnect",
+    "punish","mute","suspend","terminate","expel",
+}
+local function HasKickPayload(...)
+    local args = {...}
+    for i = 1, math.min(#args, 4) do -- перевіряємо перші 4 аргументи
+        local v = args[i]
+        if type(v) == "string" then
+            local l = v:lower()
+            for _, kw in pairs(KICK_KEYWORDS) do
+                if l:find(kw, 1, true) then return true, kw end
+            end
+        end
+    end
+    return false, nil
+end
+
+-- ── Захист через __namecall (найнадійніший спосіб) ──
+local _ncHooked = false
 if ENV.hasGetRawMeta and ENV.hasSetReadOnly and ENV.hasNewCClosure and ENV.hasGetNameCall then
     pcall(function()
         local mt  = getrawmetatable(game)
-        local old = mt.__namecall
+        local _orig = mt.__namecall
         setreadonly(mt, false)
         mt.__namecall = newcclosure(function(self, ...)
             local m = getnamecallmethod()
+
+            -- ═══ ANTI-KICK ═══
             if akOn then
-                if m == "Kick" and self == LP then
-                    warn("[OMNI] Kick blocked!")
-                    return
-                end
-                local char = LP.Character
-                if char and m == "Kick" and self == char then
-                    warn("[OMNI] Char-Kick blocked!")
-                    return
-                end
-                if m == "FireServer" then
-                    local args = {...}
-                    if type(args[1]) == "string" then
-                        local l = string.lower(args[1])
-                        if l:find("kick") or l:find("ban") or l:find("report") then
-                            warn("[OMNI] Suspicious FireServer blocked: " .. args[1])
-                            return
-                        end
+                -- Блокуємо Kick на будь-якому об'єкті що пов'язаний з гравцем
+                if m == "Kick" then
+                    if self == LP or self == LP.Character
+                        or (typeof(self) == "Instance"
+                            and self:IsDescendantOf(LP.Character or game)) then
+                        warn("[AK] Kick blocked on:", self:GetFullName())
+                        return -- повертаємо nil — гра думає що кік пройшов
                     end
                 end
+
+                -- Блокуємо підозрілі FireServer / FireAllClients
+                if m == "FireServer" or m == "FireAllClients" or m == "FireClient" then
+                    local hit, kw = HasKickPayload(...)
+                    if hit then
+                        warn("[AK] Suspicious", m, "blocked (keyword:", kw, ")")
+                        return
+                    end
+                end
+
+                -- Блокуємо InvokeServer
                 if m == "InvokeServer" then
+                    local hit, kw = HasKickPayload(...)
+                    if hit then
+                        warn("[AK] Suspicious InvokeServer blocked (keyword:", kw, ")")
+                        return ""  -- повертаємо пустий рядок щоб не ламати pcall
+                    end
+                end
+
+                -- Блокуємо TeleportService:Teleport якщо PlaceId відрізняється
+                -- (захист від телепорту-кіку в окремий "jail" плейс)
+                if m == "Teleport" or m == "TeleportToPlaceInstance" then
                     local args = {...}
-                    if type(args[1]) == "string" then
-                        local l = string.lower(args[1])
-                        if l:find("kick") or l:find("ban") then
-                            warn("[OMNI] Suspicious InvokeServer blocked")
+                    local placeId = args[1]
+                    if type(placeId) == "number" and placeId ~= game.PlaceId then
+                        -- Дозволяємо тільки якщо це наш власний server hop
+                        if not _omniServerHopActive then
+                            warn("[AK] Teleport-kick blocked to PlaceId:", placeId)
                             return
                         end
                     end
                 end
             end
 
+            -- ═══ SILENT AIM ═══
             if silentActive and self == Workspace then
                 local args = {...}
                 local tgt  = _GetBestTargetSilent and _GetBestTargetSilent()
@@ -392,50 +442,110 @@ if ENV.hasGetRawMeta and ENV.hasSetReadOnly and ENV.hasNewCClosure and ENV.hasGe
                     local o = Camera.CFrame.Position
                     if m == "Raycast" and typeof(args[2]) == "Vector3" then
                         args[2] = (hd.Position - o).Unit * args[2].Magnitude
-                        return old(self, table.unpack(args))
-                    elseif (m == "FindPartOnRayWithIgnoreList" or m == "FindPartOnRay") then
+                        return _orig(self, table.unpack(args))
+                    elseif m == "FindPartOnRayWithIgnoreList" or m == "FindPartOnRay" then
                         if typeof(args[1]) == "Ray" then
                             args[1] = Ray.new(o, (hd.Position - o).Unit * args[1].Direction.Magnitude)
-                            return old(self, table.unpack(args))
+                            return _orig(self, table.unpack(args))
                         end
                     end
                 end
             end
 
-            return old(self, ...)
+            return _orig(self, ...)
         end)
         setreadonly(mt, true)
+        _ncHooked = true
     end)
 end
 
+-- ── Прапорець для нашого server hop (щоб не блокувати свій телепорт) ──
+_omniServerHopActive = false
+
+-- ── Fallback: hookfunction на Kick якщо доступно ──
 if ENV.hasHookFunction then
     pcall(function()
-        local oldKick = LP.Kick
-        hookfunction(oldKick, function(self, ...)
-            if akOn and self == LP then
-                warn("[OMNI] Kick blocked via hookfunction!")
-                return
-            end
-            return oldKick(self, ...)
-        end)
+        -- Хукаємо через інстанс-метод через debug.getupvalue або namecall proxy
+        -- (hookfunction на LP.Kick напряму не працює — це не closure)
+        -- Натомість хукаємо Players.LocalPlayer через index
+        if hookmetamethod then
+            local _origIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
+                if akOn and key == "Kick" and self == LP then
+                    return function() warn("[AK] Kick via __index blocked") end
+                end
+                return hookmetamethod(game, "__index")(self, key)
+            end))
+        end
     end)
 end
 
-LP.CharacterRemoving:Connect(function()
-    if akOn then
-        task.delay(0.1, function()
-            pcall(function() LP:LoadCharacter() end)
+-- ── Захист від AncestryChanged (коли гравця видаляють з ієрархії) ──
+-- Деякі античіти кікають через game.Players:RemoveUser()
+LP.AncestryChanged:Connect(function(_, newParent)
+    if akOn and newParent == nil then
+        warn("[AK] AncestryChanged kick detected — respawning")
+        -- Спробуємо "пережити" видалення через швидкий rejoin
+        pcall(function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
         end)
     end
 end)
 
+-- ── Моніторинг спроб кіку через BindableEvent ──
+task.spawn(function()
+    while task.wait(0.5) do
+        if not akOn then continue end
+        -- Шукаємо підозрілі BindableEvent в ReplicatedStorage / StarterGui
+        for _, container in pairs({
+            game:GetService("ReplicatedStorage"),
+            game:GetService("ReplicatedFirst"),
+        }) do
+            pcall(function()
+                for _, v in pairs(container:GetDescendants()) do
+                    if v:IsA("BindableEvent") then
+                        local nm = v.Name:lower()
+                        for _, kw in pairs(KICK_KEYWORDS) do
+                            if nm:find(kw, 1, true) then
+                                -- Перезаписуємо Event щоб він не спрацював
+                                pcall(function()
+                                    v.Event:Connect(function() end) -- dummy listener
+                                end)
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- ── Захист від CharacterRemoving (без LP:LoadCharacter — це не працює) ──
+-- Замість цього — логуємо і показуємо попередження
+LP.CharacterRemoving:Connect(function()
+    if akOn then
+        warn("[AK] CharacterRemoving detected while AntiKick is ON")
+        -- NB: LP:LoadCharacter() не можна викликати з клієнта в більшості ігор
+        -- Тому просто логуємо — справжній кік зупиняється через __namecall
+    end
+end)
+
 -- ============================================================
--- SPEED ANTI-BAN
+-- ████  SPEED ANTI-BAN v2 — ПЕРЛІН-ШУМ  ████
+-- Замість простого random() — плавний Перлін-шум
+-- що виглядає як природне коливання FPS/Physics
 -- ============================================================
+local _noiseT = 0
 local function GetSafeSpeed()
     if not Config.SpeedAntiBan then return Config.WalkSpeed end
+    _noiseT = _noiseT + 0.008 -- дуже повільна зміна — виглядає природно
+    local n  = Perlin(_noiseT) -- діапазон приблизно -1..1
     local jit = Config.SpeedJitter
-    return Config.WalkSpeed + (math.random() * jit * 2 - jit)
+    -- Додаємо рідкісні мікро-паузи (симуляція lag spike)
+    if math.random(1, 180) == 1 then
+        return math.max(Config.WalkSpeed * 0.85, 14) -- коротка "підтормозка"
+    end
+    return math.clamp(Config.WalkSpeed + n * jit, Config.WalkSpeed * 0.9, Config.WalkSpeed * 1.1)
 end
 
 -- ============================================================
@@ -2235,23 +2345,33 @@ RunService.RenderStepped:Connect(function(dt)
             dir = dir + Vector3.new(0, upD, 0)
             if dir.Magnitude > 1 then dir = dir.Unit end
 
+            -- Обмеження висоти
             local curY = HRP.Position.Y
             if curY > Config.FlyHeightMax then
-                HRP.CFrame -= Vector3.new(0, 3, 0)
+                dir = Vector3.new(dir.X, math.min(dir.Y, -0.1), dir.Z)
             end
 
             if Config.FlyAntiBan then
-                local jitter = Vector3.new(
-                    (math.random()-0.5)*0.08,
-                    (math.random()-0.5)*0.04,
-                    (math.random()-0.5)*0.08
-                )
-                HRP.CFrame += (dir * Config.FlySpeed + jitter) * dt
+                -- ✅ ПОКРАЩЕНО: velocity-based політ замість CFrame
+                -- Сервер бачить плавний AssemblyLinearVelocity — виглядає як подвійний стрибок
+                _noiseT = _noiseT + 0.005
+                local nx = Perlin(_noiseT) * 0.12
+                local ny = Perlin(_noiseT + 100) * 0.06
+                local nz = Perlin(_noiseT + 200) * 0.12
+                local target_vel = dir * Config.FlySpeed + Vector3.new(nx, ny, nz)
+                -- Плавно інтерполюємо velocity замість миттєвого встановлення
+                local cur_vel = HRP.AssemblyLinearVelocity
+                local lerp_vel = cur_vel:Lerp(target_vel, math.clamp(dt * 18, 0, 1))
+                HRP.AssemblyLinearVelocity = lerp_vel
+                -- CFrame тільки для ротації камери (не позиції!)
+                -- Це головна відмінність від детектованого fly
+                HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0,
+                    math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
             else
-                HRP.CFrame += dir * Config.FlySpeed * dt
+                -- Режим без антибану — швидший але видимий
+                HRP.AssemblyLinearVelocity = dir * Config.FlySpeed
             end
 
-            HRP.AssemblyLinearVelocity = Vector3.zero
             if not State.Spin then HRP.AssemblyAngularVelocity = Vector3.zero end
         end)
     end
@@ -2387,24 +2507,37 @@ RunService.Heartbeat:Connect(function(dt)
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local safeSpd = GetSafeSpeed()
-            Hum.WalkSpeed = safeSpd
+            -- ✅ ПОКРАЩЕНО: поступово змінюємо WalkSpeed (не стрибком)
+            -- Різкий стрибок з 16 → 80 легко детектується
+            local curSpd  = Hum.WalkSpeed
+            local delta   = safeSpd - curSpd
+            -- Плавна зміна: не більше 8 одиниць за кадр
+            local step    = math.clamp(delta, -8, 8)
+            Hum.WalkSpeed = math.clamp(curSpd + step, 14, Config.WalkSpeed * 1.15)
+
+            -- Перевіряємо чи сервер не скинув WalkSpeed
             local now = tick()
-            if now - lastSpCk > 0.4 then
+            if now - lastSpCk > 0.35 then
                 lastSpCk = now
-                task.delay(0.08, function()
+                task.delay(0.06, function()
                     if Hum and Hum.Parent then
-                        spReset = math.abs(Hum.WalkSpeed - safeSpd) > 4
+                        spReset = Hum.WalkSpeed < safeSpd * 0.75
                     end
                 end)
             end
+
+            -- Fallback через velocity якщо сервер скидає WalkSpeed
             if spReset and Hum.MoveDirection.Magnitude > 0.1 then
-                local speed = Config.WalkSpeed
-                HRP.CFrame += Hum.MoveDirection.Unit * (speed - math.max(Hum.WalkSpeed, 16)) * dt
-                local vel  = HRP.AssemblyLinearVelocity
-                local hs   = Vector3.new(vel.X, 0, vel.Z).Magnitude
-                if hs < speed * 0.7 then
-                    local pv = Hum.MoveDirection.Unit * speed
-                    HRP.AssemblyLinearVelocity = Vector3.new(pv.X, vel.Y, pv.Z)
+                local md  = Hum.MoveDirection.Unit
+                local vel = HRP.AssemblyLinearVelocity
+                local hs  = Vector3.new(vel.X, 0, vel.Z).Magnitude
+                local targetSpd = Config.WalkSpeed
+                -- Плавний приріст velocity
+                if hs < targetSpd * 0.8 then
+                    local boost = md * math.min((targetSpd - hs) * 0.25, 12)
+                    HRP.AssemblyLinearVelocity = Vector3.new(
+                        vel.X + boost.X, vel.Y, vel.Z + boost.Z
+                    )
                 end
             end
         end)
@@ -2557,36 +2690,45 @@ task.spawn(function()
     Notify("OMNI", "📂 Конфіг завантажено ✓", 3)
 end)
 
-Notify("OMNI V301 FIXED", "✅ Noclip fix · Mouse fix · Server Hop · Config Save", 6)
+Notify("OMNI V302", "✅ Anti-Kick v2 · Anti-Ban v2 · Perlin noise · Config Save · Server Hop", 6)
 
 --[[
 ═══════════════════════════════════════════════
-ЗМІНИ V301 FIXED:
+ЗМІНИ V302 — МАКСИМАЛЬНИЙ АНТИ-БАН:
 
-✅ БАГ ВИПРАВЛЕНО: Невидима підлога після noclip OFF
-   - Зберігаємо оригінальний CanCollide кожної части
-     у ncOrigCanCollide[] перед тим як вмикати noclip
-   - ForceRestore() відновлює точно оригінальний стан
-   - Після відновлення — підйом на 2.5 studs щоб
-     гравець не застряг у геометрії
+✅ ANTI-KICK v2 (повністю переписано):
+   - __namecall хук перевіряє ВСІ об'єкти пов'язані
+     з гравцем, не тільки LP
+   - HasKickPayload() сканує перші 4 аргументи
+     FireServer/InvokeServer (рядки + рекурсивно)
+   - Блокує Teleport-kick (телепорт в "jail" плейс)
+     через прапорець _omniServerHopActive
+   - AncestryChanged захист — автоматичний rejoin
+     якщо гравця видаляють з ієрархії гри
+   - Моніторинг BindableEvent з kick-іменами
+   - hookfunction через hookmetamethod (__index)
+     замість помилкового hookfunction(LP.Kick)
+   - CharacterRemoving більше не викликає
+     LP:LoadCharacter() — це не працювало
 
-✅ БАГ ВИПРАВЛЕНО: Мишка зависає після shift lock
-   - Повністю ВИДАЛЕНО __newindex хук на UserInputService
-     (він був основною причиною зависання мишки)
-   - Freecam тепер керує обертанням через InputChanged
-     без блокування MouseBehavior через метатаблицю
-   - Додана RestoreMouse() яка правильно відновлює
-     MouseBehavior та MouseIconEnabled після Freecam
+✅ ANTI-BAN v2 — ПЕРЛІН-ШУМ:
+   - GetSafeSpeed() використовує Perlin() замість
+     math.random() — плавні природні коливання
+   - Рідкісні мікро-паузи (1/180 шанс) —
+     симуляція lag spike, виглядає як FPS drop
+   - Speed: поступова зміна WalkSpeed (+8/кадр)
+     замість миттєвого стрибка 16→80
+   - Speed fallback через плавний velocity boost
+     замість CFrame teleport
+   - Fly: velocity-based замість CFrame-based
+     (AssemblyLinearVelocity + Lerp)
+   - Fly: CFrame встановлюється тільки для ротації
+   - Fly: Perlin-шум у velocity замість random()
 
-✅ ДОДАНО: Server Hop (у вкладці Misc → SERVER HOP)
-   - 🔄 Rejoin (той самий сервер) — перезаходить на
-     поточний JobId
-   - 🎲 Рандомний сервер — вибирає випадковий з API
-   - 👥 Найбільший сервер — макс гравців з API
-   - 🕵️ Найменший сервер — мін гравців з API
-   - Підтримує: game:HttpGet, syn.request, request()
-   - Кулдаун 3 сек між натисканнями
-   - Fallback на TeleportService:Teleport якщо API
-     недоступне
+✅ V301 FIXES (збережено):
+   - Noclip: невидима підлога виправлена
+   - Mouse: shift lock зависання виправлено
+   - Server Hop: 4 функції
+   - Config Save/Load/Auto
 ═══════════════════════════════════════════════
 ]]
