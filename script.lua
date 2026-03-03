@@ -125,6 +125,9 @@ local Config = {
     AimAntiDetect     = true,
     SpeedJitter       = 1.5,
     FlyHeightMax      = 1800,
+    -- Safe Speed Mode
+    SafeSpeedMode     = false,  -- Обмежує швидкість до X разів від оригіналу гри
+    SafeSpeedMult     = 1.8,    -- Множник (1.8 = 80% швидше ніж оригінал)
 }
 
 local Binds = {
@@ -141,6 +144,7 @@ local State = {
     ESP=false, Spin=false, HighJump=false, Potato=false,
     FakeLag=false, Freecam=false, NoFallDamage=false,
     AntiAFK=false, AntiKick=false, InfiniteJump=false,
+    SafeSpeedMode=false,
 }
 
 -- ============================================================
@@ -154,7 +158,7 @@ local CFG_FILE = "OmniV300_Config.json"
 local SAVE_STATE_KEYS = {
     "AntiAFK","AntiKick","ESP","Hitbox","Speed","HighJump",
     "Bhop","NoFallDamage","InfiniteJump","Potato",
-    "SpeedAntiBan","HitboxRandomize","AimAntiDetect",
+    "SpeedAntiBan","HitboxRandomize","AimAntiDetect","SafeSpeedMode",
 }
 
 -- Перевірка доступності файлової системи
@@ -202,6 +206,8 @@ local function SaveConfig()
             AimAntiDetect   = Config.AimAntiDetect,
             SpeedJitter     = Config.SpeedJitter,
             FlyHeightMax    = Config.FlyHeightMax,
+            SafeSpeedMode   = Config.SafeSpeedMode,
+            SafeSpeedMult   = Config.SafeSpeedMult,
         },
         binds = SerializeBinds(),
         state = {},
@@ -281,6 +287,8 @@ local function ResetConfig()
     Config.AimAntiDetect   = true
     Config.SpeedJitter     = 1.5
     Config.FlyHeightMax    = 1800
+    Config.SafeSpeedMode   = false
+    Config.SafeSpeedMult   = 1.8
     Binds.Fly        = Enum.KeyCode.F
     Binds.Aim        = Enum.KeyCode.G
     Binds.Noclip     = Enum.KeyCode.V
@@ -531,21 +539,87 @@ LP.CharacterRemoving:Connect(function()
 end)
 
 -- ============================================================
--- ████  SPEED ANTI-BAN v2 — ПЕРЛІН-ШУМ  ████
--- Замість простого random() — плавний Перлін-шум
--- що виглядає як природне коливання FPS/Physics
+-- ████  SPEED SYSTEM  ████
+-- gameBaseSpeed — оригінальна швидкість ГРИ (не наша)
+-- Сеемплюємо до того як вмикаємо Speed,
+-- щоб SafeSpeedMode знав відносно чого рахувати ×1.8
 -- ============================================================
-local _noiseT = 0
+local _noiseT    = 0
+local gameBaseSpeed = 16  -- буде оновлено автоматично
+
+-- Автодетект оригінальної WalkSpeed гри (семплюємо раз при старті)
+task.spawn(function()
+    if not game:IsLoaded() then game.Loaded:Wait() end
+    task.wait(1.5) -- чекаємо поки гра ініціалізується
+    pcall(function()
+        local C = LP.Character or LP.CharacterAdded:Wait()
+        local H = C:WaitForChild("Humanoid", 5)
+        if H then
+            -- Семплюємо кілька разів і беремо найбільше
+            -- (деякі ігри застосовують базову швидкість не одразу)
+            local samples = {}
+            for i = 1, 5 do
+                task.wait(0.3)
+                if H and H.Parent and not State.Speed then
+                    table.insert(samples, H.WalkSpeed)
+                end
+            end
+            if #samples > 0 then
+                local maxSpd = 0
+                for _, v in pairs(samples) do
+                    if v > maxSpd then maxSpd = v end
+                end
+                -- Приймаємо тільки розумне значення (16–32 типово)
+                if maxSpd >= 4 and maxSpd <= 100 then
+                    gameBaseSpeed = maxSpd
+                end
+            end
+        end
+    end)
+end)
+
+-- Також оновлюємо gameBaseSpeed при кожному респауні
+LP.CharacterAdded:Connect(function(char)
+    task.spawn(function()
+        local H = char:WaitForChild("Humanoid", 5)
+        if not H then return end
+        task.wait(1.0)
+        if H and H.Parent and not State.Speed then
+            local spd = H.WalkSpeed
+            if spd >= 4 and spd <= 100 then
+                gameBaseSpeed = spd
+            end
+        end
+    end)
+end)
+
 local function GetSafeSpeed()
-    if not Config.SpeedAntiBan then return Config.WalkSpeed end
-    _noiseT = _noiseT + 0.008 -- дуже повільна зміна — виглядає природно
-    local n  = Perlin(_noiseT) -- діапазон приблизно -1..1
-    local jit = Config.SpeedJitter
-    -- Додаємо рідкісні мікро-паузи (симуляція lag spike)
-    if math.random(1, 180) == 1 then
-        return math.max(Config.WalkSpeed * 0.85, 14) -- коротка "підтормозка"
+    local base = Config.WalkSpeed
+
+    -- SafeSpeedMode: обмежуємо до gameBaseSpeed × SafeSpeedMult
+    -- Це головний захист від rubber-band
+    if State.SafeSpeedMode then
+        local cap = gameBaseSpeed * Config.SafeSpeedMult
+        base = math.min(base, cap)
     end
-    return math.clamp(Config.WalkSpeed + n * jit, Config.WalkSpeed * 0.9, Config.WalkSpeed * 1.1)
+
+    -- SpeedAntiBan: додаємо Perlin-шум щоб приховати патерн
+    if not Config.SpeedAntiBan then return base end
+    _noiseT = _noiseT + 0.008
+    local n   = Perlin(_noiseT)
+    local jit = Config.SpeedJitter
+    if math.random(1, 220) == 1 then
+        return math.max(base * 0.82, 14) -- мікро-пауза
+    end
+    return math.clamp(base + n * jit, base * 0.9, base * 1.12)
+end
+
+-- Повертає поточний ефективний ліміт для відображення в UI
+local function GetEffectiveCap()
+    if State.SafeSpeedMode then
+        return math.floor(gameBaseSpeed * Config.SafeSpeedMult)
+    end
+    return Config.WalkSpeed
 end
 
 -- ============================================================
@@ -1029,6 +1103,9 @@ local function Toggle(nm)
         if nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0
         end
+        if nm == "SafeSpeedMode" then
+            -- нічого не потрібно скидати при вимиканні
+        end
     end
 
     -- === ВМИКАННЯ ===
@@ -1429,7 +1506,7 @@ tTit.BackgroundTransparency = 1
 tTit.TextColor3           = P.wht
 tTit.Font                 = Enum.Font.GothamBlack
 tTit.TextSize             = 14
-tTit.Text                 = "OMNI V301 FIXED"
+tTit.Text                 = "OMNI V302"
 tTit.TextXAlignment       = Enum.TextXAlignment.Left
 tTit.ZIndex               = 3
 
@@ -1440,7 +1517,7 @@ tSub.BackgroundTransparency = 1
 tSub.TextColor3           = P.dim
 tSub.Font                 = Enum.Font.Gotham
 tSub.TextSize             = 9
-tSub.Text                 = IsMob and "MOBILE · ANTI-BAN · SERVER HOP" or "UNIVERSAL · ANTI-BAN · SERVER HOP"
+tSub.Text                 = IsMob and "MOBILE · SAFE SPEED · SERVER HOP" or "UNIVERSAL · SAFE SPEED · SERVER HOP"
 tSub.TextXAlignment       = Enum.TextXAlignment.Left
 tSub.ZIndex               = 3
 
@@ -2057,6 +2134,56 @@ AddHdr("Move","👻","PHYSICS")
 MkToggleBind("Move","👻","Noclip","Noclip")
 MkToggle("Move","🛡","No Fall Damage","NoFallDamage")
 
+AddHdr("Move","🛡","SAFE SPEED MODE")
+MkToggle("Move","🛡","Safe Speed (Anti Rubber-Band)","SafeSpeedMode")
+MkSlider("Move","✖","Множник (×base)",10,40,math.floor(Config.SafeSpeedMult*10),function(v)
+    Config.SafeSpeedMult = v / 10
+end)
+
+-- Живий індикатор: показує базову швидкість гри і поточний ефективний ліміт
+do
+    local pg = TabPages["Move"]
+    local infoF = Instance.new("Frame", pg)
+    infoF.Size             = UDim2.new(0.95, 0, 0, IsMob and 44 or 36)
+    infoF.BackgroundColor3 = Color3.fromRGB(14, 18, 14)
+    infoF.BorderSizePixel  = 0
+    Instance.new("UICorner", infoF).CornerRadius = UDim.new(0, 8)
+    local infoSt = Instance.new("UIStroke", infoF)
+    infoSt.Color = Color3.fromRGB(0, 160, 80); infoSt.Transparency = 0.5
+
+    local infoLbl = Instance.new("TextLabel", infoF)
+    infoLbl.Size                 = UDim2.new(1, -10, 1, 0)
+    infoLbl.Position             = UDim2.new(0, 5, 0, 0)
+    infoLbl.BackgroundTransparency = 1
+    infoLbl.TextColor3           = Color3.fromRGB(100, 230, 140)
+    infoLbl.Font                 = Enum.Font.GothamBold
+    infoLbl.TextSize             = IsMob and 10 or 9
+    infoLbl.TextXAlignment       = Enum.TextXAlignment.Left
+    infoLbl.TextWrapped          = true
+    infoLbl.Text                 = "📊 Base: ? | Cap: ? | Set: ?"
+
+    -- Оновлюємо кожну секунду
+    task.spawn(function()
+        while task.wait(0.8) do
+            pcall(function()
+                local cap    = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
+                local setSpd = Config.WalkSpeed
+                local active = State.SafeSpeedMode
+                local eff    = active and math.min(setSpd, cap) or setSpd
+                local warn   = (setSpd > cap and active) and " ⚠️" or ""
+                infoLbl.Text = string.format(
+                    "📊 Base гри: %d  |  Cap (×%.1f): %d%s
+⚡ Встановлено: %d  →  Ефективно: %d",
+                    math.floor(gameBaseSpeed), Config.SafeSpeedMult, cap, warn, setSpd, eff
+                )
+                infoLbl.TextColor3 = (setSpd > cap and active)
+                    and Color3.fromRGB(255, 180, 50)
+                    or  Color3.fromRGB(100, 230, 140)
+            end)
+        end
+    end)
+end
+
 AddHdr("Misc","🔧","EFFECTS")
 MkToggle("Misc","🌀","Spin","Spin")
 MkToggle("Misc","🥔","Potato Mode","Potato")
@@ -2183,6 +2310,7 @@ MkToggle("Config","🎯","Aim Anti-Detect","AimAntiDetect")
 State.SpeedAntiBan    = Config.SpeedAntiBan
 State.HitboxRandomize = Config.HitboxRandomize
 State.AimAntiDetect   = Config.AimAntiDetect
+State.SafeSpeedMode   = Config.SafeSpeedMode
 
 do
     local orig = Toggle
@@ -2206,6 +2334,18 @@ do
             State.AimAntiDetect  = Config.AimAntiDetect
             UpdVis(nm)
             Notify(nm, Config.AimAntiDetect and "ON ✓" or "OFF ✗", 1)
+            return
+        end
+        if nm == "SafeSpeedMode" then
+            Config.SafeSpeedMode = not Config.SafeSpeedMode
+            State.SafeSpeedMode  = Config.SafeSpeedMode
+            UpdVis(nm)
+            if Config.SafeSpeedMode then
+                local cap = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
+                Notify("Safe Speed", "🛡 ON · Cap: "..cap.." (base "..math.floor(gameBaseSpeed).."×"..Config.SafeSpeedMult..")", 3)
+            else
+                Notify("Safe Speed", "🛡 OFF · Без обмежень", 2)
+            end
             return
         end
         orig(nm)
@@ -2513,28 +2653,60 @@ RunService.Heartbeat:Connect(function(dt)
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
+            Hum.WalkSpeed   = targetSpd
 
-            -- ✅ FIX: Завжди форсуємо WalkSpeed напряму кожен кадр.
-            -- Плавний step конфліктував з серверним скидом до 16 —
-            -- в результаті швидкість зависала на ~24.
-            -- Прямий set як в слайдері — єдиний надійний метод.
-            Hum.WalkSpeed = targetSpd
-
-            -- ✅ FIX: Завжди форсуємо velocity коли рухаємось.
-            -- Це обходить серверний anticheat який скидає WalkSpeed —
-            -- навіть якщо WalkSpeed знову стане 16, velocity вже задано.
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local md  = Hum.MoveDirection
                 local vel = HRP.AssemblyLinearVelocity
                 local hs  = Vector3.new(vel.X, 0, vel.Z).Magnitude
 
-                -- Тільки прискорюємо якщо реальна швидкість нижче цільової
-                if hs < targetSpd * 0.92 then
-                    local want = md * targetSpd
-                    -- Плавне виставлення без різких стрибків
-                    local newVX = vel.X + (want.X - vel.X) * 0.45
-                    local newVZ = vel.Z + (want.Z - vel.Z) * 0.45
-                    HRP.AssemblyLinearVelocity = Vector3.new(newVX, vel.Y, newVZ)
+                if State.SafeSpeedMode then
+                    -- ══════════════════════════════════════════════
+                    -- SAFE SPEED MODE:
+                    -- Рухаємось "бурстами" — коротка пауза кожні
+                    -- ~0.55с. Це робить середню швидкість схожою
+                    -- на легітимну, але суб'єктивно відчувається
+                    -- як постійна підвищена швидкість.
+                    -- Сервер перевіряє позицію ~ кожні 0.1–0.5с,
+                    -- і бурст-паттерн не виходить за межі cap.
+                    -- ══════════════════════════════════════════════
+                    local now     = tick()
+                    local cycle   = now % 0.60          -- цикл 600мс
+                    local onTime  = 0.60 * 0.82         -- 492мс руху
+                    -- Під час паузи (118мс) velocity поступово гасимо
+                    if cycle > onTime then
+                        -- мікро-пауза: плавно гальмуємо
+                        local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
+                        local want  = md * targetSpd * math.max(brake, 0.15)
+                        local lerpF = 0.30
+                        HRP.AssemblyLinearVelocity = Vector3.new(
+                            vel.X + (want.X - vel.X) * lerpF,
+                            vel.Y,
+                            vel.Z + (want.Z - vel.Z) * lerpF
+                        )
+                    else
+                        -- активна фаза: повна швидкість
+                        if hs < targetSpd * 0.92 then
+                            local want = md * targetSpd
+                            HRP.AssemblyLinearVelocity = Vector3.new(
+                                vel.X + (want.X - vel.X) * 0.50,
+                                vel.Y,
+                                vel.Z + (want.Z - vel.Z) * 0.50
+                            )
+                        end
+                    end
+                else
+                    -- ══════════════════════════════════════════════
+                    -- ЗВИЧАЙНИЙ РЕЖИМ: просто форсуємо velocity
+                    -- ══════════════════════════════════════════════
+                    if hs < targetSpd * 0.92 then
+                        local want = md * targetSpd
+                        HRP.AssemblyLinearVelocity = Vector3.new(
+                            vel.X + (want.X - vel.X) * 0.45,
+                            vel.Y,
+                            vel.Z + (want.Z - vel.Z) * 0.45
+                        )
+                    end
                 end
             end
         end)
