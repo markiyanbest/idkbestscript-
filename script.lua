@@ -658,6 +658,24 @@ local function RestoreMouse()
     end)
 end
 
+-- FIX: Shift Lock відновлення миші
+-- Коли Roblox Shift Lock вимикається, він встановлює MouseBehavior=Default
+-- але після Freecam/скриптів миша може залишитись заблокованою
+-- Моніторимо зміну MouseBehavior і відновлюємо якщо треба
+local _lastMouseBehavior = UIS.MouseBehavior
+UIS:GetPropertyChangedSignal("MouseBehavior"):Connect(function()
+    local cur = UIS.MouseBehavior
+    -- Якщо MouseBehavior змінився на LockCenter (ShiftLock увімкнувся)
+    -- і потім назад на Default (ShiftLock вимкнувся) — миша має бути вільна
+    if cur == Enum.MouseBehavior.Default and not State.Freecam then
+        -- Переконуємось що іконка миші видима
+        task.delay(0.05, function()
+            pcall(function() UIS.MouseIconEnabled = true end)
+        end)
+    end
+    _lastMouseBehavior = cur
+end)
+
 local function Toggle(nm)
     State[nm] = not State[nm]
     local C = LP.Character
@@ -780,20 +798,33 @@ end
 -- Оголошуємо ДО CharacterAdded щоб функція була доступна
 -- ============================================================
 local _hjConn = nil
+local _hjFired = false
 function SetupHJDetector()
     if _hjConn then _hjConn:Disconnect(); _hjConn=nil end
+    _hjFired = false
     local C=LP.Character; if not C then return end
     local H=C:FindFirstChildOfClass("Humanoid"); if not H then return end
     _hjConn = H.StateChanged:Connect(function(_, newState)
+        -- скидаємо при приземленні
+        if newState==Enum.HumanoidStateType.Landed
+            or newState==Enum.HumanoidStateType.Running
+            or newState==Enum.HumanoidStateType.RunningNoPhysics then
+            _hjFired = false; return
+        end
         if newState ~= Enum.HumanoidStateType.Jumping then return end
         if not State.HighJump or State.Fly then return end
+        if _hjFired then return end
+        _hjFired = true
         task.defer(function()
-            if not State.HighJump then return end
+            if not State.HighJump then _hjFired=false; return end
             local R2=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if R2 then
                 local v=R2.AssemblyLinearVelocity
-                R2.AssemblyLinearVelocity=Vector3.new(v.X, Config.JumpPower, v.Z)
+                if v.Y >= 0 then
+                    R2.AssemblyLinearVelocity=Vector3.new(v.X, Config.JumpPower, v.Z)
+                end
             end
+            task.delay(0.6, function() _hjFired=false end)
         end)
     end)
 end
@@ -1764,20 +1795,11 @@ UIS.JumpRequest:Connect(function()
     if not H or not R or H.Health<=0 or State.Fly or State.Freecam then return end
 
     if State.HighJump then
+        -- Тільки встановлюємо JumpPower — velocity форсує SetupHJDetector
         pcall(function()
             H.UseJumpPower=true
             H.JumpPower=Config.JumpPower
             pcall(function() H.JumpHeight=Config.JumpPower*0.35 end)
-        end)
-        task.delay(0.03, function()
-            if not State.HighJump then return end
-            local R2=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-            if R2 then
-                local v=R2.AssemblyLinearVelocity
-                if v.Y>0 then
-                    R2.AssemblyLinearVelocity=Vector3.new(v.X, Config.JumpPower, v.Z)
-                end
-            end
         end)
     end
 
@@ -2009,20 +2031,13 @@ RunService.Heartbeat:Connect(function(dt)
         end)
     end
 
-    -- FIX V303: HighJump в Heartbeat — форсуємо velocity під час польоту
+    -- HighJump: тільки підтримуємо JumpPower/JumpHeight
+    -- Velocity форсується одноразово в SetupHJDetector (StateChanged)
     if State.HighJump and not State.Fly then
         pcall(function()
             Hum.UseJumpPower=true
             Hum.JumpPower=Config.JumpPower
             pcall(function() Hum.JumpHeight=Config.JumpPower*0.35 end)
-            local st=Hum:GetState()
-            if st==Enum.HumanoidStateType.Jumping or st==Enum.HumanoidStateType.Freefall then
-                local v=HRP.AssemblyLinearVelocity
-                local tY=Config.JumpPower
-                if v.Y>0 and v.Y<tY*0.9 then
-                    HRP.AssemblyLinearVelocity=Vector3.new(v.X,tY,v.Z)
-                end
-            end
         end)
     end
 
