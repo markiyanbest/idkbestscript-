@@ -27,12 +27,19 @@ local Camera = Workspace.CurrentCamera
 -- SAFE ENV DETECTION
 -- ============================================================
 local ENV = {}
-ENV.hasGetRawMeta   = (getrawmetatable ~= nil)
-ENV.hasSetReadOnly  = (setreadonly ~= nil)
-ENV.hasNewCClosure  = (newcclosure ~= nil)
-ENV.hasGetNameCall  = (getnamecallmethod ~= nil)
-ENV.hasSynapse      = (syn ~= nil) or (SENTINEL_V2 ~= nil)
-ENV.hasHookFunction = (hookfunction ~= nil)
+local function _envCheck(fn)
+    local ok, v = pcall(fn)
+    return ok and v == true
+end
+-- Всі перевірки через pcall — деякі executor-и кидають error
+-- при зверненні до невизначених глобальних (syn, SENTINEL_V2 і т.д.)
+ENV.hasGetRawMeta   = _envCheck(function() return getrawmetatable ~= nil end)
+ENV.hasSetReadOnly  = _envCheck(function() return setreadonly ~= nil end)
+ENV.hasNewCClosure  = _envCheck(function() return newcclosure ~= nil end)
+ENV.hasGetNameCall  = _envCheck(function() return getnamecallmethod ~= nil end)
+ENV.hasHookFunction = _envCheck(function() return hookfunction ~= nil end)
+ENV.hasSynapse      = _envCheck(function() return syn ~= nil end)
+                   or _envCheck(function() return SENTINEL_V2 ~= nil end)
 
 -- ============================================================
 -- CLEANUP СТАРИХ ВЕРСІЙ
@@ -487,16 +494,29 @@ if ENV.hasHookFunction then
     end)
 end
 
--- ── Захист від AncestryChanged (коли гравця видаляють з ієрархії) ──
--- Деякі античіти кікають через game.Players:RemoveUser()
+-- ── Захист від AncestryChanged ──
+-- ✅ FIX: Додаємо delay 0.4s перед дією.
+-- LP.AncestryChanged з newParent==nil ТАКОЖ спрацьовує
+-- при звичайній смерті в деяких іграх (тимчасове видалення).
+-- Після delay перевіряємо чи LP.Parent справді nil —
+-- якщо гравець вже респавнувся, LP.Parent буде game.Players.
+local _akLastAncestry = 0
 LP.AncestryChanged:Connect(function(_, newParent)
-    if akOn and newParent == nil then
-        warn("[AK] AncestryChanged kick detected — respawning")
-        -- Спробуємо "пережити" видалення через швидкий rejoin
-        pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
-        end)
-    end
+    if not akOn or newParent ~= nil then return end
+    local now = tick()
+    -- Ігноруємо якщо подія вже оброблялась < 2с тому
+    if now - _akLastAncestry < 2 then return end
+    _akLastAncestry = now
+    task.delay(0.45, function()
+        -- Перевіряємо через 450мс: якщо LP ще nil — це справжній кік
+        if LP.Parent == nil then
+            warn("[AK] Kick підтверджено (AncestryChanged) — rejoin")
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
+            end)
+        end
+        -- Якщо LP.Parent == game.Players — звичайна смерть, нічого не робимо
+    end)
 end)
 
 -- ── Моніторинг спроб кіку через BindableEvent ──
@@ -528,15 +548,9 @@ task.spawn(function()
     end
 end)
 
--- ── Захист від CharacterRemoving (без LP:LoadCharacter — це не працює) ──
--- Замість цього — логуємо і показуємо попередження
-LP.CharacterRemoving:Connect(function()
-    if akOn then
-        warn("[AK] CharacterRemoving detected while AntiKick is ON")
-        -- NB: LP:LoadCharacter() не можна викликати з клієнта в більшості ігор
-        -- Тому просто логуємо — справжній кік зупиняється через __namecall
-    end
-end)
+-- CharacterRemoving: більше не логуємо —
+-- warn при кожній смерті не несе корисної інформації
+-- і засмічував консоль.
 
 -- ============================================================
 -- ████  SPEED SYSTEM  ████
@@ -578,20 +592,7 @@ task.spawn(function()
     end)
 end)
 
--- Також оновлюємо gameBaseSpeed при кожному респауні
-LP.CharacterAdded:Connect(function(char)
-    task.spawn(function()
-        local H = char:WaitForChild("Humanoid", 5)
-        if not H then return end
-        task.wait(1.0)
-        if H and H.Parent and not State.Speed then
-            local spd = H.WalkSpeed
-            if spd >= 4 and spd <= 100 then
-                gameBaseSpeed = spd
-            end
-        end
-    end)
-end)
+-- gameBaseSpeed оновлюється в основному CharacterAdded handler нижче
 
 local function GetSafeSpeed()
     local base = Config.WalkSpeed
@@ -1186,23 +1187,28 @@ end
 -- ============================================================
 -- ANTI-AFK
 -- ============================================================
+-- ✅ FIX: Більше не використовуємо ClickButton2 —
+-- він тригерив game-скрипти які друкували "." в консоль.
+-- Замість цього — симулюємо мінімальний рух мишки (0px),
+-- який скидає AFK-таймер без будь-яких видимих ефектів.
+local _afkFlip = false
+local function DoAntiAFK()
+    pcall(function()
+        VirtualUser:CaptureController()
+        -- Мікро-рух мишки туди-назад: скидає idle без кліків
+        _afkFlip = not _afkFlip
+        local d = _afkFlip and Vector2.new(1, 0) or Vector2.new(-1, 0)
+        VirtualUser:MoveMouse(d)
+    end)
+end
+
 LP.Idled:Connect(function()
-    if State.AntiAFK then
-        pcall(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
-        end)
-    end
+    if State.AntiAFK then DoAntiAFK() end
 end)
 
 task.spawn(function()
-    while task.wait(50 + math.random() * 10) do
-        if State.AntiAFK then
-            pcall(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new())
-            end)
-        end
+    while task.wait(48 + math.random() * 14) do
+        if State.AntiAFK then DoAntiAFK() end
     end
 end)
 
@@ -1223,6 +1229,21 @@ LP.CharacterAdded:Connect(function(char)
     if hum then
         Camera.CameraType    = Enum.CameraType.Custom
         Camera.CameraSubject = hum
+
+        -- ✅ Семплюємо gameBaseSpeed після респавну
+        -- Чекаємо 1.2с щоб гра встигла застосувати свою швидкість
+        task.spawn(function()
+            task.wait(1.2)
+            pcall(function()
+                if hum and hum.Parent and not State.Speed then
+                    local spd = hum.WalkSpeed
+                    if spd >= 4 and spd <= 100 then
+                        gameBaseSpeed = spd
+                    end
+                end
+            end)
+        end)
+
         task.wait(0.5)
         if State.Speed  then pcall(function() hum.WalkSpeed = GetSafeSpeed() end) end
         if State.HighJump then
@@ -2859,7 +2880,7 @@ task.spawn(function()
     Notify("OMNI", "📂 Конфіг завантажено ✓", 3)
 end)
 
-Notify("OMNI V302", "✅ Anti-Kick v2 · Anti-Ban v2 · Perlin noise · Config Save · Server Hop", 6)
+Notify("OMNI V302", "✅ Завантажено · Config Save · Server Hop · Anti-Ban", 5)
 
 --[[
 ═══════════════════════════════════════════════
