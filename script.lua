@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V304 — MONSTER EDITION (HighJump Fixed)        ██
+-- ██  OMNI V306 — MONSTER EDITION (HighJump Fixed)        ██
 -- ██  Anti-Ban · Anti-Kick · Universal · Mobile+PC        ██
 -- ██  FIX: HighJump StateChanged+velocity (надійний)      ██
 -- ██████████████████████████████████████████████████████████
@@ -127,7 +127,7 @@ local State = {
     SafeSpeedMode=false,
 }
 
-local CFG_FILE = "OmniV304_Config.json"
+local CFG_FILE = "OmniV306_Config.json"
 local SAVE_STATE_KEYS = {
     "AntiAFK","ESP","Hitbox","Speed","HighJump",
     "Bhop","NoFallDamage","InfiniteJump","Potato",
@@ -525,7 +525,7 @@ local function RestoreHB()
     hbParts = {}
 end
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.1) do
         if not State.Hitbox then continue end
         local s = Config.HitboxSize
         for _, p in pairs(Players:GetPlayers()) do
@@ -534,7 +534,7 @@ task.spawn(function()
                 if v:IsA("BasePart")
                     and not (v.Parent and (v.Parent:IsA("Accessory") or v.Parent:IsA("Hat")))
                     and v.Size.Magnitude > 0.3
-                    and v.Size.X < s - 0.2 then
+                    and v.Size.X < s * 0.95 then  -- FIX: менш строгий фільтр
                     ApplyHB(v)
                 end
             end
@@ -1032,7 +1032,7 @@ tIco.Font=Enum.Font.GothamBlack; tIco.TextColor3=P.acc; tIco.ZIndex=3
 local tTit = Instance.new("TextLabel", TB)
 tTit.Size=UDim2.new(1,-90,0,18); tTit.Position=UDim2.new(0,40,0,5)
 tTit.BackgroundTransparency=1; tTit.TextColor3=P.wht; tTit.Font=Enum.Font.GothamBlack
-tTit.TextSize=14; tTit.Text="OMNI V304"; tTit.TextXAlignment=Enum.TextXAlignment.Left; tTit.ZIndex=3
+tTit.TextSize=14; tTit.Text="OMNI V306"; tTit.TextXAlignment=Enum.TextXAlignment.Left; tTit.ZIndex=3
 
 local tSub = Instance.new("TextLabel", TB)
 tSub.Size=UDim2.new(1,-90,0,12); tSub.Position=UDim2.new(0,40,0,24)
@@ -1630,7 +1630,7 @@ do
     local autoLbl=Instance.new("TextLabel",pg)
     autoLbl.Size=UDim2.new(0.95,0,0,IsMob and 18 or 14); autoLbl.BackgroundTransparency=1
     autoLbl.TextColor3=P.dim; autoLbl.Font=Enum.Font.Gotham; autoLbl.TextSize=IsMob and 10 or 9
-    autoLbl.Text="⏱ Авто-зберігання кожні 60 сек  ·  OmniV304_Config.json"
+    autoLbl.Text="⏱ Авто-зберігання кожні 60 сек  ·  OmniV306_Config.json"
     autoLbl.TextXAlignment=Enum.TextXAlignment.Center; autoLbl.TextWrapped=true
 end
 
@@ -1763,6 +1763,26 @@ UIS.JumpRequest:Connect(function()
     local H=C and C:FindFirstChildOfClass("Humanoid")
     local R=C and C:FindFirstChild("HumanoidRootPart")
     if not H or not R or H.Health<=0 or State.Fly or State.Freecam then return end
+
+    -- BHOP: при кожному натисканні пробілу даємо буст вперед
+    if State.Bhop then
+        pcall(function()
+            local now2 = tick()
+            if H.FloorMaterial ~= Enum.Material.Air and now2 - lastBhop > 0.06 then
+                local v  = R.AssemblyLinearVelocity
+                local md = H.MoveDirection.Magnitude > 0.1
+                    and H.MoveDirection.Unit
+                    or  R.CFrame.LookVector
+                H:ChangeState(Enum.HumanoidStateType.Jumping)
+                R.AssemblyLinearVelocity = Vector3.new(
+                    v.X + md.X * (6 + math.random() * 4),
+                    Config.BhopPower + math.random(-4, 4),
+                    v.Z + md.Z * (6 + math.random() * 4)
+                )
+                lastBhop = now2
+            end
+        end)
+    end
 
     if State.HighJump then
         pcall(function()
@@ -1974,77 +1994,54 @@ RunService.Heartbeat:Connect(function(dt)
 
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
-            local targetSpd=GetSafeSpeed()
-            Hum.WalkSpeed=targetSpd
-            if Hum.MoveDirection.Magnitude>0.1 then
-                local md=Hum.MoveDirection
-                local vel=HRP.AssemblyLinearVelocity
-                local hs=Vector3.new(vel.X,0,vel.Z).Magnitude
+            local targetSpd = GetSafeSpeed()
+            -- Форсуємо WalkSpeed кожен кадр — деякі ігри скидають його постійно
+            Hum.WalkSpeed = targetSpd
+
+            if Hum.MoveDirection.Magnitude > 0.1 then
+                local md  = Hum.MoveDirection
+                local vel = HRP.AssemblyLinearVelocity
+                local hs  = Vector3.new(vel.X, 0, vel.Z).Magnitude
+
                 if State.SafeSpeedMode then
-                    local now2=tick()
-                    local cycle=now2%0.60
-                    local onTime=0.60*0.82
-                    if cycle>onTime then
-                        local brake=1-((cycle-onTime)/(0.60-onTime))
-                        local want=md*targetSpd*math.max(brake,0.15)
-                        HRP.AssemblyLinearVelocity=Vector3.new(
-                            vel.X+(want.X-vel.X)*0.30, vel.Y, vel.Z+(want.Z-vel.Z)*0.30
+                    -- Burst режим: 82% часу рухаємось, 18% гальмуємо
+                    local now2   = tick()
+                    local cycle  = now2 % 0.60
+                    local onTime = 0.60 * 0.82
+                    if cycle > onTime then
+                        local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
+                        local want  = md * targetSpd * math.max(brake, 0.15)
+                        HRP.AssemblyLinearVelocity = Vector3.new(
+                            vel.X + (want.X - vel.X) * 0.5, vel.Y, vel.Z + (want.Z - vel.Z) * 0.5
                         )
                     else
-                        if hs<targetSpd*0.92 then
-                            local want=md*targetSpd
-                            HRP.AssemblyLinearVelocity=Vector3.new(
-                                vel.X+(want.X-vel.X)*0.50, vel.Y, vel.Z+(want.Z-vel.Z)*0.50
-                            )
-                        end
-                    end
-                else
-                    if hs<targetSpd*0.92 then
-                        local want=md*targetSpd
-                        HRP.AssemblyLinearVelocity=Vector3.new(
-                            vel.X+(want.X-vel.X)*0.45, vel.Y, vel.Z+(want.Z-vel.Z)*0.45
+                        local want = md * targetSpd
+                        HRP.AssemblyLinearVelocity = Vector3.new(
+                            vel.X + (want.X - vel.X) * 0.8, vel.Y, vel.Z + (want.Z - vel.Z) * 0.8
                         )
                     end
+                else
+                    -- Звичайний режим: агресивно форсуємо velocity
+                    local want = md * targetSpd
+                    HRP.AssemblyLinearVelocity = Vector3.new(
+                        vel.X + (want.X - vel.X) * 0.85, vel.Y, vel.Z + (want.Z - vel.Z) * 0.85
+                    )
                 end
             end
         end)
     end
 
-    -- FIX V303: HighJump в Heartbeat — форсуємо velocity під час польоту
+    -- HighJump в Heartbeat — тільки JumpPower/JumpHeight, БЕЗ velocity
+    -- Velocity форсується тільки в StateChanged і JumpRequest
     if State.HighJump and not State.Fly then
         pcall(function()
-            Hum.UseJumpPower=true
-            Hum.JumpPower=Config.JumpPower
-            pcall(function() Hum.JumpHeight=Config.JumpPower*0.35 end)
-            local st=Hum:GetState()
-            if st==Enum.HumanoidStateType.Jumping or st==Enum.HumanoidStateType.Freefall then
-                local v=HRP.AssemblyLinearVelocity
-                local tY=Config.JumpPower
-                if v.Y>0 and v.Y<tY*0.9 then
-                    HRP.AssemblyLinearVelocity=Vector3.new(v.X,tY,v.Z)
-                end
-            end
+            Hum.UseJumpPower = true
+            Hum.JumpPower    = Config.JumpPower
+            pcall(function() Hum.JumpHeight = Config.JumpPower * 0.35 end)
         end)
     end
 
-    if State.Bhop and not State.Fly and not State.Freecam then
-        pcall(function()
-            if Hum.MoveDirection.Magnitude>0.1 then
-                local now2=tick()
-                if Hum.FloorMaterial~=Enum.Material.Air and now2-lastBhop>0.06 then
-                    Hum:ChangeState(Enum.HumanoidStateType.Jumping)
-                    local v=HRP.AssemblyLinearVelocity
-                    local md=Hum.MoveDirection.Unit
-                    HRP.AssemblyLinearVelocity=Vector3.new(
-                        v.X+md.X*(4+math.random()*3),
-                        Config.BhopPower+math.random(-6,6),
-                        v.Z+md.Z*(4+math.random()*3)
-                    )
-                    lastBhop=now2
-                end
-            end
-        end)
-    end
+    -- Bhop тепер в JumpRequest (при натисканні пробілу)
 
     if State.NoFallDamage then
         pcall(function()
@@ -2118,4 +2115,4 @@ task.spawn(function()
     Notify("OMNI","📂 Конфіг завантажено ✓",3)
 end)
 
-Notify("OMNI V304","✅ HighJump Fix · Anti-Ban · Server Hop · Config Save",5)
+Notify("OMNI V306","✅ HighJump Fix · Anti-Ban · Server Hop · Config Save",5)
