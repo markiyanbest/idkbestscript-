@@ -787,6 +787,34 @@ local function ClearESP()
 end
 
 -- ESP update loop — runs every 0.2s to avoid lag
+-- Also listens to CharacterAdded so ESP rebuilds instantly on respawn
+
+local function ESP_RemovePlayer(p)
+    local ca = ESPCache[p]
+    if ca then
+        pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
+        pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
+        ESPCache[p] = nil
+    end
+end
+
+-- Hook CharacterAdded for all current + future players
+local function ESP_HookPlayer(p)
+    if p == LP then return end
+    p.CharacterAdded:Connect(function()
+        -- Wipe old ESP entry so the update loop rebuilds it for the new character
+        ESP_RemovePlayer(p)
+    end)
+    p.CharacterRemoving:Connect(function()
+        ESP_RemovePlayer(p)
+    end)
+end
+
+for _, p in pairs(Players:GetPlayers()) do
+    ESP_HookPlayer(p)
+end
+Players.PlayerAdded:Connect(ESP_HookPlayer)
+
 task.spawn(function()
     while task.wait(0.2) do
         if not State.ESP then continue end
@@ -802,17 +830,19 @@ task.spawn(function()
 
             -- Player has no valid character → remove entry
             if not char or not head or not hum then
-                local ca = ESPCache[p]
-                if ca then
-                    pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
-                    pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
-                    ESPCache[p] = nil
-                end
+                ESP_RemovePlayer(p)
                 continue
             end
 
-            -- Check if cache is still valid
+            -- Detect character swap (respawn = new char object)
             local ca = ESPCache[p]
+            if ca and ca.char ~= char then
+                -- Character changed — wipe and rebuild
+                ESP_RemovePlayer(p)
+                ca = nil
+            end
+
+            -- Check if cache is still valid
             local needRebuild = not ca
                 or not ca.bb or not ca.bb.Parent
                 or not ca.lbl or not ca.lbl.Parent
@@ -856,7 +886,7 @@ task.spawn(function()
                 lbl.ZIndex                = 5
                 lbl.Parent                = bb
 
-                ESPCache[p] = {hl = hl, bb = bb, lbl = lbl}
+                ESPCache[p] = {hl = hl, bb = bb, lbl = lbl, char = char}
                 ca = ESPCache[p]
             end
 
@@ -929,12 +959,7 @@ task.spawn(function()
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    local ca = ESPCache[p]
-    if ca then
-        pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
-        pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
-        ESPCache[p] = nil
-    end
+    ESP_RemovePlayer(p)
 end)
 
 -- ============================================================
@@ -1312,83 +1337,55 @@ local function Toggle(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
-            -- LAG SPIKE FakeLag — works in air, ragdoll, fly, knocked back
-            -- Periodically freezes all body parts (spike), then releases.
-            -- No state restrictions — anchors anywhere, any condition.
+            -- RUBBER-BAND LAG SIMULATION
+            -- You move normally. Every N frames a saved "server position" is broadcast
+            -- (by teleporting you there for 1 frame then back) creating a rubber-band pop.
+            -- To others on the server your position update packet is delayed/jumpy.
             _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
+                local cr    = LP.Character
+                local rp    = cr and cr:FindFirstChild("HumanoidRootPart")
+                if not rp then return end
+
+                -- "Server" remembers where you were ~200-400ms ago
+                local serverCF   = rp.CFrame
+                local serverVel  = Vector3.zero
+                local lastSave   = tick()
+                local saveInterval = math.random(18, 35) / 100  -- 180-350ms lag
+
                 while State.FakeLag and _fakeLagToken == myToken do
-                    -- Wait between spikes (simulate random lag intervals)
-                    task.wait(math.random(6, 18) / 100)
-                    if not (State.FakeLag and _fakeLagToken == myToken) then break end
+                    cr = LP.Character
+                    rp = cr and cr:FindFirstChild("HumanoidRootPart")
+                    if not rp then task.wait(0.05) continue end
 
-                    local cr = LP.Character
-                    if not cr then task.wait(0.05) continue end
+                    local now = tick()
+                    if now - lastSave >= saveInterval then
+                        -- "Server" gets your old position, then rubber-bands you there for 1 frame
+                        local realCF  = rp.CFrame
+                        local realVel = rp.AssemblyLinearVelocity
 
-                    -- Snapshot + freeze ALL parts instantly
-                    local frozen = {}
-                    for _, v in pairs(cr:GetDescendants()) do
-                        if v:IsA("BasePart") then
-                            frozen[v] = {
-                                cf  = v.CFrame,
-                                vel = v.AssemblyLinearVelocity,
-                                ang = v.AssemblyAngularVelocity,
-                            }
-                            pcall(function()
-                                v.Anchored                = true
-                                v.AssemblyLinearVelocity  = Vector3.zero
-                                v.AssemblyAngularVelocity = Vector3.zero
-                            end)
-                        end
-                    end
+                        -- Brief snap to server position (1 frame = rubberbanding flicker)
+                        pcall(function()
+                            rp.CFrame                 = serverCF
+                            rp.AssemblyLinearVelocity = serverVel
+                        end)
+                        RunService.Heartbeat:Wait()
 
-                    -- Hold freeze for spike duration
-                    local spikeDur = math.random(4, 14) / 100
-                    local t0 = tick()
-                    while tick() - t0 < spikeDur do
-                        cr = LP.Character
-                        if not cr then break end
-                        -- Keep enforcing freeze every frame so physics can't escape
-                        for v, data in pairs(frozen) do
-                            if v and v.Parent then
-                                pcall(function()
-                                    v.Anchored                = true
-                                    v.CFrame                  = data.cf
-                                    v.AssemblyLinearVelocity  = Vector3.zero
-                                    v.AssemblyAngularVelocity = Vector3.zero
-                                end)
-                            end
-                        end
+                        -- Snap back to real position immediately
+                        pcall(function()
+                            rp.CFrame                 = realCF
+                            rp.AssemblyLinearVelocity = realVel
+                        end)
+
+                        -- Save current as new "server checkpoint"
+                        serverCF       = realCF
+                        serverVel      = realVel
+                        lastSave       = now
+                        saveInterval   = math.random(14, 40) / 100  -- vary next lag interval
+                    else
                         RunService.Heartbeat:Wait()
                     end
-
-                    -- Release — restore original velocities so movement continues naturally
-                    cr = LP.Character
-                    if cr then
-                        for v, data in pairs(frozen) do
-                            if v and v.Parent then
-                                pcall(function()
-                                    v.Anchored                = false
-                                    v.AssemblyLinearVelocity  = data.vel
-                                    v.AssemblyAngularVelocity = data.ang
-                                end)
-                            end
-                        end
-                    end
-                    frozen = nil
-                end
-
-                -- Final cleanup on toggle off
-                local cr = LP.Character
-                if cr then
-                    for _, v in pairs(cr:GetDescendants()) do
-                        if v:IsA("BasePart") then
-                            pcall(function() v.Anchored = false end)
-                        end
-                    end
-                    local hm = cr:FindFirstChildOfClass("Humanoid")
-                    if hm then pcall(function() hm.PlatformStand = false end) end
                 end
             end)
         elseif nm == "Noclip" then
