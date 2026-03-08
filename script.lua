@@ -1257,7 +1257,18 @@ local function Toggle(nm)
             end
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
-            if R then pcall(function() R.Anchored = false end) end
+            local cr = LP.Character
+            if cr then
+                for _, v in pairs(cr:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        pcall(function() v.Anchored = false end)
+                    end
+                end
+                local hm = cr:FindFirstChildOfClass("Humanoid")
+                if hm then
+                    pcall(function() hm.PlatformStand = false end)
+                end
+            end
         elseif nm == "InfiniteJump" and H then
             pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
         elseif nm == "Aim" then
@@ -1301,36 +1312,74 @@ local function Toggle(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
+            -- PROPER TAB-GLITCH FAKE LAG
+            -- Anchors every BasePart AND re-applies saved CFrames every Heartbeat.
+            -- Result: server sees you as completely frozen, no drift, no physics pop.
+            -- Works in air, ragdoll, fly — no restrictions.
             _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
-                while State.FakeLag and _fakeLagToken == myToken do
-                    local cr = LP.Character
-                    local rp = cr and cr:FindFirstChild("HumanoidRootPart")
-                    local hm = cr and cr:FindFirstChildOfClass("Humanoid")
-                    local inAir = false
-                    if hm then
-                        local st = hm:GetState()
-                        inAir = (hm.FloorMaterial == Enum.Material.Air)
-                            or st == Enum.HumanoidStateType.Jumping
-                            or st == Enum.HumanoidStateType.Freefall
-                    end
-                    local isJumping = UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp
-                    if rp and hm and hm.MoveDirection.Magnitude > 0
-                        and not inAir and not isJumping
-                        and not State.Fly and not State.Freecam then
-                        pcall(function() rp.Anchored = true end)
-                        task.wait(math.random(35, 80) / 1000)
-                        pcall(function() rp.Anchored = false end)
-                        task.wait(math.random(90, 200) / 1000)
-                    else
-                        if rp then pcall(function() rp.Anchored = false end) end
-                        task.wait(0.1)
+                local cr = LP.Character
+                if not cr then return end
+
+                -- Snapshot CFrames of all BaseParts at the moment of activation
+                local frozenCFrames = {}
+                for _, v in pairs(cr:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        frozenCFrames[v] = v.CFrame
+                        pcall(function() v.Anchored = true end)
                     end
                 end
-                local cr = LP.Character
-                local rp = cr and cr:FindFirstChild("HumanoidRootPart")
-                if rp then pcall(function() rp.Anchored = false end) end
+
+                while State.FakeLag and _fakeLagToken == myToken do
+                    cr = LP.Character
+                    if cr then
+                        for v, cf in pairs(frozenCFrames) do
+                            -- Part might have been replaced (ragdoll reassembly)
+                            if v and v.Parent then
+                                pcall(function()
+                                    v.Anchored       = true
+                                    v.CFrame         = cf
+                                    v.AssemblyLinearVelocity  = Vector3.zero
+                                    v.AssemblyAngularVelocity = Vector3.zero
+                                end)
+                            else
+                                frozenCFrames[v] = nil
+                            end
+                        end
+                        -- Catch any new parts added mid-glitch (ragdoll spawning new parts)
+                        for _, v in pairs(cr:GetDescendants()) do
+                            if v:IsA("BasePart") and not frozenCFrames[v] then
+                                frozenCFrames[v] = v.CFrame
+                                pcall(function()
+                                    v.Anchored = true
+                                    v.AssemblyLinearVelocity  = Vector3.zero
+                                    v.AssemblyAngularVelocity = Vector3.zero
+                                end)
+                            end
+                        end
+                    end
+                    RunService.Heartbeat:Wait()
+                end
+
+                -- Unfreeze everything on disable
+                cr = LP.Character
+                if cr then
+                    for _, v in pairs(cr:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            pcall(function() v.Anchored = false end)
+                        end
+                    end
+                    local hm = cr:FindFirstChildOfClass("Humanoid")
+                    if hm then
+                        pcall(function()
+                            hm.PlatformStand = false
+                            hm:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+                            hm:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+                        end)
+                    end
+                end
+                frozenCFrames = nil
             end)
         elseif nm == "Noclip" then
             -- Fresh noclip init: store originals
@@ -3167,7 +3216,14 @@ UIS.JumpRequest:Connect(function()
     local R = C and C:FindFirstChild("HumanoidRootPart")
     if not H or not R or H.Health <= 0 or State.Fly or State.Freecam then return end
 
-    if State.FakeLag then pcall(function() R.Anchored = false end) end
+    if State.FakeLag then
+        local cr = LP.Character
+        if cr then
+            for _, v in pairs(cr:GetDescendants()) do
+                if v:IsA("BasePart") then pcall(function() v.Anchored = false end) end
+            end
+        end
+    end
 
     if State.HighJump then
         pcall(function()
