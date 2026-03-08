@@ -861,12 +861,47 @@ task.spawn(function()
             end
 
             -- Update values
-            local hp    = math.floor(hum.Health)
-            local maxHp = math.max(math.floor(hum.MaxHealth), 1)
+            -- Smart HP read: handles MaxHealth=math.huge, custom attributes, IntValues
+            local rawHp    = hum.Health
+            local rawMaxHp = hum.MaxHealth
+
+            -- If MaxHealth is infinite/huge, try to find a custom max from character
+            if rawMaxHp == math.huge or rawMaxHp <= 0 then
+                -- look for IntValue/NumberValue named MaxHealth/MaxHP/HealthMax inside char
+                local found = false
+                for _, v in pairs(char:GetDescendants()) do
+                    if (v:IsA("IntValue") or v:IsA("NumberValue")) and
+                        (v.Name == "MaxHealth" or v.Name == "MaxHP" or v.Name == "HealthMax") then
+                        rawMaxHp = v.Value; found = true; break
+                    end
+                end
+                -- check attributes too
+                if not found then
+                    local attrMax = char:GetAttribute("MaxHealth")
+                        or char:GetAttribute("MaxHP")
+                        or hum:GetAttribute("MaxHealth")
+                    if attrMax then rawMaxHp = attrMax end
+                end
+                -- last resort: use current HP as max so ratio = 1
+                if rawMaxHp == math.huge or rawMaxHp <= 0 then
+                    rawMaxHp = math.max(rawHp, 1)
+                end
+            end
+
+            -- Try attribute-based current HP (some games store real HP in attributes)
+            local attrHp = char:GetAttribute("Health")
+                or char:GetAttribute("HP")
+                or hum:GetAttribute("Health")
+            if attrHp and type(attrHp) == "number" then
+                rawHp = attrHp
+            end
+
+            local hp    = math.floor(rawHp)
+            local maxHp = math.max(math.floor(rawMaxHp), 1)
             local dist  = myHRP
                 and math.floor((myHRP.Position - head.Position).Magnitude)
                 or 0
-            local ratio = hp / maxHp
+            local ratio = math.clamp(hp / maxHp, 0, 1)
             local col   = GetESPColor(ratio)
 
             -- Keep MaxDistance in sync with slider (instant effect, no rebuild)
