@@ -1,6 +1,6 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — PERFECT EDITION (EN/UA)                ██
--- ██  All bugs fixed · Silent Aim hook · Anti-Void        ██
+-- ██  OMNI V305 — PERFECT EDITION (EN/UA) [MOD]          ██
+-- ██  Clean ESP · Better Noclip Bypass · Anti-Void        ██
 -- ██  Language Toggle · Function Descriptions · Mobile+PC ██
 -- ██████████████████████████████████████████████████████████
 
@@ -26,22 +26,17 @@ local Camera = Workspace.CurrentCamera
 -- ============================================================
 -- 2. LANGUAGE SYSTEM
 -- ============================================================
-local CurrentLang = "EN" -- Default: English
+local CurrentLang = "EN"
 
 local Strings = {
     EN = {
-        -- Title / Subtitle
         title = "OMNI V305",
         subtitle_mobile = "MOBILE · PERFECT EDITION",
         subtitle_pc = "UNIVERSAL · PERFECT EDITION",
-
-        -- Tab names
         tab_combat = "Combat",
         tab_move   = "Move",
         tab_misc   = "Misc",
         tab_config = "Config",
-
-        -- Headers
         hdr_aiming       = "AIMING",
         hdr_hitbox_esp   = "HITBOX & ESP",
         hdr_flight       = "FLIGHT",
@@ -59,8 +54,6 @@ local Strings = {
         hdr_anti_void    = "ANTI-VOID",
         hdr_anti_ban     = "ANTI-BAN",
         hdr_language     = "LANGUAGE",
-
-        -- Toggle labels
         lbl_auto_aim      = "Auto Aim",
         lbl_silent_aim    = "Silent Aim",
         lbl_shadow_lock   = "Magnet (ShadowLock)",
@@ -83,20 +76,18 @@ local Strings = {
         lbl_speed_jitter  = "Speed Jitter",
         lbl_hitbox_rand   = "Hitbox Randomize",
         lbl_aim_anti      = "Aim Anti-Detect",
-
-        -- Toggle descriptions
         desc_auto_aim      = "Automatically aims your camera at the nearest visible enemy within FOV radius.",
         desc_silent_aim    = "Redirects raycasts to enemies without moving your camera. Requires exploit hooks.",
         desc_shadow_lock   = "Teleports you behind the closest enemy, following their movement.",
         desc_hitbox        = "Expands enemy hitbox parts so they are easier to hit.",
-        desc_esp           = "Shows player names, health, and distance through walls with highlights.",
+        desc_esp           = "Shows player name, HP and distance as clean floating text above all players.",
         desc_fly           = "Allows free flight in any direction. Use W/A/S/D + Space/Ctrl.",
         desc_freecam       = "Detaches camera from character for free spectating.",
         desc_speed         = "Increases your walk speed beyond the game default.",
         desc_bhop          = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
         desc_high_jump     = "Increases your jump height/power significantly.",
         desc_infinite_jump = "Allows jumping in mid-air infinitely.",
-        desc_noclip        = "Walk through walls and solid objects.",
+        desc_noclip        = "Walk through walls. Uses multi-method bypass for all places.",
         desc_no_fall       = "Prevents fall damage by resetting state before landing.",
         desc_anti_void     = "Teleports you back to safety if you fall below the void threshold.",
         desc_safe_speed    = "Caps your speed relative to the game's base speed to avoid rubber-banding.",
@@ -107,8 +98,6 @@ local Strings = {
         desc_speed_jitter  = "Adds small random variation to speed to avoid anti-cheat detection.",
         desc_hitbox_rand   = "Adds small random variation to hitbox size to avoid detection.",
         desc_aim_anti      = "Adds micro-jitter to aim direction to avoid pattern detection.",
-
-        -- Slider labels
         sl_fly_speed    = "Fly Speed",
         sl_walk_speed   = "Walk Speed",
         sl_jump_power   = "Jump Power",
@@ -118,8 +107,6 @@ local Strings = {
         sl_aim_smooth   = "Aim Smooth %",
         sl_anti_void_h  = "Anti-Void Height",
         sl_safe_mult    = "Multiplier (×base)",
-
-        -- Button labels
         btn_save     = "💾 Save",
         btn_load     = "📂 Load",
         btn_reset    = "🔄 Reset",
@@ -127,8 +114,6 @@ local Strings = {
         btn_random   = "Random server",
         btn_biggest  = "Biggest server",
         btn_smallest = "Smallest server",
-
-        -- Notifications
         ntf_saved      = "💾 Saved",
         ntf_loaded     = "📂 Config loaded ✓",
         ntf_reset      = "🔄 Reset",
@@ -148,27 +133,21 @@ local Strings = {
         ntf_safe_off   = "🛡 OFF",
         ntf_hook_ok    = "🔇 Hook installed ✓",
         ntf_anti_void  = "🛡 Teleported to safe position",
-        ntf_startup    = "✅ Perfect Edition · All Bugs Fixed · Anti-Void",
+        ntf_startup    = "✅ Perfect Edition · Clean ESP · Multi-Bypass Noclip",
         ntf_lang       = "Language changed to: ",
-
-        -- Status
         stat_no_target = "No target",
         stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Config.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
-
-        -- Language button
         btn_lang_toggle = "🌐 Language: English → Українська",
     },
     UA = {
         title = "OMNI V305",
         subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
         subtitle_pc = "УНІВЕРСАЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
-
         tab_combat = "Бій",
         tab_move   = "Рух",
         tab_misc   = "Інше",
         tab_config = "Налашт.",
-
         hdr_aiming       = "ПРИЦІЛЮВАННЯ",
         hdr_hitbox_esp   = "ХІТБОКС & ESP",
         hdr_flight       = "ПОЛІТ",
@@ -186,7 +165,6 @@ local Strings = {
         hdr_anti_void    = "АНТИ-ВОЙД",
         hdr_anti_ban     = "АНТИ-БАН",
         hdr_language     = "МОВА",
-
         lbl_auto_aim      = "Авто Прицілювання",
         lbl_silent_aim    = "Тихий Прицілювання",
         lbl_shadow_lock   = "Магніт (ShadowLock)",
@@ -209,30 +187,28 @@ local Strings = {
         lbl_speed_jitter  = "Джиттер швидкості",
         lbl_hitbox_rand   = "Рандомізація хітбокса",
         lbl_aim_anti      = "Анти-детект прицілу",
-
         desc_auto_aim      = "Автоматично наводить камеру на найближчого видимого ворога в радіусі FOV.",
-        desc_silent_aim    = "Перенаправляє рейкасти на ворогів без руху камери. Потрібні хуки експлойту.",
-        desc_shadow_lock   = "Телепортує вас за найближчого ворога, слідуючи за його рухом.",
-        desc_hitbox        = "Збільшує хітбокс частини ворогів, щоб в них було легше попасти.",
-        desc_esp           = "Показує імена гравців, здоров'я та відстань через стіни з підсвіткою.",
-        desc_fly           = "Дозволяє вільний політ у будь-якому напрямку. W/A/S/D + Пробіл/Ctrl.",
-        desc_freecam       = "Від'єднує камеру від персонажа для вільного перегляду.",
-        desc_speed         = "Збільшує швидкість ходьби понад стандартну гри.",
-        desc_bhop          = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
-        desc_high_jump     = "Значно збільшує висоту/силу стрибка.",
-        desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно.",
-        desc_noclip        = "Проходьте крізь стіни та тверді об'єкти.",
-        desc_no_fall       = "Запобігає пошкодженню від падіння скидаючи стан перед приземленням.",
-        desc_anti_void     = "Телепортує назад у безпечне місце при падінні нижче порога войду.",
-        desc_safe_speed    = "Обмежує швидкість відносно базової швидкості гри для уникнення відкиду.",
-        desc_spin          = "Швидко обертає персонажа навколо осі Y.",
-        desc_potato        = "Вимикає тіні, частинки та знижує якість для кращого FPS.",
-        desc_fake_lag      = "Імітує лаг, короткочасно закріплюючи персонажа під час руху.",
+        desc_silent_aim    = "Перенаправляє рейкасти на ворогів без руху камери. Потрібні хуки.",
+        desc_shadow_lock   = "Телепортує вас за найближчого ворога.",
+        desc_hitbox        = "Збільшує хітбокс частини ворогів.",
+        desc_esp           = "Показує нік, HP та відстань як чистий текст над усіма гравцями.",
+        desc_fly           = "Вільний політ. W/A/S/D + Пробіл/Ctrl.",
+        desc_freecam       = "Від'єднує камеру від персонажа.",
+        desc_speed         = "Збільшує швидкість ходьби.",
+        desc_bhop          = "Авто-банні хоп.",
+        desc_high_jump     = "Збільшує висоту стрибка.",
+        desc_infinite_jump = "Нескінченний стрибок у повітрі.",
+        desc_noclip        = "Проходь крізь стіни. Мульти-метод обходу для всіх плейсів.",
+        desc_no_fall       = "Запобігає пошкодженню від падіння.",
+        desc_anti_void     = "Телепортує назад при падінні у войд.",
+        desc_safe_speed    = "Обмежує швидкість для уникнення відкиду.",
+        desc_spin          = "Обертає персонажа.",
+        desc_potato        = "Знижує якість для кращого FPS.",
+        desc_fake_lag      = "Імітує лаг.",
         desc_anti_afk      = "Запобігає кіку за бездіяльність.",
-        desc_speed_jitter  = "Додає невелику випадкову варіацію швидкості для уникнення античіту.",
-        desc_hitbox_rand   = "Додає невелику випадкову варіацію розміру хітбокса для уникнення детекту.",
-        desc_aim_anti      = "Додає мікро-тремтіння напрямку прицілу для уникнення детекту паттернів.",
-
+        desc_speed_jitter  = "Варіація швидкості для уникнення античіту.",
+        desc_hitbox_rand   = "Варіація хітбокса для уникнення детекту.",
+        desc_aim_anti      = "Мікро-тремтіння прицілу для уникнення детекту.",
         sl_fly_speed    = "Швидкість польоту",
         sl_walk_speed   = "Швидкість ходьби",
         sl_jump_power   = "Сила стрибка",
@@ -242,7 +218,6 @@ local Strings = {
         sl_aim_smooth   = "Плавність прицілу %",
         sl_anti_void_h  = "Висота Анти-Войд",
         sl_safe_mult    = "Множник (×база)",
-
         btn_save     = "💾 Зберегти",
         btn_load     = "📂 Завантажити",
         btn_reset    = "🔄 Скинути",
@@ -250,7 +225,6 @@ local Strings = {
         btn_random   = "Рандомний сервер",
         btn_biggest  = "Найбільший сервер",
         btn_smallest = "Найменший сервер",
-
         ntf_saved      = "💾 Збережено",
         ntf_loaded     = "📂 Конфіг завантажено ✓",
         ntf_reset      = "🔄 Скинуто",
@@ -270,13 +244,11 @@ local Strings = {
         ntf_safe_off   = "🛡 OFF",
         ntf_hook_ok    = "🔇 Хук встановлено ✓",
         ntf_anti_void  = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup    = "✅ Ідеальна Версія · Всі баги виправлено · Анти-Войд",
+        ntf_startup    = "✅ Ідеальна Версія · Чистий ESP · Мульти-Обхід Нокліп",
         ntf_lang       = "Мову змінено на: ",
-
         stat_no_target = "Ціль відсутня",
         stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Config.json",
-        stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
-
+        stat_safe_info = "📊 База: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
         btn_lang_toggle = "🌐 Мова: Українська → English",
     },
 }
@@ -317,15 +289,35 @@ pcall(function()
     end
 end)
 
-local SafeGroup = "OmniNC_" .. math.random(1000, 9999)
+-- ============================================================
+-- 4B. NOCLIP COLLISION GROUP SETUP (Multi-method bypass)
+-- ============================================================
+-- We use a randomly-named group so game anti-cheats can't hardblock by name
+local SafeGroup = "NC_" .. math.random(100000, 999999)
+local ncGroupReady = false
+
 pcall(function()
+    -- Method 1: New API (2022+)
     if PhysicsService.RegisterCollisionGroup then
-        PhysicsService:RegisterCollisionGroup(SafeGroup)
-    elseif PhysicsService.CreateCollisionGroup then
-        pcall(function() PhysicsService:CreateCollisionGroup(SafeGroup) end)
+        local ok = pcall(function()
+            PhysicsService:RegisterCollisionGroup(SafeGroup)
+        end)
+        if ok then
+            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
+            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Players", false) end)
+            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
+            ncGroupReady = true
+        end
     end
-    pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
-    pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
+    -- Method 2: Old API fallback
+    if not ncGroupReady and PhysicsService.CreateCollisionGroup then
+        local ok = pcall(function() PhysicsService:CreateCollisionGroup(SafeGroup) end)
+        if ok then
+            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
+            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
+            ncGroupReady = true
+        end
+    end
 end)
 
 -- ============================================================
@@ -751,83 +743,141 @@ local function GetBestAimTarget()
 end
 
 -- ============================================================
--- 12. ESP SYSTEM
+-- 12. ESP SYSTEM — CLEAN FLOATING TEXT, NO BOX, LOW LAG
 -- ============================================================
+-- Design: no background frame, just shadow text floating above head
+-- Shows: "PlayerName  HP/MaxHP  Xm" colour-coded by health
+-- Uses a single TextLabel per player, cached, updated every 0.2s
+
 local ESPCache = {}
+
+local function GetESPColor(ratio)
+    if ratio >= 0.6 then
+        return Color3.fromRGB(80, 255, 120)
+    elseif ratio >= 0.3 then
+        return Color3.fromRGB(255, 220, 40)
+    else
+        return Color3.fromRGB(255, 60, 60)
+    end
+end
 
 local function ClearESP()
     for _, d in pairs(ESPCache) do
-        pcall(function() d.hl:Destroy() end)
-        pcall(function() d.bb:Destroy() end)
+        pcall(function() if d.hl and d.hl.Parent then d.hl:Destroy() end end)
+        pcall(function() if d.bb and d.bb.Parent then d.bb:Destroy() end end)
     end
     ESPCache = {}
 end
 
+-- ESP update loop — runs every 0.2s to avoid lag
 task.spawn(function()
-    while task.wait(0.15) do
+    while task.wait(0.2) do
         if not State.ESP then continue end
-        local my = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+
+        local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+
         for _, p in pairs(Players:GetPlayers()) do
             if p == LP then continue end
-            local c  = p.Character
-            local hd = FindHead(c)
-            local hm = c and c:FindFirstChildOfClass("Humanoid")
-            if not c or not hd or not hm then
-                if ESPCache[p] then
-                    pcall(function() ESPCache[p].hl:Destroy() end)
-                    pcall(function() ESPCache[p].bb:Destroy() end)
+
+            local char = p.Character
+            local head = char and FindHead(char)
+            local hum  = char and char:FindFirstChildOfClass("Humanoid")
+
+            -- Player has no valid character → remove entry
+            if not char or not head or not hum then
+                local ca = ESPCache[p]
+                if ca then
+                    pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
+                    pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
                     ESPCache[p] = nil
                 end
                 continue
             end
 
+            -- Check if cache is still valid
             local ca = ESPCache[p]
-            if not ca or not ca.hl or not ca.hl.Parent or not ca.bb or not ca.bb.Parent then
+            local needRebuild = not ca
+                or not ca.bb or not ca.bb.Parent
+                or not ca.lbl or not ca.lbl.Parent
+
+            if needRebuild then
+                -- Clean up old
                 if ca then
-                    pcall(function() ca.hl:Destroy() end)
-                    pcall(function() ca.bb:Destroy() end)
+                    pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
+                    pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
                 end
-                local hl = Instance.new("Highlight", c)
-                hl.FillColor = Color3.fromRGB(220, 40, 40)
-                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                hl.FillTransparency = 0.5
-                local bb = Instance.new("BillboardGui", hd)
-                bb.Size = UDim2.new(0, 170, 0, 50)
-                bb.StudsOffset = Vector3.new(0, 3.4, 0)
-                bb.AlwaysOnTop = true; bb.MaxDistance = 600
-                local bg = Instance.new("Frame", bb)
-                bg.Size = UDim2.new(1, 0, 1, 0)
-                bg.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
-                bg.BackgroundTransparency = 0.2; bg.BorderSizePixel = 0
-                Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 7)
-                Instance.new("UIStroke", bg).Color = Color3.fromRGB(60, 60, 75)
-                local lb = Instance.new("TextLabel", bg)
-                lb.Name = "T"; lb.Size = UDim2.new(1, -6, 1, 0)
-                lb.Position = UDim2.new(0, 3, 0, 0)
-                lb.BackgroundTransparency = 1; lb.Font = Enum.Font.GothamBold
-                lb.TextSize = 10; lb.TextWrapped = true
-                lb.TextColor3 = Color3.new(1, 1, 1)
-                ESPCache[p] = {hl = hl, bb = bb, lbl = lb}
+
+                -- Highlight (fills character with colour, no outline box on screen)
+                local hl = Instance.new("Highlight")
+                hl.FillTransparency    = 0.55
+                hl.OutlineTransparency = 1     -- no outline = less visual clutter
+                hl.FillColor           = Color3.fromRGB(40, 180, 80)
+                hl.Parent              = char
+
+                -- BillboardGui: wide enough for text, no background
+                local bb = Instance.new("BillboardGui")
+                bb.Size          = UDim2.new(0, 200, 0, 36)
+                bb.StudsOffset   = Vector3.new(0, 2.8, 0)
+                bb.AlwaysOnTop   = true
+                bb.MaxDistance   = 700
+                bb.LightInfluence = 0
+                bb.Parent        = head
+
+                -- Single TextLabel — no background frame
+                local lbl = Instance.new("TextLabel")
+                lbl.Name                  = "ESPLabel"
+                lbl.Size                  = UDim2.new(1, 0, 1, 0)
+                lbl.BackgroundTransparency = 1
+                lbl.Font                  = Enum.Font.GothamBold
+                lbl.TextSize              = IsMob and 12 or 11
+                lbl.TextWrapped           = false
+                lbl.TextXAlignment        = Enum.TextXAlignment.Center
+                lbl.TextYAlignment        = Enum.TextYAlignment.Center
+                -- Shadow for readability (built-in stroke)
+                lbl.TextStrokeColor3      = Color3.new(0, 0, 0)
+                lbl.TextStrokeTransparency = 0.35
+                lbl.ZIndex                = 5
+                lbl.Parent                = bb
+
+                ESPCache[p] = {hl = hl, bb = bb, lbl = lbl}
                 ca = ESPCache[p]
             end
 
-            local hp = math.floor(hm.Health)
-            local mx = math.max(math.floor(hm.MaxHealth), 1)
-            local ds = my and math.floor((my.Position - hd.Position).Magnitude) or 0
-            local r  = hp / mx
-            ca.lbl.Text = string.format("[%s]\nHP:%d/%d  %dm", p.Name, hp, mx, ds)
-            ca.lbl.TextColor3 = r >= 0.6 and Color3.fromRGB(80, 255, 120)
-                or r >= 0.3 and Color3.fromRGB(255, 220, 40)
-                or Color3.fromRGB(255, 60, 60)
-            ca.hl.FillColor = r >= 0.5 and Color3.fromRGB(40, 180, 80) or Color3.fromRGB(220, 40, 40)
+            -- Update values
+            local hp    = math.floor(hum.Health)
+            local maxHp = math.max(math.floor(hum.MaxHealth), 1)
+            local dist  = myHRP
+                and math.floor((myHRP.Position - head.Position).Magnitude)
+                or 0
+            local ratio = hp / maxHp
+            local col   = GetESPColor(ratio)
+
+            -- Format: "PlayerName  HP/MaxHP  Xm"
+            ca.lbl.Text       = string.format("%s  %d/%d  %dm", p.Name, hp, maxHp, dist)
+            ca.lbl.TextColor3 = col
+
+            -- Update highlight colour to match health
+            ca.hl.FillColor = ratio >= 0.5
+                and Color3.fromRGB(40, 180, 80)
+                or Color3.fromRGB(200, 40, 40)
+        end
+
+        -- Prune players who left but weren't caught by PlayerRemoving
+        for p, ca in pairs(ESPCache) do
+            if not p or not p.Parent then
+                pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
+                pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
+                ESPCache[p] = nil
+            end
         end
     end
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    if ESPCache[p] then
-        pcall(function() ESPCache[p].hl:Destroy() end)
-        pcall(function() ESPCache[p].bb:Destroy() end)
+    local ca = ESPCache[p]
+    if ca then
+        pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
+        pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
         ESPCache[p] = nil
     end
 end)
@@ -929,11 +979,11 @@ end
 -- ============================================================
 -- 15. NOCLIP STATE
 -- ============================================================
-local ncStuck = 0
-local lastNcPos = Vector3.zero
+local ncStuck        = 0
+local lastNcPos      = Vector3.zero
 local ncOrigCanCollide = {}
-local ncRay = RaycastParams.new()
-ncRay.FilterType = Enum.RaycastFilterType.Exclude
+local ncRay          = RaycastParams.new()
+ncRay.FilterType     = Enum.RaycastFilterType.Exclude
 
 -- ============================================================
 -- 16. FORCE RESTORE
@@ -964,10 +1014,13 @@ local function ForceRestore()
         end
     end
 
+    -- Restore all parts: collision group back to Default, CanCollide restored
     for _, v in pairs(C:GetDescendants()) do
         pcall(function()
             if v:IsA("BasePart") then
-                v.CollisionGroup = "Default"
+                -- Method 1: collision group reset
+                pcall(function() v.CollisionGroup = "Default" end)
+                -- Method 2: restore original CanCollide
                 local orig = ncOrigCanCollide[v]
                 if orig ~= nil then
                     v.CanCollide = orig
@@ -1014,7 +1067,6 @@ local TabPages = {}
 local TabBtns  = {}
 local CurTab   = "Combat"
 
--- Store all localizable UI elements for language refresh
 local LocalizableElements = {}
 
 local function UpdVis(nm)
@@ -1065,7 +1117,6 @@ local LockedTarget = nil
 local lastBhop     = 0
 
 local function Toggle(nm)
-    -- CONFIG TOGGLES
     if nm == "SpeedAntiBan" then
         Config.SpeedAntiBan = not Config.SpeedAntiBan
         State.SpeedAntiBan = Config.SpeedAntiBan
@@ -1100,13 +1151,11 @@ local function Toggle(nm)
         return
     end
 
-    -- REGULAR TOGGLES
     State[nm] = not State[nm]
     local C = LP.Character
     local R = C and C:FindFirstChild("HumanoidRootPart")
     local H = C and C:FindFirstChildOfClass("Humanoid")
 
-    -- TURNING OFF
     if not State[nm] then
         if nm == "Fly" then
             pcall(function()
@@ -1148,8 +1197,6 @@ local function Toggle(nm)
         elseif nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0
         end
-
-    -- TURNING ON
     else
         if nm == "Potato" then
             DoPotato()
@@ -1190,7 +1237,6 @@ local function Toggle(nm)
                     local cr = LP.Character
                     local rp = cr and cr:FindFirstChild("HumanoidRootPart")
                     local hm = cr and cr:FindFirstChildOfClass("Humanoid")
-
                     local inAir = false
                     if hm then
                         local st = hm:GetState()
@@ -1199,7 +1245,6 @@ local function Toggle(nm)
                             or st == Enum.HumanoidStateType.Freefall
                     end
                     local isJumping = UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp
-
                     if rp and hm and hm.MoveDirection.Magnitude > 0
                         and not inAir and not isJumping
                         and not State.Fly and not State.Freecam then
@@ -1217,6 +1262,7 @@ local function Toggle(nm)
                 if rp then pcall(function() rp.Anchored = false end) end
             end)
         elseif nm == "Noclip" then
+            -- Fresh noclip init: store originals
             ncStuck = 0; lastNcPos = Vector3.zero; ncOrigCanCollide = {}
             if C then
                 for _, v in pairs(C:GetDescendants()) do
@@ -1269,7 +1315,6 @@ local function SetupHJDetector()
                 R2.AssemblyLinearVelocity = Vector3.new(v.X, Config.JumpPower, v.Z)
             end
         end
-
         task.delay(0.03, function()
             if not State.HighJump then return end
             local R3 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
@@ -1280,7 +1325,6 @@ local function SetupHJDetector()
                 end
             end
         end)
-
         task.delay(0.5, function() _hjFired = false end)
     end)
 end
@@ -1397,19 +1441,15 @@ local function SetupSilentAimHook()
     local ok = pcall(function()
         local mt = getrawmetatable(game)
         if not mt then return end
-
         local oldNC = mt.__namecall
         if not oldNC then return end
-
         if setreadonly then setreadonly(mt, false) end
 
         local newNC
         if newcclosure then
             newNC = newcclosure(function(self, ...)
                 local method = getnamecallmethod()
-                if not State.SilentAim then
-                    return oldNC(self, ...)
-                end
+                if not State.SilentAim then return oldNC(self, ...) end
 
                 if method == "Raycast" and self == Workspace then
                     local target = GetBestAimTarget()
@@ -1456,24 +1496,21 @@ local function SetupSilentAimHook()
                         end
                     end
                 end
-
                 return oldNC(self, ...)
             end)
         else
             newNC = function(self, ...)
                 local method = getnamecallmethod()
-                if State.SilentAim then
-                    if (method == "Raycast" and self == Workspace) then
-                        local target = GetBestAimTarget()
-                        local part = target and FindAimPart(target)
-                        if part then
-                            local args = {...}
-                            local origin = args[1]
-                            if typeof(origin) == "Vector3" then
-                                local dir = (part.Position - origin)
-                                args[2] = dir.Unit * dir.Magnitude
-                                return oldNC(self, unpack(args))
-                            end
+                if State.SilentAim and method == "Raycast" and self == Workspace then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part then
+                        local args = {...}
+                        local origin = args[1]
+                        if typeof(origin) == "Vector3" then
+                            local dir = (part.Position - origin)
+                            args[2] = dir.Unit * dir.Magnitude
+                            return oldNC(self, unpack(args))
                         end
                     end
                 end
@@ -1670,7 +1707,6 @@ local fovStroke = Instance.new("UIStroke", fovCircle)
 fovStroke.Color = Color3.fromRGB(0, 200, 100)
 fovStroke.Thickness = 1.5; fovStroke.Transparency = 0.3
 
--- Target info label
 local tgtInfo = Instance.new("TextLabel", Scr)
 tgtInfo.Size = UDim2.new(0, 200, 0, 22)
 tgtInfo.Position = UDim2.new(0.5, -100, 0.5, -Config.AimFOV - 32)
@@ -1786,8 +1822,8 @@ tabFr.Size = UDim2.new(1, -12, 0, 30); tabFr.Position = UDim2.new(0, 6, 0, tabY)
 tabFr.BackgroundColor3 = P.dark; tabFr.BorderSizePixel = 0
 Instance.new("UICorner", tabFr).CornerRadius = UDim.new(0, 6)
 
-local tNames = {"Combat", "Move", "Misc", "Config"}
-local tIcons = {"⚔", "🏃", "🔧", "⚙"}
+local tNames    = {"Combat", "Move", "Misc", "Config"}
+local tIcons    = {"⚔", "🏃", "🔧", "⚙"}
 local tLangKeys = {"tab_combat", "tab_move", "tab_misc", "tab_config"}
 local tW = 1 / #tNames
 
@@ -1919,7 +1955,6 @@ exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60); exDiv.BorderSizePixel = 0; 
 local exPingRow, eP = MkStat(exS, "📶", "PING", 21)
 exPingRow.Position = UDim2.new(0, 8, 0, 33)
 
--- Draggable external stats
 do
     local exDr, exDs, exDp = false, nil, nil
     exS.InputBegan:Connect(function(inp)
@@ -1968,7 +2003,6 @@ task.spawn(function()
     end
 end)
 
--- Draggable menu button
 do
     local dr, ds, dp, mv, mt = false, nil, nil, false, 0
     mB.InputBegan:Connect(function(inp)
@@ -2111,7 +2145,6 @@ Instance.new("UICorner", descClose).CornerRadius = UDim.new(1, 0)
 local function ShowDesc(title, descKey)
     descTitle.Text = title
     descBody.Text = L(descKey)
-    -- Auto-size height
     local textH = math.max(60, math.min(descBody.TextBounds.Y + 10, 160))
     local totalH = textH + 48
     descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
@@ -2175,7 +2208,6 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
     lbl.Font = Enum.Font.GothamBold; lbl.TextSize = FS
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Info button (description)
     if descKey then
         local infoBtn = Instance.new("TextButton", row)
         infoBtn.Size = UDim2.new(0, IsMob and 22 or 18, 0, IsMob and 22 or 18)
@@ -2359,14 +2391,13 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
 end
 
 -- ============================================================
--- 29. LANGUAGE REFRESH FUNCTION
+-- 29. LANGUAGE REFRESH
 -- ============================================================
-local langBtnRef = nil
+local langBtnRef    = nil
 local autoSaveLblRef = nil
 local safeInfoLblRef = nil
 
 local function RefreshLanguage()
-    -- Refresh all stored localizable elements
     for _, el in pairs(LocalizableElements) do
         pcall(function()
             if el.type == "header" then
@@ -2378,29 +2409,17 @@ local function RefreshLanguage()
             end
         end)
     end
-    -- Title & subtitle
     pcall(function()
         tTit.Text = L("title")
         tSub.Text = IsMob and L("subtitle_mobile") or L("subtitle_pc")
     end)
-    -- Language button
-    if langBtnRef then
-        pcall(function()
-            langBtnRef.Text = L("btn_lang_toggle")
-        end)
-    end
-    -- Auto-save label
-    if autoSaveLblRef then
-        pcall(function()
-            autoSaveLblRef.Text = L("stat_auto_save")
-        end)
-    end
+    if langBtnRef then pcall(function() langBtnRef.Text = L("btn_lang_toggle") end) end
+    if autoSaveLblRef then pcall(function() autoSaveLblRef.Text = L("stat_auto_save") end) end
 end
 
 -- ============================================================
 -- 30. POPULATE UI TABS
 -- ============================================================
--- Combat
 AddHdr("Combat", "🎯", "hdr_aiming")
 MkToggleBind("Combat", "🎯", "lbl_auto_aim", "Aim", "desc_auto_aim")
 MkToggleBind("Combat", "🔇", "lbl_silent_aim", "SilentAim", "desc_silent_aim")
@@ -2409,7 +2428,6 @@ AddHdr("Combat", "💥", "hdr_hitbox_esp")
 MkToggle("Combat", "📦", "lbl_hitbox", "Hitbox", "desc_hitbox")
 MkToggle("Combat", "👁", "lbl_esp", "ESP", "desc_esp")
 
--- Move
 AddHdr("Move", "✈️", "hdr_flight")
 MkToggleBind("Move", "✈️", "lbl_fly", "Fly", "desc_fly")
 MkToggle("Move", "📷", "lbl_freecam", "Freecam", "desc_freecam")
@@ -2428,7 +2446,6 @@ MkSlider("Move", "✖", "sl_safe_mult", 10, 40, math.floor(Config.SafeSpeedMult 
     Config.SafeSpeedMult = v / 10
 end)
 
--- Safe speed info panel
 do
     local pg = TabPages["Move"]
     local infoF = Instance.new("Frame", pg)
@@ -2465,7 +2482,6 @@ do
     end)
 end
 
--- Misc
 AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
@@ -2478,7 +2494,6 @@ MkButton("Misc", "🎲", "btn_random", Color3.fromRGB(22, 28, 38), JoinRandomSer
 MkButton("Misc", "👥", "btn_biggest", Color3.fromRGB(22, 28, 38), JoinBiggestServer)
 MkButton("Misc", "🕵️", "btn_smallest", Color3.fromRGB(22, 28, 38), JoinSmallestServer)
 
--- Config
 AddHdr("Config", "🌐", "hdr_language")
 do
     local pg = TabPages["Config"]
@@ -2491,7 +2506,6 @@ do
     Instance.new("UICorner", langRow).CornerRadius = UDim.new(0, 8)
     Instance.new("UIStroke", langRow).Color = P.acc
     langBtnRef = langRow
-
     langRow.MouseButton1Click:Connect(function()
         CurrentLang = (CurrentLang == "EN") and "UA" or "EN"
         RefreshLanguage()
@@ -2506,8 +2520,6 @@ do
     local btnRow = Instance.new("Frame", pg)
     btnRow.Size = UDim2.new(0.95, 0, 0, BH)
     btnRow.BackgroundTransparency = 1; btnRow.BorderSizePixel = 0
-
-    local cfgBtnRefs = {}
 
     local function MkCfgBtn(lblKey, col, xPos, xSize, onClick)
         local b = Instance.new("TextButton", btnRow)
@@ -2659,9 +2671,7 @@ UIS.JumpRequest:Connect(function()
     local R = C and C:FindFirstChild("HumanoidRootPart")
     if not H or not R or H.Health <= 0 or State.Fly or State.Freecam then return end
 
-    if State.FakeLag then
-        pcall(function() R.Anchored = false end)
-    end
+    if State.FakeLag then pcall(function() R.Anchored = false end) end
 
     if State.HighJump then
         pcall(function()
@@ -2718,9 +2728,9 @@ end)
 -- ============================================================
 -- 34. RENDER STEPPED
 -- ============================================================
-local FrameLog   = {}
-local lastPing   = 0
-local pingTk     = 0
+local FrameLog  = {}
+local lastPing  = 0
+local pingTk    = 0
 
 RunService.RenderStepped:Connect(function(dt)
     local now = tick()
@@ -2764,11 +2774,9 @@ RunService.RenderStepped:Connect(function(dt)
             if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then upD = -1 end
             dir = dir + Vector3.new(0, upD, 0)
             if dir.Magnitude > 1 then dir = dir.Unit end
-
             if HRP.Position.Y > Config.FlyHeightMax then
                 dir = Vector3.new(dir.X, math.min(dir.Y, -0.1), dir.Z)
             end
-
             if Config.FlyAntiBan then
                 _flyNoiseT = _flyNoiseT + 0.005
                 local nx = PseudoNoise(_flyNoiseT) * 0.12
@@ -2831,7 +2839,6 @@ RunService.RenderStepped:Connect(function(dt)
                 end
                 local targetCF = CFrame.new(Camera.CFrame.Position, predictedPos)
                 Camera.CFrame = Camera.CFrame:Lerp(targetCF, smooth)
-
                 local plr = Players:GetPlayerFromCharacter(target)
                 tgtInfo.Text = "🔒 " .. (plr and plr.Name or "?") .. " [" .. math.floor(dist) .. "m]"
                 tgtInfo.TextColor3 = Color3.fromRGB(0, 230, 120); tgtInfo.Visible = true
@@ -2897,12 +2904,10 @@ RunService.Heartbeat:Connect(function(dt)
         pcall(function()
             local targetSpd = GetSafeSpeed()
             Hum.WalkSpeed = targetSpd
-
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local md = Hum.MoveDirection.Unit
                 local vel = HRP.AssemblyLinearVelocity
                 local flatVel = Vector3.new(vel.X, 0, vel.Z)
-
                 if State.SafeSpeedMode then
                     local cycle = tick() % 0.60
                     local onTime = 0.60 * 0.82
@@ -2975,8 +2980,18 @@ RunService.Heartbeat:Connect(function(dt)
 end)
 
 -- ============================================================
--- 36. STEPPED (Noclip)
+-- 36. STEPPED — NOCLIP (MULTI-METHOD BYPASS)
 -- ============================================================
+--[[
+  Three-layer bypass to handle all places:
+  Layer 1 (best): CollisionGroup method — character assigned to a group
+                  that doesn't collide with Default. Works on most places.
+  Layer 2 (fallback): Direct CanCollide = false on every BasePart every frame.
+                      Works when collision groups aren't available.
+  Layer 3 (anti-stuck): If character stops moving but inputs are pressed,
+                        raycast forward and nudge CFrame through the wall.
+]]
+
 RunService.Stepped:Connect(function()
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -2986,20 +3001,29 @@ RunService.Stepped:Connect(function()
         for _, v in pairs(Char:GetDescendants()) do
             if v:IsA("BasePart") then
                 pcall(function()
+                    -- Layer 1: collision group (random name, unblockable by name filter)
+                    if ncGroupReady then
+                        v.CollisionGroup = SafeGroup
+                    end
+                    -- Layer 2: direct CanCollide override (belt-and-suspenders)
                     if ncOrigCanCollide[v] == nil then
                         ncOrigCanCollide[v] = v.CanCollide
                     end
-                    v.CollisionGroup = SafeGroup
                     v.CanCollide = false
                 end)
             end
         end
 
+        -- Layer 3: anti-stuck nudge
         local moving = Hum.MoveDirection.Magnitude > 0.05
             or HRP.AssemblyLinearVelocity.Magnitude > 5
         local delta = (HRP.Position - lastNcPos).Magnitude
 
-        if moving and delta < 0.06 then ncStuck += 1 else ncStuck = 0 end
+        if moving and delta < 0.06 then
+            ncStuck += 1
+        else
+            ncStuck = 0
+        end
 
         if ncStuck >= 3 then
             local md = Hum.MoveDirection.Magnitude > 0.05
@@ -3052,6 +3076,6 @@ task.spawn(function()
 end)
 
 -- ============================================================
--- 38. STARTUP NOTIFICATION
+-- 38. STARTUP
 -- ============================================================
 Notify("OMNI V305", L("ntf_startup"), 5)
