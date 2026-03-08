@@ -1312,58 +1312,75 @@ local function Toggle(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
-            -- PROPER TAB-GLITCH FAKE LAG
-            -- Anchors every BasePart AND re-applies saved CFrames every Heartbeat.
-            -- Result: server sees you as completely frozen, no drift, no physics pop.
-            -- Works in air, ragdoll, fly — no restrictions.
+            -- LAG SPIKE FakeLag — works in air, ragdoll, fly, knocked back
+            -- Periodically freezes all body parts (spike), then releases.
+            -- No state restrictions — anchors anywhere, any condition.
             _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
-                local cr = LP.Character
-                if not cr then return end
-
-                -- Snapshot CFrames of all BaseParts at the moment of activation
-                local frozenCFrames = {}
-                for _, v in pairs(cr:GetDescendants()) do
-                    if v:IsA("BasePart") then
-                        frozenCFrames[v] = v.CFrame
-                        pcall(function() v.Anchored = true end)
-                    end
-                end
-
                 while State.FakeLag and _fakeLagToken == myToken do
-                    cr = LP.Character
-                    if cr then
-                        for v, cf in pairs(frozenCFrames) do
-                            -- Part might have been replaced (ragdoll reassembly)
+                    -- Wait between spikes (simulate random lag intervals)
+                    task.wait(math.random(6, 18) / 100)
+                    if not (State.FakeLag and _fakeLagToken == myToken) then break end
+
+                    local cr = LP.Character
+                    if not cr then task.wait(0.05) continue end
+
+                    -- Snapshot + freeze ALL parts instantly
+                    local frozen = {}
+                    for _, v in pairs(cr:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            frozen[v] = {
+                                cf  = v.CFrame,
+                                vel = v.AssemblyLinearVelocity,
+                                ang = v.AssemblyAngularVelocity,
+                            }
+                            pcall(function()
+                                v.Anchored                = true
+                                v.AssemblyLinearVelocity  = Vector3.zero
+                                v.AssemblyAngularVelocity = Vector3.zero
+                            end)
+                        end
+                    end
+
+                    -- Hold freeze for spike duration
+                    local spikeDur = math.random(4, 14) / 100
+                    local t0 = tick()
+                    while tick() - t0 < spikeDur do
+                        cr = LP.Character
+                        if not cr then break end
+                        -- Keep enforcing freeze every frame so physics can't escape
+                        for v, data in pairs(frozen) do
                             if v and v.Parent then
                                 pcall(function()
-                                    v.Anchored       = true
-                                    v.CFrame         = cf
+                                    v.Anchored                = true
+                                    v.CFrame                  = data.cf
                                     v.AssemblyLinearVelocity  = Vector3.zero
                                     v.AssemblyAngularVelocity = Vector3.zero
                                 end)
-                            else
-                                frozenCFrames[v] = nil
                             end
                         end
-                        -- Catch any new parts added mid-glitch (ragdoll spawning new parts)
-                        for _, v in pairs(cr:GetDescendants()) do
-                            if v:IsA("BasePart") and not frozenCFrames[v] then
-                                frozenCFrames[v] = v.CFrame
+                        RunService.Heartbeat:Wait()
+                    end
+
+                    -- Release — restore original velocities so movement continues naturally
+                    cr = LP.Character
+                    if cr then
+                        for v, data in pairs(frozen) do
+                            if v and v.Parent then
                                 pcall(function()
-                                    v.Anchored = true
-                                    v.AssemblyLinearVelocity  = Vector3.zero
-                                    v.AssemblyAngularVelocity = Vector3.zero
+                                    v.Anchored                = false
+                                    v.AssemblyLinearVelocity  = data.vel
+                                    v.AssemblyAngularVelocity = data.ang
                                 end)
                             end
                         end
                     end
-                    RunService.Heartbeat:Wait()
+                    frozen = nil
                 end
 
-                -- Unfreeze everything on disable
-                cr = LP.Character
+                -- Final cleanup on toggle off
+                local cr = LP.Character
                 if cr then
                     for _, v in pairs(cr:GetDescendants()) do
                         if v:IsA("BasePart") then
@@ -1371,15 +1388,8 @@ local function Toggle(nm)
                         end
                     end
                     local hm = cr:FindFirstChildOfClass("Humanoid")
-                    if hm then
-                        pcall(function()
-                            hm.PlatformStand = false
-                            hm:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-                            hm:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-                        end)
-                    end
+                    if hm then pcall(function() hm.PlatformStand = false end) end
                 end
-                frozenCFrames = nil
             end)
         elseif nm == "Noclip" then
             -- Fresh noclip init: store originals
