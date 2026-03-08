@@ -71,6 +71,8 @@ local Strings = {
         lbl_safe_speed    = "Safe Speed (Anti Rubber-Band)",
         lbl_spin          = "Spin",
         lbl_potato        = "Potato Mode",
+        lbl_fullbright    = "FullBright",
+        desc_fullbright   = "Sets max brightness and removes all Lighting effects — everything is fully visible even in dark maps.",
         lbl_fake_lag      = "Fake Lag",
         lbl_anti_afk      = "Anti-AFK",
         lbl_speed_jitter  = "Speed Jitter",
@@ -183,6 +185,8 @@ local Strings = {
         lbl_safe_speed    = "Безпечна швидкість (Анти Rubber-Band)",
         lbl_spin          = "Обертання",
         lbl_potato        = "Картопляний режим",
+        lbl_fullbright    = "Фул Брайт",
+        desc_fullbright   = "Максимальна яскравість і видалення всіх ефектів освітлення — все видно навіть на темних картах.",
         lbl_fake_lag      = "Фейк лаг",
         lbl_anti_afk      = "Анти-АФК",
         lbl_speed_jitter  = "Джиттер швидкості",
@@ -396,7 +400,7 @@ local Binds = {
 local State = {
     Fly = false, Aim = false, SilentAim = false, ShadowLock = false,
     Noclip = false, Hitbox = false, Speed = false, Bhop = false,
-    ESP = false, Spin = false, HighJump = false, Potato = false,
+    ESP = false, Spin = false, HighJump = false, Potato = false, FullBright = false,
     FakeLag = false, Freecam = false, NoFallDamage = false,
     AntiAFK = false, InfiniteJump = false, AntiVoid = false,
     SpeedAntiBan = true, HitboxRandomize = true,
@@ -1057,8 +1061,56 @@ local function UndoPotato()
 end
 
 -- ============================================================
--- 15. NOCLIP STATE
+-- 14B. FULLBRIGHT SYSTEM
 -- ============================================================
+local _fbSaved = {}
+
+local function DoFullBright()
+    _fbSaved = {
+        Ambient              = Lighting.Ambient,
+        OutdoorAmbient       = Lighting.OutdoorAmbient,
+        Brightness           = Lighting.Brightness,
+        ClockTime            = Lighting.ClockTime,
+        FogEnd               = Lighting.FogEnd,
+        FogStart             = Lighting.FogStart,
+        GlobalShadows        = Lighting.GlobalShadows,
+        EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
+        EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
+    }
+    pcall(function()
+        Lighting.Ambient              = Color3.fromRGB(178, 178, 178)
+        Lighting.OutdoorAmbient       = Color3.fromRGB(178, 178, 178)
+        Lighting.Brightness           = 10
+        Lighting.ClockTime            = 14
+        Lighting.FogEnd               = 100000
+        Lighting.FogStart             = 100000
+        Lighting.GlobalShadows        = false
+        Lighting.EnvironmentDiffuseScale  = 0
+        Lighting.EnvironmentSpecularScale = 0
+    end)
+    -- Disable all Lighting post-effects (Blur, Bloom, ColorCorrection, etc.)
+    for _, v in pairs(Lighting:GetChildren()) do
+        pcall(function()
+            if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
+                v.Enabled = false
+            end
+        end)
+    end
+end
+
+local function UndoFullBright()
+    for k, v in pairs(_fbSaved) do
+        pcall(function() Lighting[k] = v end)
+    end
+    _fbSaved = {}
+    for _, v in pairs(Lighting:GetChildren()) do
+        pcall(function()
+            if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
+                v.Enabled = true
+            end
+        end)
+    end
+end
 local ncStuck        = 0
 local lastNcPos      = Vector3.zero
 local ncOrigCanCollide = {}
@@ -1273,6 +1325,8 @@ local function Toggle(nm)
             RestoreHB()
         elseif nm == "Potato" then
             UndoPotato()
+        elseif nm == "FullBright" then
+            UndoFullBright()
         elseif nm == "Freecam" then
             pcall(function() if R then R.Anchored = false end end)
             RestoreMouse()
@@ -1307,6 +1361,8 @@ local function Toggle(nm)
     else
         if nm == "Potato" then
             DoPotato()
+        elseif nm == "FullBright" then
+            DoFullBright()
         elseif nm == "ShadowLock" then
             LockedTarget = GetClosestEnemy()
         elseif nm == "Fly" and H then
@@ -1515,7 +1571,7 @@ LP.CharacterAdded:Connect(function(char)
     aimTarget = nil; aimLocked = false; aimLostFrames = 0
     ncOrigCanCollide = {}; _lastSafePos = nil
 
-    for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag"}) do
+    for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag", "FullBright"}) do
         if State[n] then
             State[n] = false
             UpdVis(n)
@@ -2269,6 +2325,7 @@ local MobHUDDefs = {
     {id = "AntiVoid",     icon = "🌊", short = "AVoid"},
     {id = "FakeLag",      icon = "📡", short = "FLag"},
     {id = "ShadowLock",   icon = "🧲", short = "SLock"},
+    {id = "FullBright",   icon = "☀",  short = "FBrt"},
 }
 
 -- Default positions: stacked right edge, spacing from top
@@ -3024,6 +3081,7 @@ end
 AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
+MkToggle("Misc", "☀️", "lbl_fullbright", "FullBright", "desc_fullbright")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
 AddHdr("Misc", "🛡", "hdr_protection")
 MkToggle("Misc", "💤", "lbl_anti_afk", "AntiAFK", "desc_anti_afk")
