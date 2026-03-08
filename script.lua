@@ -1144,6 +1144,21 @@ local function ForceRestore()
         for _, v in pairs(R:GetChildren()) do
             if v:IsA("BodyMover") then SafeDel(v) end
         end
+        -- Kill any accumulated velocity from noclip movement
+        pcall(function()
+            R.AssemblyLinearVelocity  = Vector3.zero
+            R.AssemblyAngularVelocity = Vector3.zero
+        end)
+    end
+
+    -- Also zero velocity on all other parts so ragdoll/limbs don't fly
+    for _, v in pairs(C:GetDescendants()) do
+        pcall(function()
+            if v:IsA("BasePart") and v ~= R then
+                v.AssemblyLinearVelocity  = Vector3.zero
+                v.AssemblyAngularVelocity = Vector3.zero
+            end
+        end)
     end
 
     -- Restore all parts: collision group back to Default, CanCollide restored
