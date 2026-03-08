@@ -2146,236 +2146,410 @@ end)
 -- ============================================================
 -- 26B. MOBILE HUD BUTTONS (touch only)
 -- ============================================================
--- On-screen toggle buttons for all main features.
--- TAP  = toggle feature (when NOT in edit mode)
--- EDIT = press "✏ Edit" button → buttons glow yellow → drag them anywhere
--- DONE = press "✓ Done" → positions saved automatically to config
--- Positions persist across sessions via config file.
+-- "HUD" button (bottom-left, above M) opens a chooser panel.
+-- In the panel: tap any feature chip to show/hide its button.
+-- "✏ Move" = enter drag mode to reposition visible buttons.
+-- "✓ Done" = close panel + save.
+-- By default ALL buttons are hidden — user picks what they want.
 -- ============================================================
 
-local MobHUDEditMode = false
-local MobHUDBtns     = {}   -- keyed by feature id
+local MobHUDEditMode  = false
+local MobHUDBtns      = {}   -- keyed by id, stores {btn, btnSt, dot, editOverlay}
 
-local HUD_SZ      = 56   -- button size px
-local HUD_GAP     = 7
-local HUD_COL_OFF = Color3.fromRGB(20, 20, 34)
-local HUD_COL_ON  = Color3.fromRGB(18, 65, 40)
-local HUD_COL_EDT = Color3.fromRGB(50, 40, 10)
+local HUD_SZ          = 58
+local HUD_COL_OFF     = Color3.fromRGB(18, 18, 30)
+local HUD_COL_ON      = Color3.fromRGB(14, 58, 36)
+local HUD_COL_EDT     = Color3.fromRGB(42, 36, 8)
+
+-- Which buttons are shown on screen (persisted in Config.MobHUDEnabled)
+if not Config.MobHUDEnabled then Config.MobHUDEnabled = {} end
 
 local MobHUDDefs = {
     {id = "Fly",          icon = "✈",  short = "Fly"},
-    {id = "Speed",        icon = "👟", short = "Spd"},
-    {id = "Bhop",         icon = "🐇", short = "Hop"},
+    {id = "Speed",        icon = "👟", short = "Speed"},
+    {id = "Bhop",         icon = "🐇", short = "Bhop"},
     {id = "Aim",          icon = "🎯", short = "Aim"},
-    {id = "SilentAim",    icon = "🔇", short = "SA"},
+    {id = "SilentAim",    icon = "🔇", short = "S.Aim"},
     {id = "Noclip",       icon = "👻", short = "NC"},
     {id = "ESP",          icon = "👁",  short = "ESP"},
-    {id = "Hitbox",       icon = "📦", short = "HB"},
-    {id = "HighJump",     icon = "⬆",  short = "HJ"},
-    {id = "InfiniteJump", icon = "♾",  short = "IJ"},
-    {id = "AntiVoid",     icon = "🌊", short = "AV"},
-    {id = "FakeLag",      icon = "📡", short = "FL"},
-    {id = "ShadowLock",   icon = "🧲", short = "SL"},
+    {id = "Hitbox",       icon = "📦", short = "HBox"},
+    {id = "HighJump",     icon = "⬆",  short = "HJump"},
+    {id = "InfiniteJump", icon = "♾",  short = "∞Jump"},
+    {id = "AntiVoid",     icon = "🌊", short = "AVoid"},
+    {id = "FakeLag",      icon = "📡", short = "FLag"},
+    {id = "ShadowLock",   icon = "🧲", short = "SLock"},
 }
 
+-- Default positions: stacked right edge, spacing from top
 local function GetHUDDefaultPos(idx)
-    local vp   = Camera.ViewportSize
-    local cols = 7
-    local row  = math.floor((idx - 1) / cols)
-    local col  = (idx - 1) % cols
-    local totalW = cols * HUD_SZ + (cols - 1) * HUD_GAP
-    local startX = math.max(4, (vp.X - totalW) / 2)
-    local x = startX + col * (HUD_SZ + HUD_GAP)
-    local y = vp.Y - (HUD_SZ + HUD_GAP) * (2 - row) - 80
-    return math.clamp(x, 0, vp.X - HUD_SZ),
-           math.clamp(y, 0, vp.Y - HUD_SZ)
+    local vp = Camera.ViewportSize
+    return vp.X - HUD_SZ - 8, 120 + (idx - 1) * (HUD_SZ + 6)
 end
 
-local function UpdateHUDColor(entry)
+local function ApplyHUDBtnColor(entry)
     if MobHUDEditMode then
-        entry.btn.BackgroundColor3 = HUD_COL_EDT
-        entry.btnSt.Color = Color3.fromRGB(255, 200, 50)
-        entry.dot.TextColor3 = Color3.fromRGB(255, 200, 50)
-        entry.editOverlay.Visible = true
+        entry.btn.BackgroundColor3     = HUD_COL_EDT
+        entry.btnSt.Color              = Color3.fromRGB(255, 200, 50)
+        entry.dot.TextColor3           = Color3.fromRGB(255, 200, 50)
+        entry.editOverlay.Visible      = true
     else
         local on = State[entry.id]
-        entry.btn.BackgroundColor3 = on and HUD_COL_ON or HUD_COL_OFF
-        entry.btnSt.Color = on and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 70)
-        entry.dot.TextColor3 = on
-            and Color3.fromRGB(0, 255, 120)
-            or Color3.fromRGB(60, 60, 80)
-        entry.editOverlay.Visible = false
+        entry.btn.BackgroundColor3     = on and HUD_COL_ON or HUD_COL_OFF
+        entry.btnSt.Color              = on and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(44, 44, 62)
+        entry.dot.TextColor3           = on and Color3.fromRGB(0, 255, 130) or Color3.fromRGB(50, 50, 68)
+        entry.editOverlay.Visible      = false
+    end
+end
+
+local function SetHUDBtnVisible(id, visible)
+    local entry = MobHUDBtns[id]
+    if entry then entry.btn.Visible = visible end
+end
+
+local function RefreshHUDVisibility()
+    for _, def in ipairs(MobHUDDefs) do
+        SetHUDBtnVisible(def.id, Config.MobHUDEnabled[def.id] == true)
     end
 end
 
 if IsTab then
-    -- ── Edit button ──────────────────────────────────────────
-    local editBtn = Instance.new("TextButton", Scr)
-    editBtn.Size     = UDim2.new(0, 60, 0, 30)
-    editBtn.Position = UDim2.new(1, -70, 0, 72)
-    editBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 36)
-    editBtn.Text     = "✏ Edit"
-    editBtn.TextColor3 = P.acc
-    editBtn.Font     = Enum.Font.GothamBold
-    editBtn.TextSize = 11
-    editBtn.BorderSizePixel = 0
-    editBtn.ZIndex   = 92
-    editBtn.AutoButtonColor = false
-    Instance.new("UICorner", editBtn).CornerRadius = UDim.new(0, 8)
-    local editBtnSt = Instance.new("UIStroke", editBtn)
-    editBtnSt.Color = P.acc; editBtnSt.Thickness = 1.5
 
-    -- ── Build each HUD button ─────────────────────────────────
+    -- ── Build all 13 HUD buttons (hidden by default) ─────────
     for idx, def in ipairs(MobHUDDefs) do
         local saved = Config.MobHUDPositions and Config.MobHUDPositions[def.id]
         local defX, defY = GetHUDDefaultPos(idx)
         local posX = (saved and saved[1]) or defX
         local posY = (saved and saved[2]) or defY
-
-        -- clamp into current viewport
         local vp = Camera.ViewportSize
         posX = math.clamp(posX, 0, vp.X - HUD_SZ)
         posY = math.clamp(posY, 0, vp.Y - HUD_SZ)
 
         local btn = Instance.new("TextButton", Scr)
-        btn.Size = UDim2.new(0, HUD_SZ, 0, HUD_SZ)
-        btn.Position = UDim2.new(0, posX, 0, posY)
-        btn.BackgroundColor3 = HUD_COL_OFF
-        btn.BorderSizePixel = 0
-        btn.AutoButtonColor = false
-        btn.Text = ""
-        btn.ZIndex = 62
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 11)
+        btn.Size               = UDim2.new(0, HUD_SZ, 0, HUD_SZ)
+        btn.Position           = UDim2.new(0, posX, 0, posY)
+        btn.BackgroundColor3   = HUD_COL_OFF
+        btn.BorderSizePixel    = 0
+        btn.AutoButtonColor    = false
+        btn.Text               = ""
+        btn.ZIndex             = 62
+        btn.Visible            = false   -- hidden until user enables it
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
         local btnSt = Instance.new("UIStroke", btn)
-        btnSt.Color = Color3.fromRGB(50, 50, 70); btnSt.Thickness = 1.5
+        btnSt.Color = Color3.fromRGB(44, 44, 62); btnSt.Thickness = 1.5
 
-        -- icon
         local icoLbl = Instance.new("TextLabel", btn)
-        icoLbl.Size = UDim2.new(1, 0, 0, 30)
-        icoLbl.Position = UDim2.new(0, 0, 0, 4)
+        icoLbl.Size               = UDim2.new(1, 0, 0, 32)
+        icoLbl.Position           = UDim2.new(0, 0, 0, 4)
         icoLbl.BackgroundTransparency = 1
-        icoLbl.Text = def.icon
-        icoLbl.TextSize = 20
-        icoLbl.Font = Enum.Font.Gotham
-        icoLbl.TextColor3 = P.txt
-        icoLbl.ZIndex = 63
+        icoLbl.Text               = def.icon
+        icoLbl.TextSize           = 22
+        icoLbl.Font               = Enum.Font.Gotham
+        icoLbl.TextColor3         = P.txt
+        icoLbl.ZIndex             = 63
 
-        -- short label
         local shortLbl = Instance.new("TextLabel", btn)
-        shortLbl.Size = UDim2.new(1, 0, 0, 14)
-        shortLbl.Position = UDim2.new(0, 0, 1, -16)
+        shortLbl.Size             = UDim2.new(1, 0, 0, 14)
+        shortLbl.Position         = UDim2.new(0, 0, 1, -16)
         shortLbl.BackgroundTransparency = 1
-        shortLbl.Text = def.short
-        shortLbl.TextSize = 9
-        shortLbl.Font = Enum.Font.GothamBold
-        shortLbl.TextColor3 = Color3.fromRGB(130, 130, 160)
-        shortLbl.ZIndex = 63
+        shortLbl.Text             = def.short
+        shortLbl.TextSize         = 8
+        shortLbl.Font             = Enum.Font.GothamBold
+        shortLbl.TextColor3       = Color3.fromRGB(120, 120, 150)
+        shortLbl.ZIndex           = 63
 
-        -- state dot (top-right)
         local dot = Instance.new("TextLabel", btn)
-        dot.Size = UDim2.new(0, 10, 0, 10)
-        dot.Position = UDim2.new(1, -12, 0, 3)
+        dot.Size                  = UDim2.new(0, 10, 0, 10)
+        dot.Position              = UDim2.new(1, -13, 0, 3)
         dot.BackgroundTransparency = 1
-        dot.Text = "●"
-        dot.TextSize = 9
-        dot.Font = Enum.Font.GothamBold
-        dot.TextColor3 = Color3.fromRGB(60, 60, 80)
-        dot.ZIndex = 64
+        dot.Text                  = "●"
+        dot.TextSize              = 9
+        dot.Font                  = Enum.Font.GothamBold
+        dot.TextColor3            = Color3.fromRGB(50, 50, 68)
+        dot.ZIndex                = 64
 
-        -- edit mode overlay (drag icon, hidden normally)
         local editOverlay = Instance.new("TextLabel", btn)
-        editOverlay.Size = UDim2.new(1, 0, 1, 0)
+        editOverlay.Size          = UDim2.new(1, 0, 1, 0)
         editOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        editOverlay.BackgroundTransparency = 0.45
-        editOverlay.Text = "✥"
-        editOverlay.TextSize = 24
-        editOverlay.Font = Enum.Font.GothamBlack
-        editOverlay.TextColor3 = Color3.fromRGB(255, 200, 50)
-        editOverlay.ZIndex = 65
-        editOverlay.Visible = false
-        Instance.new("UICorner", editOverlay).CornerRadius = UDim.new(0, 11)
+        editOverlay.BackgroundTransparency = 0.42
+        editOverlay.Text          = "✥"
+        editOverlay.TextSize      = 26
+        editOverlay.Font          = Enum.Font.GothamBlack
+        editOverlay.TextColor3    = Color3.fromRGB(255, 200, 50)
+        editOverlay.ZIndex        = 65
+        editOverlay.Visible       = false
+        Instance.new("UICorner", editOverlay).CornerRadius = UDim.new(0, 12)
 
-        local entry = {
-            id          = def.id,
-            btn         = btn,
-            btnSt       = btnSt,
-            dot         = dot,
-            editOverlay = editOverlay,
-        }
+        local entry = {id = def.id, btn = btn, btnSt = btnSt, dot = dot, editOverlay = editOverlay}
         MobHUDBtns[def.id] = entry
-        UpdateHUDColor(entry)
+        ApplyHUDBtnColor(entry)
 
-        -- ── Touch input ───────────────────────────────────────
         local tStart, tMoved, tOrigin, tBtnOrigin = nil, false, nil, nil
-
         btn.InputBegan:Connect(function(inp)
             if inp.UserInputType ~= Enum.UserInputType.Touch then return end
-            tStart    = tick()
-            tMoved    = false
-            tOrigin   = inp.Position
+            tStart = tick(); tMoved = false
+            tOrigin = inp.Position
             tBtnOrigin = Vector2.new(btn.Position.X.Offset, btn.Position.Y.Offset)
         end)
-
         btn.InputChanged:Connect(function(inp)
-            if inp.UserInputType ~= Enum.UserInputType.Touch then return end
-            if not tStart or not MobHUDEditMode then return end
-            -- drag in edit mode
+            if inp.UserInputType ~= Enum.UserInputType.Touch or not MobHUDEditMode or not tStart then return end
             local delta = inp.Position - tOrigin
-            if delta.Magnitude > 4 then tMoved = true end
+            if delta.Magnitude > 5 then tMoved = true end
             local vp2 = Camera.ViewportSize
-            local nx = math.clamp(tBtnOrigin.X + delta.X, 0, vp2.X - HUD_SZ)
-            local ny = math.clamp(tBtnOrigin.Y + delta.Y, 0, vp2.Y - HUD_SZ)
-            btn.Position = UDim2.new(0, nx, 0, ny)
+            btn.Position = UDim2.new(0,
+                math.clamp(tBtnOrigin.X + delta.X, 0, vp2.X - HUD_SZ), 0,
+                math.clamp(tBtnOrigin.Y + delta.Y, 0, vp2.Y - HUD_SZ))
         end)
-
         btn.InputEnded:Connect(function(inp)
             if inp.UserInputType ~= Enum.UserInputType.Touch then return end
             if MobHUDEditMode then
-                -- save new position
                 if not Config.MobHUDPositions then Config.MobHUDPositions = {} end
-                Config.MobHUDPositions[def.id] = {
-                    btn.Position.X.Offset,
-                    btn.Position.Y.Offset,
-                }
-            elseif tStart and not tMoved and (tick() - tStart) < 0.4 then
-                -- quick tap = toggle
+                Config.MobHUDPositions[def.id] = {btn.Position.X.Offset, btn.Position.Y.Offset}
+            elseif tStart and not tMoved and (tick() - tStart) < 0.35 then
                 Toggle(def.id)
                 if def.id == "Fly" then UpdFly() end
-                if def.id == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
-                UpdateHUDColor(entry)
+                if def.id == "Freecam" then fcZ.Visible = State.Freecam end
+                ApplyHUDBtnColor(entry)
             end
             tStart = nil; tMoved = false
         end)
     end
 
-    -- ── Edit button logic ─────────────────────────────────────
-    editBtn.MouseButton1Click:Connect(function()
-        MobHUDEditMode = not MobHUDEditMode
-        editBtn.Text = MobHUDEditMode and "✓ Done" or "✏ Edit"
-        editBtn.BackgroundColor3 = MobHUDEditMode
-            and Color3.fromRGB(30, 55, 10)
-            or Color3.fromRGB(22, 22, 36)
-        editBtnSt.Color = MobHUDEditMode
-            and Color3.fromRGB(120, 255, 80)
-            or P.acc
-        for _, entry in pairs(MobHUDBtns) do
-            UpdateHUDColor(entry)
-        end
-        if not MobHUDEditMode then
-            -- auto-save positions when exiting edit mode
-            if HasFileSystem() then pcall(SaveConfig) end
-            Notify("HUD", "✓ Positions saved", 2)
+    -- Apply saved visibility
+    RefreshHUDVisibility()
+
+    -- ── Sync colors every 0.3s ────────────────────────────────
+    task.spawn(function()
+        while task.wait(0.3) do
+            if not MobHUDEditMode then
+                for _, entry in pairs(MobHUDBtns) do
+                    if entry.btn.Visible then pcall(ApplyHUDBtnColor, entry) end
+                end
+            end
         end
     end)
 
-    -- ── Sync colors with State every 0.25s ───────────────────
-    task.spawn(function()
-        while task.wait(0.25) do
-            if not MobHUDEditMode then
-                for _, entry in pairs(MobHUDBtns) do
-                    pcall(UpdateHUDColor, entry)
-                end
-            end
+    -- ═══════════════════════════════════════════════════════════
+    -- HUD CHOOSER PANEL
+    -- ═══════════════════════════════════════════════════════════
+    local hudPanel = Instance.new("Frame", Scr)
+    hudPanel.Size               = UDim2.new(0, 300, 0, 0)
+    hudPanel.Position           = UDim2.new(0.5, -150, 1, -10)
+    hudPanel.BackgroundColor3   = Color3.fromRGB(12, 12, 20)
+    hudPanel.BorderSizePixel    = 0
+    hudPanel.Visible            = false
+    hudPanel.ZIndex             = 300
+    hudPanel.ClipsDescendants   = true
+    Instance.new("UICorner", hudPanel).CornerRadius = UDim.new(0, 14)
+    local hudPanelSt = Instance.new("UIStroke", hudPanel)
+    hudPanelSt.Color = P.acc; hudPanelSt.Thickness = 1.5
+
+    -- Panel title bar
+    local hudTitleBar = Instance.new("Frame", hudPanel)
+    hudTitleBar.Size             = UDim2.new(1, 0, 0, 38)
+    hudTitleBar.BackgroundColor3 = Color3.fromRGB(18, 18, 30)
+    hudTitleBar.BorderSizePixel  = 0
+    hudTitleBar.ZIndex           = 301
+    Instance.new("UICorner", hudTitleBar).CornerRadius = UDim.new(0, 14)
+    local hudTitleFix = Instance.new("Frame", hudTitleBar)
+    hudTitleFix.Size = UDim2.new(1, 0, 0, 14); hudTitleFix.Position = UDim2.new(0, 0, 1, -14)
+    hudTitleFix.BackgroundColor3 = Color3.fromRGB(18, 18, 30); hudTitleFix.BorderSizePixel = 0
+
+    local hudTitleLbl = Instance.new("TextLabel", hudTitleBar)
+    hudTitleLbl.Size              = UDim2.new(1, -80, 1, 0)
+    hudTitleLbl.Position          = UDim2.new(0, 12, 0, 0)
+    hudTitleLbl.BackgroundTransparency = 1
+    hudTitleLbl.Text              = "⚙  HUD Buttons"
+    hudTitleLbl.TextColor3        = P.acc
+    hudTitleLbl.Font              = Enum.Font.GothamBlack
+    hudTitleLbl.TextSize          = 13
+    hudTitleLbl.TextXAlignment    = Enum.TextXAlignment.Left
+    hudTitleLbl.ZIndex            = 302
+
+    -- "✏ Move" toggle inside panel title bar
+    local moveTogBtn = Instance.new("TextButton", hudTitleBar)
+    moveTogBtn.Size             = UDim2.new(0, 64, 0, 26)
+    moveTogBtn.Position         = UDim2.new(1, -130, 0.5, -13)
+    moveTogBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 44)
+    moveTogBtn.Text             = "✏ Move"
+    moveTogBtn.TextColor3       = P.dim
+    moveTogBtn.Font             = Enum.Font.GothamBold
+    moveTogBtn.TextSize         = 10
+    moveTogBtn.BorderSizePixel  = 0
+    moveTogBtn.AutoButtonColor  = false
+    moveTogBtn.ZIndex           = 303
+    Instance.new("UICorner", moveTogBtn).CornerRadius = UDim.new(0, 7)
+    Instance.new("UIStroke", moveTogBtn).Color = P.dim
+
+    -- "✓ Done" close button
+    local hudDoneBtn = Instance.new("TextButton", hudTitleBar)
+    hudDoneBtn.Size             = UDim2.new(0, 54, 0, 26)
+    hudDoneBtn.Position         = UDim2.new(1, -62, 0.5, -13)
+    hudDoneBtn.BackgroundColor3 = Color3.fromRGB(16, 55, 28)
+    hudDoneBtn.Text             = "✓ Done"
+    hudDoneBtn.TextColor3       = Color3.fromRGB(0, 220, 100)
+    hudDoneBtn.Font             = Enum.Font.GothamBold
+    hudDoneBtn.TextSize         = 10
+    hudDoneBtn.BorderSizePixel  = 0
+    hudDoneBtn.AutoButtonColor  = false
+    hudDoneBtn.ZIndex           = 303
+    Instance.new("UICorner", hudDoneBtn).CornerRadius = UDim.new(0, 7)
+    Instance.new("UIStroke", hudDoneBtn).Color = Color3.fromRGB(0, 180, 80)
+
+    -- Chips grid
+    local chipsFrame = Instance.new("Frame", hudPanel)
+    chipsFrame.Position          = UDim2.new(0, 0, 0, 40)
+    chipsFrame.Size              = UDim2.new(1, 0, 1, -40)
+    chipsFrame.BackgroundTransparency = 1
+    chipsFrame.ZIndex            = 301
+    local chipsGrid = Instance.new("UIGridLayout", chipsFrame)
+    chipsGrid.CellSize           = UDim2.new(0, 84, 0, 38)
+    chipsGrid.CellPadding        = UDim2.new(0, 7, 0, 6)
+    chipsGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    chipsGrid.SortOrder          = Enum.SortOrder.LayoutOrder
+    local chipsPad = Instance.new("UIPadding", chipsFrame)
+    chipsPad.PaddingTop    = UDim.new(0, 6)
+    chipsPad.PaddingBottom = UDim.new(0, 8)
+    chipsPad.PaddingLeft   = UDim.new(0, 6)
+    chipsPad.PaddingRight  = UDim.new(0, 6)
+
+    local ChipRefs = {}   -- {chip, dot} keyed by id
+
+    for _, def in ipairs(MobHUDDefs) do
+        local chip = Instance.new("TextButton", chipsFrame)
+        chip.Size               = UDim2.new(0, 84, 0, 38)
+        chip.BackgroundColor3   = Color3.fromRGB(22, 22, 36)
+        chip.BorderSizePixel    = 0
+        chip.AutoButtonColor    = false
+        chip.Text               = ""
+        chip.ZIndex             = 302
+        Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 9)
+        local chipSt = Instance.new("UIStroke", chip)
+        chipSt.Color = Color3.fromRGB(44, 44, 62); chipSt.Thickness = 1.2
+
+        local chipIco = Instance.new("TextLabel", chip)
+        chipIco.Size              = UDim2.new(0, 28, 1, 0)
+        chipIco.Position          = UDim2.new(0, 4, 0, 0)
+        chipIco.BackgroundTransparency = 1
+        chipIco.Text              = def.icon
+        chipIco.TextSize          = 18
+        chipIco.Font              = Enum.Font.Gotham
+        chipIco.TextColor3        = P.txt
+        chipIco.ZIndex            = 303
+
+        local chipLbl = Instance.new("TextLabel", chip)
+        chipLbl.Size              = UDim2.new(1, -32, 1, 0)
+        chipLbl.Position          = UDim2.new(0, 30, 0, 0)
+        chipLbl.BackgroundTransparency = 1
+        chipLbl.Text              = def.short
+        chipLbl.TextSize          = 9
+        chipLbl.Font              = Enum.Font.GothamBold
+        chipLbl.TextColor3        = P.txt
+        chipLbl.TextXAlignment    = Enum.TextXAlignment.Left
+        chipLbl.ZIndex            = 303
+
+        -- small toggle indicator (right side)
+        local chipDot = Instance.new("Frame", chip)
+        chipDot.Size              = UDim2.new(0, 8, 0, 8)
+        chipDot.Position          = UDim2.new(1, -11, 0.5, -4)
+        chipDot.BackgroundColor3  = Color3.fromRGB(44, 44, 62)
+        chipDot.BorderSizePixel   = 0
+        chipDot.ZIndex            = 303
+        Instance.new("UICorner", chipDot).CornerRadius = UDim.new(1, 0)
+
+        ChipRefs[def.id] = {chip = chip, chipSt = chipSt, chipDot = chipDot}
+
+        local function RefreshChip()
+            local en = Config.MobHUDEnabled[def.id] == true
+            chip.BackgroundColor3 = en and Color3.fromRGB(16, 52, 30) or Color3.fromRGB(22, 22, 36)
+            chipSt.Color          = en and Color3.fromRGB(0, 180, 90) or Color3.fromRGB(44, 44, 62)
+            chipDot.BackgroundColor3 = en and Color3.fromRGB(0, 220, 100) or Color3.fromRGB(44, 44, 62)
+        end
+        RefreshChip()
+
+        chip.MouseButton1Click:Connect(function()
+            Config.MobHUDEnabled[def.id] = not (Config.MobHUDEnabled[def.id] == true)
+            RefreshChip()
+            RefreshHUDVisibility()
+        end)
+    end
+
+    -- Auto-size panel height based on chips grid
+    local function ResizeHudPanel()
+        local rows = math.ceil(#MobHUDDefs / 3)
+        local contentH = 40 + rows * 38 + (rows - 1) * 6 + 20
+        local vp = Camera.ViewportSize
+        local h = math.min(contentH, vp.Y * 0.55)
+        hudPanel.Size = UDim2.new(0, 300, 0, h)
+        hudPanel.Position = UDim2.new(0.5, -150, 1, -(h + 72))
+        chipsFrame.Size = UDim2.new(1, 0, 0, h - 40)
+    end
+
+    -- ── "HUD" open button ─────────────────────────────────────
+    local hudOpenBtn = Instance.new("TextButton", Scr)
+    hudOpenBtn.Size             = UDim2.new(0, MBS, 0, 34)
+    hudOpenBtn.Position         = UDim2.new(0, 10, 0.5, MBS / 2 + 8)
+    hudOpenBtn.BackgroundColor3 = P.bg
+    hudOpenBtn.Text             = "HUD"
+    hudOpenBtn.TextColor3       = P.acc
+    hudOpenBtn.Font             = Enum.Font.GothamBlack
+    hudOpenBtn.TextSize         = 11
+    hudOpenBtn.ZIndex           = 100
+    hudOpenBtn.AutoButtonColor  = false
+    Instance.new("UICorner", hudOpenBtn).CornerRadius = UDim.new(0, 10)
+    local hudOpenBtnSt = Instance.new("UIStroke", hudOpenBtn)
+    hudOpenBtnSt.Thickness = 1.5; hudOpenBtnSt.Color = P.acc
+
+    local hudPanelOpen = false
+    local function OpenHUDPanel()
+        hudPanelOpen = true
+        ResizeHudPanel()
+        hudPanel.Visible = true
+        hudPanel.Size = UDim2.new(0, 300, 0, 0)
+        local finalH = math.min(40 + math.ceil(#MobHUDDefs / 3) * 44 + 20, Camera.ViewportSize.Y * 0.55)
+        TweenService:Create(hudPanel, TweenInfo.new(0.22, Enum.EasingStyle.Quart), {
+            Size = UDim2.new(0, 300, 0, finalH),
+        }):Play()
+        hudOpenBtn.TextColor3 = Color3.fromRGB(255, 200, 50)
+        hudOpenBtnSt.Color    = Color3.fromRGB(255, 200, 50)
+    end
+    local function CloseHUDPanel()
+        hudPanelOpen = false
+        TweenService:Create(hudPanel, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 300, 0, 0),
+        }):Play()
+        task.delay(0.15, function() hudPanel.Visible = false end)
+        hudOpenBtn.TextColor3 = P.acc
+        hudOpenBtnSt.Color    = P.acc
+        -- exit move mode too
+        if MobHUDEditMode then
+            MobHUDEditMode = false
+            moveTogBtn.Text             = "✏ Move"
+            moveTogBtn.TextColor3       = P.dim
+            moveTogBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 44)
+            for _, entry in pairs(MobHUDBtns) do pcall(ApplyHUDBtnColor, entry) end
+        end
+        if HasFileSystem() then pcall(SaveConfig) end
+    end
+
+    hudOpenBtn.MouseButton1Click:Connect(function()
+        if hudPanelOpen then CloseHUDPanel() else OpenHUDPanel() end
+    end)
+
+    hudDoneBtn.MouseButton1Click:Connect(CloseHUDPanel)
+
+    moveTogBtn.MouseButton1Click:Connect(function()
+        MobHUDEditMode = not MobHUDEditMode
+        if MobHUDEditMode then
+            moveTogBtn.Text             = "● Moving"
+            moveTogBtn.TextColor3       = Color3.fromRGB(255, 200, 50)
+            moveTogBtn.BackgroundColor3 = Color3.fromRGB(40, 34, 8)
+        else
+            moveTogBtn.Text             = "✏ Move"
+            moveTogBtn.TextColor3       = P.dim
+            moveTogBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 44)
+        end
+        for _, entry in pairs(MobHUDBtns) do
+            if entry.btn.Visible then pcall(ApplyHUDBtnColor, entry) end
         end
     end)
 
