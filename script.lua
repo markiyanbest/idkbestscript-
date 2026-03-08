@@ -103,6 +103,7 @@ local Strings = {
         sl_jump_power   = "Jump Power",
         sl_bhop_power   = "Bhop Power",
         sl_hitbox_size  = "Hitbox Size",
+        sl_esp_dist     = "ESP Radius (studs)",
         sl_aim_fov      = "Aim FOV (px)",
         sl_aim_smooth   = "Aim Smooth %",
         sl_anti_void_h  = "Anti-Void Height",
@@ -214,6 +215,7 @@ local Strings = {
         sl_jump_power   = "Сила стрибка",
         sl_bhop_power   = "Сила Bhop",
         sl_hitbox_size  = "Розмір хітбокса",
+        sl_esp_dist     = "Радіус ESP (стадів)",
         sl_aim_fov      = "FOV прицілу (пкс)",
         sl_aim_smooth   = "Плавність прицілу %",
         sl_anti_void_h  = "Висота Анти-Войд",
@@ -369,6 +371,7 @@ local Config = {
     AimFOV            = 200,
     AimSmooth         = 0.18,
     AimPart           = "Head",
+    ESPDistance       = 700,
     SpeedAntiBan      = true,
     FlyAntiBan        = true,
     HitboxRandomize   = true,
@@ -514,7 +517,7 @@ local function ResetConfig()
     Config.HitboxRandomize = true; Config.AimAntiDetect = true
     Config.SpeedJitter = 1.5; Config.FlyHeightMax = 1800
     Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8
-    Config.AntiVoidHeight = -180
+    Config.AntiVoidHeight = -180; Config.ESPDistance = 700
     Binds.Fly = Enum.KeyCode.F; Binds.Aim = Enum.KeyCode.G
     Binds.Noclip = Enum.KeyCode.V; Binds.SilentAim = Enum.KeyCode.B
     Binds.ToggleMenu = Enum.KeyCode.M
@@ -819,7 +822,7 @@ task.spawn(function()
                 bb.Size          = UDim2.new(0, 200, 0, 36)
                 bb.StudsOffset   = Vector3.new(0, 2.8, 0)
                 bb.AlwaysOnTop   = true
-                bb.MaxDistance   = 700
+                bb.MaxDistance   = Config.ESPDistance
                 bb.LightInfluence = 0
                 bb.Parent        = head
 
@@ -851,6 +854,9 @@ task.spawn(function()
                 or 0
             local ratio = hp / maxHp
             local col   = GetESPColor(ratio)
+
+            -- Keep MaxDistance in sync with slider (instant effect, no rebuild)
+            ca.bb.MaxDistance = Config.ESPDistance
 
             -- Format: "PlayerName  HP/MaxHP  Xm"
             ca.lbl.Text       = string.format("%s  %d/%d  %dm", p.Name, hp, maxHp, dist)
@@ -1092,18 +1098,29 @@ local function UpdVis(nm)
 end
 
 local function RestoreMouse()
-    task.delay(0.1, function()
+    -- Step 1: immediately unlock mouse behavior to prevent freeze
+    pcall(function()
+        UIS.MouseBehavior    = Enum.MouseBehavior.Default
+        UIS.MouseIconEnabled = true
+    end)
+    task.delay(0.05, function()
+        -- Step 2: restore camera to follow humanoid
+        local C = LP.Character
+        local H = C and C:FindFirstChildOfClass("Humanoid")
+        pcall(function()
+            Camera.CameraType = Enum.CameraType.Custom
+            if H then Camera.CameraSubject = H end
+        end)
+        -- Step 3: send a tiny neutral mouse delta so shift-lock snaps back correctly
         pcall(function()
             UIS.MouseBehavior = Enum.MouseBehavior.Default
-            UIS.MouseIconEnabled = true
         end)
-        task.delay(0.05, function()
-            local C = LP.Character
-            local H = C and C:FindFirstChildOfClass("Humanoid")
-            pcall(function()
-                Camera.CameraType = Enum.CameraType.Custom
-                if H then Camera.CameraSubject = H end
-            end)
+    end)
+    task.delay(0.15, function()
+        -- Step 4: final safety reset after camera settles
+        pcall(function()
+            UIS.MouseBehavior    = Enum.MouseBehavior.Default
+            UIS.MouseIconEnabled = true
         end)
     end)
 end
@@ -1196,6 +1213,11 @@ local function Toggle(nm)
             pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
         elseif nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0
+            -- Restore camera/mouse so shift-lock doesn't stay broken
+            RestoreMouse()
+        elseif nm == "SilentAim" then
+            -- nothing extra, but also fix mouse if shift-lock was affected
+            RestoreMouse()
         end
     else
         if nm == "Potato" then
@@ -2600,6 +2622,19 @@ end)
 AddHdr("Config", "📦", "hdr_hitbox_cfg")
 MkSlider("Config", "📦", "sl_hitbox_size", 2, 15, Config.HitboxSize, "HitboxSize", function(v)
     Config.HitboxSize = v
+end)
+
+AddHdr("Config", "👁", "hdr_hitbox_esp")
+MkSlider("Config", "👁", "sl_esp_dist", 50, 2000, Config.ESPDistance, "ESPDistance", function(v)
+    Config.ESPDistance = v
+    -- apply instantly to all active ESP entries
+    for _, ca in pairs(ESPCache) do
+        pcall(function()
+            if ca.bb and ca.bb.Parent then
+                ca.bb.MaxDistance = v
+            end
+        end)
+    end
 end)
 
 AddHdr("Config", "🎯", "hdr_aim_settings")
