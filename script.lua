@@ -108,6 +108,7 @@ local Strings = {
         sl_esp_dist     = "ESP Radius (studs)",
         sl_aim_fov      = "Aim FOV (px)",
         sl_aim_smooth   = "Aim Smooth %",
+        sl_aim_pred     = "Prediction ×",
         sl_anti_void_h  = "Anti-Void Height",
         sl_safe_mult    = "Multiplier (×base)",
         btn_save     = "💾 Save",
@@ -222,6 +223,7 @@ local Strings = {
         sl_esp_dist     = "Радіус ESP (стадів)",
         sl_aim_fov      = "FOV прицілу (пкс)",
         sl_aim_smooth   = "Плавність прицілу %",
+        sl_aim_pred     = "Предікт ×",
         sl_anti_void_h  = "Висота Анти-Войд",
         sl_safe_mult    = "Множник (×база)",
         btn_save     = "💾 Зберегти",
@@ -374,6 +376,7 @@ local Config = {
     HitboxSize        = 5,
     AimFOV            = 200,
     AimSmooth         = 0.18,
+    AimPredMult       = 10,
     AimPart           = "Head",
     ESPDistance       = 700,
     SpeedAntiBan      = true,
@@ -531,7 +534,7 @@ end
 local function ResetConfig()
     Config.FlySpeed = 55; Config.WalkSpeed = 30; Config.JumpPower = 125
     Config.BhopPower = 62; Config.HitboxSize = 5; Config.AimFOV = 200
-    Config.AimSmooth = 0.18; Config.SpeedAntiBan = true; Config.FlyAntiBan = true
+    Config.AimSmooth = 0.18; Config.AimPredMult = 10; Config.SpeedAntiBan = true; Config.FlyAntiBan = true
     Config.HitboxRandomize = true; Config.AimAntiDetect = true
     Config.SpeedJitter = 1.5; Config.FlyHeightMax = 1800
     Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8
@@ -3287,6 +3290,9 @@ end)
 MkSlider("Config", "🎚", "sl_aim_smooth", 5, 100, math.floor(Config.AimSmooth * 100), "AimSmooth_slider", function(v)
     Config.AimSmooth = v / 100
 end)
+MkSlider("Config", "🔮", "sl_aim_pred", 0, 30, 10, "AimPredMult", function(v)
+    Config.AimPredMult = v
+end)
 
 AddHdr("Config", "🌊", "hdr_anti_void")
 MkSlider("Config", "🌊", "sl_anti_void_h", -500, -50, Config.AntiVoidHeight, "AntiVoidHeight", function(v)
@@ -3506,7 +3512,7 @@ RunService.RenderStepped:Connect(function(dt)
                 local predTime = math.clamp(lastPing, 0.01, 0.25)
                 local vel = part.AssemblyLinearVelocity
                 local dist = (Camera.CFrame.Position - part.Position).Magnitude
-                local predMul = math.clamp(dist / 100, 0.3, 1.5)
+                local predMul = math.clamp(dist / 100, 0.3, 1.5) * ((Config.AimPredMult or 10) / 10)
                 local predictedPos = part.Position + vel * predTime * predMul
                 if vel.Y < -5 then
                     predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0)
