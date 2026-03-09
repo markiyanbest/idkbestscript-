@@ -20,8 +20,18 @@ local HttpService       = game:GetService("HttpService")
 local TeleportService   = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local LP     = Players.LocalPlayer
+-- Безпечне очікування гравця для уникнення помилок "nil" при autoexec
+local LP = Players.LocalPlayer
+while not LP do
+    task.wait()
+    LP = Players.LocalPlayer
+end
+
 local Camera = Workspace.CurrentCamera
+while not Camera do
+    task.wait()
+    Camera = Workspace.CurrentCamera
+end
 
 -- ============================================================
 -- 2. LANGUAGE SYSTEM
@@ -1581,8 +1591,13 @@ local function DoAntiAFK()
     end)
 end
 
-LP.Idled:Connect(function()
-    if State.AntiAFK then DoAntiAFK() end
+-- Безпечне підключення Anti-AFK
+pcall(function()
+    if LP then
+        LP.Idled:Connect(function()
+            if State.AntiAFK then DoAntiAFK() end
+        end)
+    end
 end)
 
 task.spawn(function()
@@ -2286,7 +2301,6 @@ do
                     CloseMenu()
                 else
                     OpenMenu()
-                    -- Re-show stats widget if it was closed
                     exS.Visible = State.FPSDisplay
                 end
             end
@@ -2899,14 +2913,13 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
     swDot.BackgroundColor3 = P.wht; swDot.BorderSizePixel = 0
     Instance.new("UICorner", swDot).CornerRadius = UDim.new(1, 0)
 
-    do
-        row.Activated:Connect(function()
-            if waitingBind then return end
-            Toggle(logicName)
-            if logicName == "Fly" then UpdFly() end
-            if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
-        end)
-    end
+    -- Повернено найнадійніший MouseButton1Click
+    row.MouseButton1Click:Connect(function()
+        if waitingBind then return end
+        Toggle(logicName)
+        if logicName == "Fly" then UpdFly() end
+        if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
+    end)
 
     AllRows[logicName] = {swBG = swBG, swDot = swDot, accent = accent, row = row, lbl = lbl}
     table.insert(LocalizableElements, {type = "toggle", obj = lbl, langKey = lblKey})
