@@ -1954,14 +1954,19 @@ end
 -- ============================================================
 -- 26. GUI CREATION
 -- ============================================================
-local GuiP = LP:WaitForChild("PlayerGui", 5)
+-- Try CoreGui first (exploit), fall back to PlayerGui
+local GuiP = nil
 pcall(function()
     local c = game:GetService("CoreGui")
-    local _ = c.Name
+    local _ = c.Name  -- will error if restricted
     GuiP = c
 end)
+if not GuiP then
+    GuiP = LP:FindFirstChild("PlayerGui") or LP:WaitForChild("PlayerGui", 10)
+end
+if not GuiP then GuiP = LP:FindFirstChildWhichIsA("BasePlayerGui") end
 
-local Scr = Instance.new("ScreenGui", GuiP)
+local Scr = Instance.new("ScreenGui", GuiP or game:GetService("CoreGui"))
 Scr.Name = RndStr(12)
 Scr.ResetOnSpawn = false
 Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
