@@ -2112,21 +2112,27 @@ local function CloseMenu()
 end
 
 -- Tap-outside overlay — sits behind menu, closes it on tap
-local menuOverlay = Instance.new("TextButton", Scr)
-menuOverlay.Size = UDim2.new(1, 0, 1, 0)
-menuOverlay.BackgroundTransparency = 1
-menuOverlay.Text = ""; menuOverlay.ZIndex = 48
-menuOverlay.Visible = false; menuOverlay.AutoButtonColor = false
-menuOverlay.MouseButton1Click:Connect(function()
-    CloseMenu()
-    menuOverlay.Visible = false
+-- Close menu when tapping outside — checked via UIS, not an overlay button
+-- (overlay buttons intercept ALL taps including ones on the menu itself)
+UIS.InputBegan:Connect(function(inp, gpe)
+    if gpe then return end
+    if not Main.Visible then return end
+    if inp.UserInputType ~= Enum.UserInputType.MouseButton1
+        and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+    local pos = inp.Position
+    local ap  = Main.AbsolutePosition
+    local as  = Main.AbsoluteSize
+    -- If tap is outside the menu bounds → close
+    if pos.X < ap.X or pos.X > ap.X + as.X
+        or pos.Y < ap.Y or pos.Y > ap.Y + as.Y then
+        CloseMenu()
+    end
 end)
 
 local function OpenMenu()
     Main.Size = UDim2.new(0, MW, 0, 0)
     Main.Position = UDim2.new(0.5, -MW / 2, 0.5, 0)
     Main.Visible = true
-    menuOverlay.Visible = true
     TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, MW, 0, MH),
         Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2),
@@ -2135,7 +2141,6 @@ end
 
 clsB.MouseButton1Click:Connect(function()
     CloseMenu()
-    menuOverlay.Visible = false
 end)
 
 -- Status bar
@@ -3464,7 +3469,7 @@ UIS.InputBegan:Connect(function(inp, gpe)
         if inp.KeyCode == key then
             if act == "ToggleMenu" then
                 if Main.Visible then
-                    CloseMenu(); menuOverlay.Visible = false
+                    CloseMenu()
                 else
                     OpenMenu()
                     exS.Visible = true
