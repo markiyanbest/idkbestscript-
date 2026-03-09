@@ -76,12 +76,9 @@ local Strings = {
         lbl_fake_lag      = "Fake Lag",
         lbl_anti_afk      = "Anti-AFK",
         lbl_fps_unlocker  = "FPS Unlocker",
-        lbl_fps_widget    = "FPS/Ping Widget",
-        desc_fps_unlocker = "Removes the 60 FPS cap. Uses SetMaxFPS — works on most exploits.",
-        desc_fps_widget   = "Show or hide the floating FPS and ping display widget.",
-        lbl_fps_unlocker  = "FPS Unlocker",
-        lbl_fps_display   = "Show FPS/Ping",
         desc_fps_unlocker = "Unlocks frame rate above 60 FPS using setfpscap(0). Requires executor support.",
+        lbl_fps_display   = "Show FPS/Ping",
+        desc_fps_display  = "Shows the floating FPS and Ping widget on screen.",
         desc_fps_display  = "Shows the floating FPS and Ping widget on screen.",
         lbl_speed_jitter  = "Speed Jitter",
         lbl_hitbox_rand   = "Hitbox Randomize",
@@ -199,12 +196,9 @@ local Strings = {
         lbl_fake_lag      = "Фейк лаг",
         lbl_anti_afk      = "Анти-АФК",
         lbl_fps_unlocker  = "FPS Анлокер",
-        lbl_fps_widget    = "FPS/Пінг Віджет",
-        desc_fps_unlocker = "Знімає обмеження 60 FPS. Використовує SetMaxFPS — працює на більшості експлойтів.",
-        desc_fps_widget   = "Показати або приховати плаваючий FPS та пінг віджет.",
-        lbl_fps_unlocker  = "FPS Анлокер",
-        lbl_fps_display   = "Показ FPS/Пінг",
         desc_fps_unlocker = "Знімає обмеження FPS через setfpscap(0). Потрібна підтримка екзекутора.",
+        lbl_fps_display   = "Показ FPS/Пінг",
+        desc_fps_display  = "Показує плаваючий виджет FPS та Пінг на екрані.",
         desc_fps_display  = "Показує плаваючий виджет FPS та Пінг на екрані.",
         lbl_speed_jitter  = "Джиттер швидкості",
         lbl_hitbox_rand   = "Рандомізація хітбокса",
@@ -422,7 +416,6 @@ local State = {
     ESP = false, Spin = false, HighJump = false, Potato = false, FullBright = false,
     FakeLag = false, Freecam = false, NoFallDamage = false,
     AntiAFK = false, InfiniteJump = false, AntiVoid = false,
-    FPSUnlocker = false, FPSWidget = true,
     FPSUnlocker = false, FPSDisplay = true,
     SpeedAntiBan = true, HitboxRandomize = true,
     AimAntiDetect = true, SafeSpeedMode = false,
@@ -433,7 +426,7 @@ local State = {
 -- ============================================================
 local CFG_FILE = "OmniV305_Config.json"
 local SAVE_STATE_KEYS = {
-    "AntiAFK", "FPSWidget", "FPSUnlocker", "ESP", "Hitbox", "Speed", "HighJump", "FPSUnlocker", "FPSDisplay",
+    "AntiAFK", "FPSDisplay", "FPSUnlocker", "ESP", "Hitbox", "Speed", "HighJump",
     "Bhop", "NoFallDamage", "InfiniteJump", "Potato",
     "AntiVoid",
 }
@@ -1380,18 +1373,11 @@ local function Toggle(nm)
         elseif nm == "FullBright" then
             UndoFullBright()
         elseif nm == "FPSUnlocker" then
-            -- restore 60 fps cap
             pcall(function()
                 if setfpscap then setfpscap(60)
                 elseif settings and settings().Rendering then
                     settings().Rendering.FrameRateManager = Enum.FrameRateManagerMode.On
                 end
-            end)
-        elseif nm == "FPSWidget" then
-            exS.Visible = false
-        elseif nm == "FPSUnlocker" then
-            pcall(function()
-                if setfpscap then setfpscap(60) end  -- restore 60 FPS cap
             end)
             Notify("FPS", "FPS cap restored (60)", 2)
         elseif nm == "FPSDisplay" then
@@ -1434,27 +1420,15 @@ local function Toggle(nm)
             DoFullBright()
         elseif nm == "FPSUnlocker" then
             pcall(function()
-                -- setfpscap is provided by most exploits (Synapse X, KRNL, Fluxus etc.)
                 if setfpscap then
-                    setfpscap(0)  -- 0 = unlimited
+                    setfpscap(0)
+                    Notify("FPS", "FPS Unlocked ✓", 2)
                 elseif syn and syn.set_fps_cap then
                     syn.set_fps_cap(0)
-                elseif Drawing and Drawing.Fonts then
-                    -- fallback: try via settings
-                    pcall(function() settings().Rendering.FrameRateManager = Enum.FrameRateManagerMode.Off end)
-                end
-            end)
-        elseif nm == "FPSWidget" then
-            exS.Visible = true
-        elseif nm == "FPSUnlocker" then
-            pcall(function()
-                if setfpscap then
-                    setfpscap(0)  -- 0 = unlimited
                     Notify("FPS", "FPS Unlocked ✓", 2)
                 else
-                    -- fallback: some executors use different name
-                    local ok = pcall(function() (getgenv and getgenv() or {}).setfpscap = nil end)
-                    Notify("FPS", "setfpscap not supported", 2)
+                    pcall(function() settings().Rendering.FrameRateManager = Enum.FrameRateManagerMode.Off end)
+                    Notify("FPS", "setfpscap not supported on this executor", 3)
                 end
             end)
         elseif nm == "FPSDisplay" then
@@ -2104,9 +2078,11 @@ clsB.BorderSizePixel = 0; clsB.ZIndex = 4; clsB.AutoButtonColor = false
 Instance.new("UICorner", clsB).CornerRadius = UDim.new(1, 0)
 
 local function CloseMenu()
+    local ap = Main.AbsolutePosition
+    local vp = Camera.ViewportSize
     TweenService:Create(Main, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
         Size = UDim2.new(0, MW, 0, 0),
-        Position = UDim2.new(0.5, -MW / 2, 0.5, 0),
+        Position = UDim2.new(0, ap.X, 0, math.floor(vp.Y / 2)),
     }):Play()
     task.delay(0.15, function() Main.Visible = false end)
 end
@@ -2114,28 +2090,18 @@ end
 -- Tap-outside overlay — sits behind menu, closes it on tap
 -- Close menu when tapping outside — checked via UIS, not an overlay button
 -- (overlay buttons intercept ALL taps including ones on the menu itself)
-UIS.InputBegan:Connect(function(inp, gpe)
-    if gpe then return end
-    if not Main.Visible then return end
-    if inp.UserInputType ~= Enum.UserInputType.MouseButton1
-        and inp.UserInputType ~= Enum.UserInputType.Touch then return end
-    local pos = inp.Position
-    local ap  = Main.AbsolutePosition
-    local as  = Main.AbsoluteSize
-    -- If tap is outside the menu bounds → close
-    if pos.X < ap.X or pos.X > ap.X + as.X
-        or pos.Y < ap.Y or pos.Y > ap.Y + as.Y then
-        CloseMenu()
-    end
-end)
+-- (outside-click-to-close removed: caused buttons inside menu to stop working)
 
 local function OpenMenu()
+    local vp = Camera.ViewportSize
+    local cx = math.floor(vp.X / 2 - MW / 2)
+    local cy = math.floor(vp.Y / 2 - MH / 2)
     Main.Size = UDim2.new(0, MW, 0, 0)
-    Main.Position = UDim2.new(0.5, -MW / 2, 0.5, 0)
+    Main.Position = UDim2.new(0, cx, 0, math.floor(vp.Y / 2))
     Main.Visible = true
     TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, MW, 0, MH),
-        Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2),
+        Position = UDim2.new(0, cx, 0, cy),
     }):Play()
 end
 
@@ -2223,25 +2189,34 @@ for _, n in ipairs(tNames) do
     TabPages[n] = s
 end
 
--- Draggable title bar
+-- Draggable title bar (UIS-based for reliable Touch tracking on mobile/exploit)
 do
-    local dr, ds, dp = false, nil, nil
+    local dr, ds, dpX, dpY = false, nil, 0, 0
+
     TB.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
-            dr = true; ds = inp.Position; dp = Main.Position
+            dr = true
+            ds = Vector2.new(inp.Position.X, inp.Position.Y)
+            dpX = Main.AbsolutePosition.X
+            dpY = Main.AbsolutePosition.Y
         end
     end)
-    TB.InputChanged:Connect(function(inp)
+
+    -- Use UIS.InputChanged so Touch move is always captured regardless of UI state
+    UIS.InputChanged:Connect(function(inp)
         if not dr then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
             or inp.UserInputType == Enum.UserInputType.Touch then
-            local d = inp.Position - ds
-            local newX = math.clamp(dp.X.Offset + d.X, -MW / 2, Camera.ViewportSize.X - MW / 2)
-            local newY = math.clamp(dp.Y.Offset + d.Y, -MH / 2, Camera.ViewportSize.Y - MH / 2)
-            Main.Position = UDim2.new(dp.X.Scale, newX, dp.Y.Scale, newY)
+            local d = Vector2.new(inp.Position.X - ds.X, inp.Position.Y - ds.Y)
+            local vp = Camera.ViewportSize
+            local ms = Main.AbsoluteSize
+            local newX = math.clamp(dpX + d.X, 0, vp.X - ms.X)
+            local newY = math.clamp(dpY + d.Y, 0, vp.Y - ms.Y)
+            Main.Position = UDim2.new(0, newX, 0, newY)
         end
     end)
+
     TB.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then dr = false end
@@ -2521,7 +2496,6 @@ local MobHUDDefs = {
     {id = "ShadowLock",   icon = "🧲", short = "SLock"},
     {id = "FullBright",   icon = "☀",  short = "FBrt"},
     {id = "FPSUnlocker",  icon = "🔓", short = "FPS+"},
-    {id = "FPSUnlocker",  icon = "🚀", short = "FPS+"},
     {id = "FPSDisplay",   icon = "📊", short = "FPSw"},
 }
 
@@ -3038,12 +3012,36 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
     swDot.BackgroundColor3 = P.wht; swDot.BorderSizePixel = 0
     Instance.new("UICorner", swDot).CornerRadius = UDim.new(1, 0)
 
-    row.MouseButton1Click:Connect(function()
-        if waitingBind then return end
-        Toggle(logicName)
-        if logicName == "Fly" then UpdFly() end
-        if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
-    end)
+    -- Use InputBegan/InputEnded instead of MouseButton1Click
+    -- so that ScrollingFrame can still detect swipe-to-scroll gestures on mobile
+    do
+        local tapStart = 0
+        local tapStartPos = nil  -- start position of touch/click
+        local MOVE_THRESHOLD = 14  -- pixels of total movement = scroll intent
+        row.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseButton1
+                or inp.UserInputType == Enum.UserInputType.Touch then
+                tapStart = tick()
+                tapStartPos = Vector2.new(inp.Position.X, inp.Position.Y)
+            end
+        end)
+        row.InputEnded:Connect(function(inp)
+            if (inp.UserInputType == Enum.UserInputType.MouseButton1
+                or inp.UserInputType == Enum.UserInputType.Touch)
+                and tapStartPos ~= nil
+                and (tick() - tapStart) < 0.45 then
+                -- Check total travel distance from where finger started
+                local dist = (Vector2.new(inp.Position.X, inp.Position.Y) - tapStartPos).Magnitude
+                if dist < MOVE_THRESHOLD then
+                    if waitingBind then return end
+                    Toggle(logicName)
+                    if logicName == "Fly" then UpdFly() end
+                    if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
+                end
+                tapStartPos = nil
+            end
+        end)
+    end
 
     AllRows[logicName] = {swBG = swBG, swDot = swDot, accent = accent, row = row, lbl = lbl}
     table.insert(LocalizableElements, {type = "toggle", obj = lbl, langKey = lblKey})
@@ -3292,9 +3290,7 @@ MkToggle("Misc", "☀️", "lbl_fullbright", "FullBright", "desc_fullbright")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
 AddHdr("Misc", "🛡", "hdr_protection")
 MkToggle("Misc", "🔓", "lbl_fps_unlocker", "FPSUnlocker", "desc_fps_unlocker")
-MkToggle("Misc", "📊", "lbl_fps_widget", "FPSWidget", "desc_fps_widget")
 MkToggle("Misc", "💤", "lbl_anti_afk", "AntiAFK", "desc_anti_afk")
-MkToggle("Misc", "🚀", "lbl_fps_unlocker", "FPSUnlocker", "desc_fps_unlocker")
 MkToggle("Misc", "📊", "lbl_fps_display", "FPSDisplay", "desc_fps_display")
 AddHdr("Misc", "🌐", "hdr_server_hop")
 MkButton("Misc", "🔄", "btn_rejoin", Color3.fromRGB(22, 28, 38), RejoinSameServer)
@@ -3450,6 +3446,7 @@ MkToggle("Config", "🎯", "lbl_aim_anti", "AimAntiDetect", "desc_aim_anti")
 UIS.InputBegan:Connect(function(inp, gpe)
     if waitingBind then
         if inp.UserInputType == Enum.UserInputType.Keyboard then
+            -- PC: assign the pressed key as bind
             local key = inp.KeyCode; local nm = waitingBind
             Binds[nm] = key
             local d = AllRows[nm]
@@ -3458,6 +3455,17 @@ UIS.InputBegan:Connect(function(inp, gpe)
                 d.bindBtn.TextColor3 = P.dim
             end
             Notify("BIND", nm .. " → " .. tostring(key):gsub("Enum.KeyCode.", ""), 2)
+            waitingBind = nil
+        elseif inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then
+            -- Mobile/mouse: cancel bind waiting so buttons don't freeze
+            local nm = waitingBind
+            local d = AllRows[nm]
+            if d and d.bindBtn then
+                d.bindBtn.Text = tostring(Binds[nm] or ""):gsub("Enum.KeyCode.", "")
+                d.bindBtn.TextColor3 = P.dim
+            end
+            Notify("BIND", "Cancelled", 1)
             waitingBind = nil
         end
         return
@@ -3931,3 +3939,8 @@ end)
 -- 38. STARTUP
 -- ============================================================
 Notify("OMNI V305", L("ntf_startup"), 5)
+-- Sync FPS widget visibility with saved state
+task.spawn(function()
+    task.wait(0.8)
+    if exS then exS.Visible = (State.FPSDisplay ~= false) end
+end)
