@@ -422,6 +422,13 @@ local State = {
 }
 
 -- ============================================================
+local HasFileSystem
+local SaveConfig
+local ApplyLoadedConfig
+local UpdateAllSliders
+local LoadConfig
+local ResetConfig
+do
 -- 7. CONFIG PERSISTENCE
 -- ============================================================
 local CFG_FILE = "OmniV305_Config.json"
@@ -434,7 +441,7 @@ local SAVE_CFG_KEYS = {
     "SpeedAntiBan", "HitboxRandomize", "AimAntiDetect", "SafeSpeedMode",
 }
 
-local function HasFileSystem()
+HasFileSystem = function()
     return (writefile ~= nil and readfile ~= nil)
 end
 
@@ -455,7 +462,7 @@ end
 
 local SliderRefs = {}
 
-local function SaveConfig()
+SaveConfig = function()
     if not HasFileSystem() then
         Notify("Config", L("ntf_no_write"), 3)
         return false
@@ -483,7 +490,7 @@ local function SaveConfig()
     end
 end
 
-local function ApplyLoadedConfig(data)
+ApplyLoadedConfig = function(data)
     if data.config then
         for k, v in pairs(data.config) do
             if Config[k] ~= nil then
@@ -518,7 +525,7 @@ local function ApplyLoadedConfig(data)
     end
 end
 
-local function UpdateAllSliders()
+UpdateAllSliders = function()
     for key, ref in pairs(SliderRefs) do
         if ref and ref.update then
             pcall(ref.update, Config[key] or ref.default)
@@ -526,7 +533,7 @@ local function UpdateAllSliders()
     end
 end
 
-local function LoadConfig()
+LoadConfig = function()
     if not HasFileSystem() then
         Notify("Config", L("ntf_no_read"), 3)
         return false
@@ -547,7 +554,7 @@ local function LoadConfig()
     return true
 end
 
-local function ResetConfig()
+ResetConfig = function()
     Config.FlySpeed = 55; Config.WalkSpeed = 30; Config.JumpPower = 125
     Config.BhopPower = 62; Config.HitboxSize = 5; Config.AimFOV = 200
     Config.AimSmooth = 0.18; Config.AimPredMult = 10; Config.SpeedAntiBan = true; Config.FlyAntiBan = true
@@ -571,6 +578,8 @@ task.spawn(function()
 end)
 
 -- ============================================================
+end -- do -- 7. CONFIG
+
 -- 8. NOISE GENERATOR
 -- ============================================================
 local _pSeed = math.random(1, 99999)
@@ -1299,12 +1308,14 @@ end
 local UpdFly
 
 -- ============================================================
+local Toggle
+do
 -- 19. UNIFIED TOGGLE FUNCTION
 -- ============================================================
 local LockedTarget = nil
 local lastBhop     = 0
 
-local function Toggle(nm)
+Toggle = function(nm)
     if nm == "SpeedAntiBan" then
         Config.SpeedAntiBan = not Config.SpeedAntiBan
         State.SpeedAntiBan = Config.SpeedAntiBan
@@ -1579,6 +1590,8 @@ local function Toggle(nm)
 end
 
 -- ============================================================
+end -- do -- 19. UNIFIED
+
 -- 20. HIGH JUMP DETECTOR
 -- ============================================================
 local _hjConn = nil
@@ -1726,6 +1739,8 @@ LP.CharacterAdded:Connect(function(char)
 end)
 
 -- ============================================================
+
+do
 -- 24. SILENT AIM HOOK
 -- ============================================================
 local silentAimHooked = false
@@ -1830,6 +1845,13 @@ task.spawn(function()
 end)
 
 -- ============================================================
+end -- do -- 24. SILENT
+
+local RejoinSameServer
+local JoinRandomServer
+local JoinBiggestServer
+local JoinSmallestServer
+do
 -- 25. SERVER HOP FUNCTIONS
 -- ============================================================
 local function GetHTTP(url)
@@ -1867,7 +1889,7 @@ local function ServerCooldown()
     return false
 end
 
-local function RejoinSameServer()
+RejoinSameServer = function()
     if ServerCooldown() then return end
     Notify("Rejoin", L("ntf_rejoin"), 3)
     task.delay(1.5, function()
@@ -1877,7 +1899,7 @@ local function RejoinSameServer()
     end)
 end
 
-local function JoinRandomServer()
+JoinRandomServer = function()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_rnd"), 3)
     task.spawn(function()
@@ -1901,7 +1923,7 @@ local function JoinRandomServer()
     end)
 end
 
-local function JoinBiggestServer()
+JoinBiggestServer = function()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_big"), 3)
     task.spawn(function()
@@ -1926,7 +1948,7 @@ local function JoinBiggestServer()
     end)
 end
 
-local function JoinSmallestServer()
+JoinSmallestServer = function()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_sml"), 3)
     task.spawn(function()
@@ -1952,6 +1974,10 @@ local function JoinSmallestServer()
 end
 
 -- ============================================================
+end -- do -- 25. SERVER
+
+local exS, MobHUDBtns, HUD_SZ
+do
 -- 26. GUI CREATION
 -- ============================================================
 -- Try CoreGui first (exploit), fall back to PlayerGui
@@ -2233,7 +2259,7 @@ do
 end
 
 -- External stats display
-local exS = Instance.new("Frame", Scr)
+exS = Instance.new("Frame", Scr)
 exS.Size = UDim2.new(0, 130, 0, 58)
 exS.Position = UDim2.new(1, -142, 0, 10)
 exS.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
@@ -2456,9 +2482,8 @@ end)
 -- ============================================================
 
 local MobHUDEditMode  = false
-local MobHUDBtns      = {}   -- keyed by id, stores {btn, btnSt, dot, editOverlay}
-
-local HUD_SZ          = 58
+MobHUDBtns = {}   -- keyed by id, stores {btn, btnSt, dot, editOverlay}
+HUD_SZ = 58
 local HUD_COL_OFF     = Color3.fromRGB(18, 18, 30)
 local HUD_COL_ON      = Color3.fromRGB(14, 58, 36)
 local HUD_COL_EDT     = Color3.fromRGB(42, 36, 8)
@@ -3718,6 +3743,8 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 -- ============================================================
+end -- do GUI
+
 -- 35. HEARTBEAT
 -- ============================================================
 RunService.Heartbeat:Connect(function(dt)
