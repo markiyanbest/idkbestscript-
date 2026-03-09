@@ -75,6 +75,14 @@ local Strings = {
         desc_fullbright   = "Sets max brightness and removes all Lighting effects — everything is fully visible even in dark maps.",
         lbl_fake_lag      = "Fake Lag",
         lbl_anti_afk      = "Anti-AFK",
+        lbl_fps_unlocker  = "FPS Unlocker",
+        lbl_fps_widget    = "FPS/Ping Widget",
+        desc_fps_unlocker = "Removes the 60 FPS cap. Uses SetMaxFPS — works on most exploits.",
+        desc_fps_widget   = "Show or hide the floating FPS and ping display widget.",
+        lbl_fps_unlocker  = "FPS Unlocker",
+        lbl_fps_display   = "Show FPS/Ping",
+        desc_fps_unlocker = "Unlocks frame rate above 60 FPS using setfpscap(0). Requires executor support.",
+        desc_fps_display  = "Shows the floating FPS and Ping widget on screen.",
         lbl_speed_jitter  = "Speed Jitter",
         lbl_hitbox_rand   = "Hitbox Randomize",
         lbl_aim_anti      = "Aim Anti-Detect",
@@ -190,6 +198,14 @@ local Strings = {
         desc_fullbright   = "Максимальна яскравість і видалення всіх ефектів освітлення — все видно навіть на темних картах.",
         lbl_fake_lag      = "Фейк лаг",
         lbl_anti_afk      = "Анти-АФК",
+        lbl_fps_unlocker  = "FPS Анлокер",
+        lbl_fps_widget    = "FPS/Пінг Віджет",
+        desc_fps_unlocker = "Знімає обмеження 60 FPS. Використовує SetMaxFPS — працює на більшості експлойтів.",
+        desc_fps_widget   = "Показати або приховати плаваючий FPS та пінг віджет.",
+        lbl_fps_unlocker  = "FPS Анлокер",
+        lbl_fps_display   = "Показ FPS/Пінг",
+        desc_fps_unlocker = "Знімає обмеження FPS через setfpscap(0). Потрібна підтримка екзекутора.",
+        desc_fps_display  = "Показує плаваючий виджет FPS та Пінг на екрані.",
         lbl_speed_jitter  = "Джиттер швидкості",
         lbl_hitbox_rand   = "Рандомізація хітбокса",
         lbl_aim_anti      = "Анти-детект прицілу",
@@ -406,6 +422,8 @@ local State = {
     ESP = false, Spin = false, HighJump = false, Potato = false, FullBright = false,
     FakeLag = false, Freecam = false, NoFallDamage = false,
     AntiAFK = false, InfiniteJump = false, AntiVoid = false,
+    FPSUnlocker = false, FPSWidget = true,
+    FPSUnlocker = false, FPSDisplay = true,
     SpeedAntiBan = true, HitboxRandomize = true,
     AimAntiDetect = true, SafeSpeedMode = false,
 }
@@ -415,7 +433,7 @@ local State = {
 -- ============================================================
 local CFG_FILE = "OmniV305_Config.json"
 local SAVE_STATE_KEYS = {
-    "AntiAFK", "ESP", "Hitbox", "Speed", "HighJump",
+    "AntiAFK", "FPSWidget", "FPSUnlocker", "ESP", "Hitbox", "Speed", "HighJump", "FPSUnlocker", "FPSDisplay",
     "Bhop", "NoFallDamage", "InfiniteJump", "Potato",
     "AntiVoid",
 }
@@ -483,6 +501,11 @@ local function ApplyLoadedConfig(data)
                         if type(pos) == "table" and pos[1] and pos[2] then
                             Config.MobHUDPositions[id] = {pos[1], pos[2]}
                         end
+                    end
+                elseif k == "MobHUDEnabled" and type(v) == "table" then
+                    Config.MobHUDEnabled = {}
+                    for id, en in pairs(v) do
+                        Config.MobHUDEnabled[id] = (en == true)
                     end
                 else
                     Config[k] = v
@@ -1031,21 +1054,32 @@ end)
 local savedShd, savedQ = true, Enum.QualityLevel.Automatic
 
 local function DoPotato()
+    -- Apply Lighting settings immediately (no cost)
     pcall(function()
         savedShd = Lighting.GlobalShadows
         savedQ = settings().Rendering.QualityLevel
         Lighting.GlobalShadows = false
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     end)
-    for _, v in pairs(Workspace:GetDescendants()) do
-        pcall(function()
-            if v:IsA("BasePart") then
-                v.CastShadow = false; v.Reflectance = 0
-            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-                v.Enabled = false
+    -- Gradually process workspace objects in small batches to avoid a freeze spike
+    task.spawn(function()
+        local BATCH = 60   -- objects per frame
+        local count = 0
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if not State.Potato then break end  -- cancelled
+            pcall(function()
+                if v:IsA("BasePart") then
+                    v.CastShadow = false; v.Reflectance = 0
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+                    v.Enabled = false
+                end
+            end)
+            count += 1
+            if count % BATCH == 0 then
+                RunService.Heartbeat:Wait()  -- yield every BATCH objects
             end
-        end)
-    end
+        end
+    end)
 end
 
 local function UndoPotato()
@@ -1345,6 +1379,23 @@ local function Toggle(nm)
             UndoPotato()
         elseif nm == "FullBright" then
             UndoFullBright()
+        elseif nm == "FPSUnlocker" then
+            -- restore 60 fps cap
+            pcall(function()
+                if setfpscap then setfpscap(60)
+                elseif settings and settings().Rendering then
+                    settings().Rendering.FrameRateManager = Enum.FrameRateManagerMode.On
+                end
+            end)
+        elseif nm == "FPSWidget" then
+            exS.Visible = false
+        elseif nm == "FPSUnlocker" then
+            pcall(function()
+                if setfpscap then setfpscap(60) end  -- restore 60 FPS cap
+            end)
+            Notify("FPS", "FPS cap restored (60)", 2)
+        elseif nm == "FPSDisplay" then
+            exS.Visible = false
         elseif nm == "Freecam" then
             pcall(function() if R then R.Anchored = false end end)
             RestoreMouse()
@@ -1381,6 +1432,33 @@ local function Toggle(nm)
             DoPotato()
         elseif nm == "FullBright" then
             DoFullBright()
+        elseif nm == "FPSUnlocker" then
+            pcall(function()
+                -- setfpscap is provided by most exploits (Synapse X, KRNL, Fluxus etc.)
+                if setfpscap then
+                    setfpscap(0)  -- 0 = unlimited
+                elseif syn and syn.set_fps_cap then
+                    syn.set_fps_cap(0)
+                elseif Drawing and Drawing.Fonts then
+                    -- fallback: try via settings
+                    pcall(function() settings().Rendering.FrameRateManager = Enum.FrameRateManagerMode.Off end)
+                end
+            end)
+        elseif nm == "FPSWidget" then
+            exS.Visible = true
+        elseif nm == "FPSUnlocker" then
+            pcall(function()
+                if setfpscap then
+                    setfpscap(0)  -- 0 = unlimited
+                    Notify("FPS", "FPS Unlocked ✓", 2)
+                else
+                    -- fallback: some executors use different name
+                    local ok = pcall(function() (getgenv and getgenv() or {}).setfpscap = nil end)
+                    Notify("FPS", "setfpscap not supported", 2)
+                end
+            end)
+        elseif nm == "FPSDisplay" then
+            exS.Visible = true
         elseif nm == "ShadowLock" then
             LockedTarget = GetClosestEnemy()
         elseif nm == "Fly" and H then
@@ -2033,17 +2111,32 @@ local function CloseMenu()
     task.delay(0.15, function() Main.Visible = false end)
 end
 
+-- Tap-outside overlay — sits behind menu, closes it on tap
+local menuOverlay = Instance.new("TextButton", Scr)
+menuOverlay.Size = UDim2.new(1, 0, 1, 0)
+menuOverlay.BackgroundTransparency = 1
+menuOverlay.Text = ""; menuOverlay.ZIndex = 48
+menuOverlay.Visible = false; menuOverlay.AutoButtonColor = false
+menuOverlay.MouseButton1Click:Connect(function()
+    CloseMenu()
+    menuOverlay.Visible = false
+end)
+
 local function OpenMenu()
     Main.Size = UDim2.new(0, MW, 0, 0)
     Main.Position = UDim2.new(0.5, -MW / 2, 0.5, 0)
     Main.Visible = true
+    menuOverlay.Visible = true
     TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, MW, 0, MH),
         Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2),
     }):Play()
 end
 
-clsB.MouseButton1Click:Connect(CloseMenu)
+clsB.MouseButton1Click:Connect(function()
+    CloseMenu()
+    menuOverlay.Visible = false
+end)
 
 -- Status bar
 local stB = Instance.new("Frame", Main)
@@ -2199,12 +2292,37 @@ exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60); exDiv.BorderSizePixel = 0; 
 local exPingRow, eP = MkStat(exS, "📶", "PING", 21)
 exPingRow.Position = UDim2.new(0, 8, 0, 33)
 
+-- Sync exS visibility with FPSDisplay state on startup
+-- (done in startup block after state load)
+
+-- Close button on stats widget
+local exClose = Instance.new("TextButton", exS)
+exClose.Size = UDim2.new(0, 16, 0, 16)
+exClose.Position = UDim2.new(1, -18, 0, 2)
+exClose.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
+exClose.Text = "✕"; exClose.TextColor3 = Color3.fromRGB(200, 80, 80)
+exClose.Font = Enum.Font.GothamBold; exClose.TextSize = 8
+exClose.BorderSizePixel = 0; exClose.ZIndex = 25; exClose.AutoButtonColor = false
+Instance.new("UICorner", exClose).CornerRadius = UDim.new(1, 0)
+exClose.MouseButton1Click:Connect(function()
+    exS.Visible = false
+    State.FPSDisplay = false
+    UpdVis("FPSDisplay")
+end)
+
+-- Clicking the M button also re-shows the stats widget if hidden
+-- (done in mB handler below)
+
 do
-    local exDr, exDs, exDp = false, nil, nil
+    local exDr, exDs, exDpX, exDpY = false, nil, 0, 0
     exS.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
-            exDr = true; exDs = inp.Position; exDp = exS.Position
+            exDr = true
+            exDs = inp.Position
+            -- Always snapshot absolute pixel position to avoid Scale≠0 jump
+            exDpX = exS.AbsolutePosition.X
+            exDpY = exS.AbsolutePosition.Y
         end
     end)
     exS.InputChanged:Connect(function(inp)
@@ -2212,14 +2330,18 @@ do
         if inp.UserInputType == Enum.UserInputType.MouseMovement
             or inp.UserInputType == Enum.UserInputType.Touch then
             local d = inp.Position - exDs
-            local newX = math.clamp(exDp.X.Offset + d.X, 0, Camera.ViewportSize.X - 130)
-            local newY = math.clamp(exDp.Y.Offset + d.Y, 0, Camera.ViewportSize.Y - 58)
+            local newX = math.clamp(exDpX + d.X, 0, Camera.ViewportSize.X - exS.AbsoluteSize.X)
+            local newY = math.clamp(exDpY + d.Y, 0, Camera.ViewportSize.Y - exS.AbsoluteSize.Y)
             exS.Position = UDim2.new(0, newX, 0, newY)
         end
     end)
     exS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then exDr = false end
+    end)
+    -- Global mouse up safety
+    UIS.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then exDr = false end
     end)
 end
 
@@ -2268,7 +2390,13 @@ do
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
             if dr and not mv and (tick() - mt) < 0.35 then
-                if Main.Visible then CloseMenu() else OpenMenu() end
+                if Main.Visible then
+                    CloseMenu()
+                else
+                    OpenMenu()
+                    -- Re-show stats widget if it was closed
+                    exS.Visible = true
+                end
             end
             dr = false
         end
@@ -2387,6 +2515,9 @@ local MobHUDDefs = {
     {id = "FakeLag",      icon = "📡", short = "FLag"},
     {id = "ShadowLock",   icon = "🧲", short = "SLock"},
     {id = "FullBright",   icon = "☀",  short = "FBrt"},
+    {id = "FPSUnlocker",  icon = "🔓", short = "FPS+"},
+    {id = "FPSUnlocker",  icon = "🚀", short = "FPS+"},
+    {id = "FPSDisplay",   icon = "📊", short = "FPSw"},
 }
 
 -- Default positions: stacked right edge, spacing from top
@@ -3155,7 +3286,11 @@ MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
 MkToggle("Misc", "☀️", "lbl_fullbright", "FullBright", "desc_fullbright")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
 AddHdr("Misc", "🛡", "hdr_protection")
+MkToggle("Misc", "🔓", "lbl_fps_unlocker", "FPSUnlocker", "desc_fps_unlocker")
+MkToggle("Misc", "📊", "lbl_fps_widget", "FPSWidget", "desc_fps_widget")
 MkToggle("Misc", "💤", "lbl_anti_afk", "AntiAFK", "desc_anti_afk")
+MkToggle("Misc", "🚀", "lbl_fps_unlocker", "FPSUnlocker", "desc_fps_unlocker")
+MkToggle("Misc", "📊", "lbl_fps_display", "FPSDisplay", "desc_fps_display")
 AddHdr("Misc", "🌐", "hdr_server_hop")
 MkButton("Misc", "🔄", "btn_rejoin", Color3.fromRGB(22, 28, 38), RejoinSameServer)
 MkButton("Misc", "🎲", "btn_random", Color3.fromRGB(22, 28, 38), JoinRandomServer)
@@ -3328,7 +3463,12 @@ UIS.InputBegan:Connect(function(inp, gpe)
     for act, key in pairs(Binds) do
         if inp.KeyCode == key then
             if act == "ToggleMenu" then
-                if Main.Visible then CloseMenu() else OpenMenu() end
+                if Main.Visible then
+                    CloseMenu(); menuOverlay.Visible = false
+                else
+                    OpenMenu()
+                    exS.Visible = true
+                end
             else
                 Toggle(act)
                 if act == "Fly" then UpdFly() end
@@ -3442,10 +3582,12 @@ RunService.RenderStepped:Connect(function(dt)
     local pc = pm <= 80 and Color3.fromRGB(130, 255, 170)
         or pm <= 150 and Color3.fromRGB(255, 220, 80)
         or Color3.fromRGB(255, 90, 90)
-    fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
+    fpsL.Text = "FPS: " .. fps .. " | " .. pm .. "ms"; fpsL.TextColor3 = fc
     pngL.Text = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
-    eF.Text = tostring(fps); eF.TextColor3 = fc
-    eP.Text = pm .. " ms"; eP.TextColor3 = pc
+    if exS.Visible then
+        eF.Text = tostring(fps); eF.TextColor3 = fc
+        eP.Text = pm .. " ms"; eP.TextColor3 = pc
+    end
 
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3775,6 +3917,8 @@ task.spawn(function()
             end
         end
     end
+    -- Sync FPS widget visibility with loaded state
+    exS.Visible = (State.FPSDisplay ~= false)
     Notify("OMNI", L("ntf_loaded"), 3)
 end)
 
