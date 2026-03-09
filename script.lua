@@ -2275,23 +2275,7 @@ exPingRow.Position = UDim2.new(0, 8, 0, 33)
 -- Sync exS visibility with FPSDisplay state on startup
 -- (done in startup block after state load)
 
--- Close button on stats widget
-local exClose = Instance.new("TextButton", exS)
-exClose.Size = UDim2.new(0, 16, 0, 16)
-exClose.Position = UDim2.new(1, -18, 0, 2)
-exClose.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
-exClose.Text = "✕"; exClose.TextColor3 = Color3.fromRGB(200, 80, 80)
-exClose.Font = Enum.Font.GothamBold; exClose.TextSize = 8
-exClose.BorderSizePixel = 0; exClose.ZIndex = 25; exClose.AutoButtonColor = false
-Instance.new("UICorner", exClose).CornerRadius = UDim.new(1, 0)
-exClose.MouseButton1Click:Connect(function()
-    exS.Visible = false
-    State.FPSDisplay = false
-    UpdVis("FPSDisplay")
-end)
-
--- Clicking the M button also re-shows the stats widget if hidden
--- (done in mB handler below)
+-- Stats widget: no close button — use FPSDisplay toggle in Misc tab
 
 do
     local exDr, exDs, exDpX, exDpY = false, nil, 0, 0
@@ -2299,29 +2283,26 @@ do
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
             exDr = true
-            exDs = inp.Position
-            -- Always snapshot absolute pixel position to avoid Scale≠0 jump
+            exDs = Vector2.new(inp.Position.X, inp.Position.Y)
             exDpX = exS.AbsolutePosition.X
             exDpY = exS.AbsolutePosition.Y
         end
     end)
-    exS.InputChanged:Connect(function(inp)
+    -- Use UIS.InputChanged (global) so Touch movement is always captured on mobile
+    UIS.InputChanged:Connect(function(inp)
         if not exDr then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
             or inp.UserInputType == Enum.UserInputType.Touch then
-            local d = inp.Position - exDs
-            local newX = math.clamp(exDpX + d.X, 0, Camera.ViewportSize.X - exS.AbsoluteSize.X)
-            local newY = math.clamp(exDpY + d.Y, 0, Camera.ViewportSize.Y - exS.AbsoluteSize.Y)
+            local d = Vector2.new(inp.Position.X - exDs.X, inp.Position.Y - exDs.Y)
+            local vp = Camera.ViewportSize
+            local newX = math.clamp(exDpX + d.X, 0, vp.X - exS.AbsoluteSize.X)
+            local newY = math.clamp(exDpY + d.Y, 0, vp.Y - exS.AbsoluteSize.Y)
             exS.Position = UDim2.new(0, newX, 0, newY)
         end
     end)
-    exS.InputEnded:Connect(function(inp)
+    UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then exDr = false end
-    end)
-    -- Global mouse up safety
-    UIS.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 then exDr = false end
     end)
 end
 
@@ -3015,31 +2996,12 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
     -- Use InputBegan/InputEnded instead of MouseButton1Click
     -- so that ScrollingFrame can still detect swipe-to-scroll gestures on mobile
     do
-        local tapStart = 0
-        local tapStartPos = nil  -- start position of touch/click
-        local MOVE_THRESHOLD = 14  -- pixels of total movement = scroll intent
-        row.InputBegan:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseButton1
-                or inp.UserInputType == Enum.UserInputType.Touch then
-                tapStart = tick()
-                tapStartPos = Vector2.new(inp.Position.X, inp.Position.Y)
-            end
-        end)
-        row.InputEnded:Connect(function(inp)
-            if (inp.UserInputType == Enum.UserInputType.MouseButton1
-                or inp.UserInputType == Enum.UserInputType.Touch)
-                and tapStartPos ~= nil
-                and (tick() - tapStart) < 0.45 then
-                -- Check total travel distance from where finger started
-                local dist = (Vector2.new(inp.Position.X, inp.Position.Y) - tapStartPos).Magnitude
-                if dist < MOVE_THRESHOLD then
-                    if waitingBind then return end
-                    Toggle(logicName)
-                    if logicName == "Fly" then UpdFly() end
-                    if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
-                end
-                tapStartPos = nil
-            end
+        -- Activated fires for clean tap/click only (ScrollingFrame won't block it)
+        row.Activated:Connect(function()
+            if waitingBind then return end
+            Toggle(logicName)
+            if logicName == "Fly" then UpdFly() end
+            if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
         end)
     end
 
