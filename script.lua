@@ -1408,55 +1408,98 @@ local function Toggle(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
-            -- RUBBER-BAND LAG SIMULATION
-            -- You move normally. Every N frames a saved "server position" is broadcast
-            -- (by teleporting you there for 1 frame then back) creating a rubber-band pop.
-            -- To others on the server your position update packet is delayed/jumpy.
+            -- REAL LAG SIMULATION
+            -- Buffers your position history. Every 150-400ms triggers a "lag spike":
+            -- freezes ALL parts (including in air/ragdoll) for 60-180ms then snaps
+            -- to your real current position — looks exactly like high-ping rubber-band.
             _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
-                local cr    = LP.Character
-                local rp    = cr and cr:FindFirstChild("HumanoidRootPart")
-                if not rp then return end
+                -- Position ring-buffer (last 60 frames)
+                local posBuffer = {}
+                local bufSize   = 60
+                local bufIdx    = 0
 
-                -- "Server" remembers where you were ~200-400ms ago
-                local serverCF   = rp.CFrame
-                local serverVel  = Vector3.zero
-                local lastSave   = tick()
-                local saveInterval = math.random(18, 35) / 100  -- 180-350ms lag
+                local nextSpike = tick() + math.random(15, 35) / 100
 
                 while State.FakeLag and _fakeLagToken == myToken do
-                    cr = LP.Character
-                    rp = cr and cr:FindFirstChild("HumanoidRootPart")
-                    if not rp then task.wait(0.05) continue end
+                    local cr = LP.Character
+                    local rp = cr and cr:FindFirstChild("HumanoidRootPart")
+
+                    if not cr or not rp then
+                        RunService.Heartbeat:Wait(); continue
+                    end
+
+                    -- Record current position into buffer every frame
+                    bufIdx = (bufIdx % bufSize) + 1
+                    posBuffer[bufIdx] = {
+                        cf  = rp.CFrame,
+                        vel = rp.AssemblyLinearVelocity,
+                        ang = rp.AssemblyAngularVelocity,
+                    }
 
                     local now = tick()
-                    if now - lastSave >= saveInterval then
-                        -- "Server" gets your old position, then rubber-bands you there for 1 frame
-                        local realCF  = rp.CFrame
-                        local realVel = rp.AssemblyLinearVelocity
+                    if now >= nextSpike then
+                        -- === LAG SPIKE: freeze all parts for spike duration ===
+                        local parts = {}
+                        for _, v in pairs(cr:GetDescendants()) do
+                            if v:IsA("BasePart") then
+                                parts[#parts + 1] = v
+                            end
+                        end
 
-                        -- Brief snap to server position (1 frame = rubberbanding flicker)
+                        local spikeDur = math.random(6, 18) / 100  -- 60-180ms
+                        local spikeEnd = now + spikeDur
+                        local frozenCF  = rp.CFrame
+                        local frozenVel = rp.AssemblyLinearVelocity
+
+                        -- Freeze every part
+                        for _, v in ipairs(parts) do
+                            pcall(function()
+                                v.Anchored                = true
+                                v.AssemblyLinearVelocity  = Vector3.zero
+                                v.AssemblyAngularVelocity = Vector3.zero
+                            end)
+                        end
+
+                        -- Hold freeze, re-enforce each frame so physics can't escape
+                        while tick() < spikeEnd do
+                            for _, v in ipairs(parts) do
+                                pcall(function()
+                                    v.Anchored                = true
+                                    v.AssemblyLinearVelocity  = Vector3.zero
+                                    v.AssemblyAngularVelocity = Vector3.zero
+                                end)
+                            end
+                            RunService.Heartbeat:Wait()
+                            if not (State.FakeLag and _fakeLagToken == myToken) then break end
+                        end
+
+                        -- Release with original velocity (snap-forward pop)
+                        for _, v in ipairs(parts) do
+                            pcall(function() v.Anchored = false end)
+                        end
                         pcall(function()
-                            rp.CFrame                 = serverCF
-                            rp.AssemblyLinearVelocity = serverVel
-                        end)
-                        RunService.Heartbeat:Wait()
-
-                        -- Snap back to real position immediately
-                        pcall(function()
-                            rp.CFrame                 = realCF
-                            rp.AssemblyLinearVelocity = realVel
+                            rp.AssemblyLinearVelocity  = frozenVel
+                            rp.AssemblyAngularVelocity = frozenVel * 0  -- zero ang
                         end)
 
-                        -- Save current as new "server checkpoint"
-                        serverCF       = realCF
-                        serverVel      = realVel
-                        lastSave       = now
-                        saveInterval   = math.random(14, 40) / 100  -- vary next lag interval
+                        nextSpike = tick() + math.random(15, 40) / 100
                     else
                         RunService.Heartbeat:Wait()
                     end
+                end
+
+                -- Cleanup on disable
+                local cr2 = LP.Character
+                if cr2 then
+                    for _, v in pairs(cr2:GetDescendants()) do
+                        if v:IsA("BasePart") then
+                            pcall(function() v.Anchored = false end)
+                        end
+                    end
+                    local hm = cr2:FindFirstChildOfClass("Humanoid")
+                    if hm then pcall(function() hm.PlatformStand = false end) end
                 end
             end)
         elseif nm == "Noclip" then
@@ -2559,11 +2602,17 @@ if IsTab then
     Instance.new("UIStroke", hudDoneBtn).Color = Color3.fromRGB(0, 180, 80)
 
     -- Chips grid
-    local chipsFrame = Instance.new("Frame", hudPanel)
-    chipsFrame.Position          = UDim2.new(0, 0, 0, 40)
-    chipsFrame.Size              = UDim2.new(1, 0, 1, -40)
+    local chipsFrame = Instance.new("ScrollingFrame", hudPanel)
+    chipsFrame.Position               = UDim2.new(0, 0, 0, 40)
+    chipsFrame.Size                   = UDim2.new(1, 0, 1, -40)
     chipsFrame.BackgroundTransparency = 1
-    chipsFrame.ZIndex            = 301
+    chipsFrame.ZIndex                 = 301
+    chipsFrame.ScrollBarThickness     = IsMob and 4 or 3
+    chipsFrame.ScrollBarImageColor3   = P.acc
+    chipsFrame.CanvasSize             = UDim2.new(0, 0, 0, 0)
+    chipsFrame.ScrollingDirection     = Enum.ScrollingDirection.Y
+    chipsFrame.BorderSizePixel        = 0
+    chipsFrame.ElasticBehavior        = Enum.ElasticBehavior.WhenScrollable
     local chipsGrid = Instance.new("UIGridLayout", chipsFrame)
     chipsGrid.CellSize           = UDim2.new(0, 84, 0, 38)
     chipsGrid.CellPadding        = UDim2.new(0, 7, 0, 6)
@@ -2574,6 +2623,10 @@ if IsTab then
     chipsPad.PaddingBottom = UDim.new(0, 8)
     chipsPad.PaddingLeft   = UDim.new(0, 6)
     chipsPad.PaddingRight  = UDim.new(0, 6)
+    -- Auto-update canvas height when grid content changes
+    chipsGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        chipsFrame.CanvasSize = UDim2.new(0, 0, 0, chipsGrid.AbsoluteContentSize.Y + 16)
+    end)
 
     local ChipRefs = {}   -- {chip, dot} keyed by id
 
