@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — PERFECT EDITION (EN/UA) [MOD]          ██
+-- ██  OMNI V305 — PERFECT EDITION (EN/UA) [MOD]         ██
 -- ██  Clean ESP · Better Noclip Bypass · Anti-Void        ██
 -- ██  Language Toggle · Function Descriptions · Mobile+PC ██
 -- ██████████████████████████████████████████████████████████
@@ -78,7 +78,6 @@ local Strings = {
         lbl_fps_unlocker  = "FPS Unlocker",
         desc_fps_unlocker = "Unlocks frame rate above 60 FPS using setfpscap(0). Requires executor support.",
         lbl_fps_display   = "Show FPS/Ping",
-        desc_fps_display  = "Shows the floating FPS and Ping widget on screen.",
         desc_fps_display  = "Shows the floating FPS and Ping widget on screen.",
         lbl_speed_jitter  = "Speed Jitter",
         lbl_hitbox_rand   = "Hitbox Randomize",
@@ -198,7 +197,6 @@ local Strings = {
         lbl_fps_unlocker  = "FPS Анлокер",
         desc_fps_unlocker = "Знімає обмеження FPS через setfpscap(0). Потрібна підтримка екзекутора.",
         lbl_fps_display   = "Показ FPS/Пінг",
-        desc_fps_display  = "Показує плаваючий виджет FPS та Пінг на екрані.",
         desc_fps_display  = "Показує плаваючий виджет FPS та Пінг на екрані.",
         lbl_speed_jitter  = "Джиттер швидкості",
         lbl_hitbox_rand   = "Рандомізація хітбокса",
@@ -785,10 +783,6 @@ end
 -- ============================================================
 -- 12. ESP SYSTEM — CLEAN FLOATING TEXT, NO BOX, LOW LAG
 -- ============================================================
--- Design: no background frame, just shadow text floating above head
--- Shows: "PlayerName  HP/MaxHP  Xm" colour-coded by health
--- Uses a single TextLabel per player, cached, updated every 0.2s
-
 local ESPCache = {}
 
 local function GetESPColor(ratio)
@@ -809,9 +803,6 @@ local function ClearESP()
     ESPCache = {}
 end
 
--- ESP update loop — runs every 0.2s to avoid lag
--- Also listens to CharacterAdded so ESP rebuilds instantly on respawn
-
 local function ESP_RemovePlayer(p)
     local ca = ESPCache[p]
     if ca then
@@ -821,11 +812,9 @@ local function ESP_RemovePlayer(p)
     end
 end
 
--- Hook CharacterAdded for all current + future players
 local function ESP_HookPlayer(p)
     if p == LP then return end
     p.CharacterAdded:Connect(function()
-        -- Wipe old ESP entry so the update loop rebuilds it for the new character
         ESP_RemovePlayer(p)
     end)
     p.CharacterRemoving:Connect(function()
@@ -851,40 +840,33 @@ task.spawn(function()
             local head = char and FindHead(char)
             local hum  = char and char:FindFirstChildOfClass("Humanoid")
 
-            -- Player has no valid character → remove entry
             if not char or not head or not hum then
                 ESP_RemovePlayer(p)
                 continue
             end
 
-            -- Detect character swap (respawn = new char object)
             local ca = ESPCache[p]
             if ca and ca.char ~= char then
-                -- Character changed — wipe and rebuild
                 ESP_RemovePlayer(p)
                 ca = nil
             end
 
-            -- Check if cache is still valid
             local needRebuild = not ca
                 or not ca.bb or not ca.bb.Parent
                 or not ca.lbl or not ca.lbl.Parent
 
             if needRebuild then
-                -- Clean up old
                 if ca then
                     pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
                     pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
                 end
 
-                -- Highlight (fills character with colour, no outline box on screen)
                 local hl = Instance.new("Highlight")
                 hl.FillTransparency    = 0.55
-                hl.OutlineTransparency = 1     -- no outline = less visual clutter
+                hl.OutlineTransparency = 1
                 hl.FillColor           = Color3.fromRGB(40, 180, 80)
                 hl.Parent              = char
 
-                -- BillboardGui: wide enough for text, no background
                 local bb = Instance.new("BillboardGui")
                 bb.Size          = UDim2.new(0, 200, 0, 36)
                 bb.StudsOffset   = Vector3.new(0, 2.8, 0)
@@ -893,7 +875,6 @@ task.spawn(function()
                 bb.LightInfluence = 0
                 bb.Parent        = head
 
-                -- Single TextLabel — no background frame
                 local lbl = Instance.new("TextLabel")
                 lbl.Name                  = "ESPLabel"
                 lbl.Size                  = UDim2.new(1, 0, 1, 0)
@@ -903,7 +884,6 @@ task.spawn(function()
                 lbl.TextWrapped           = false
                 lbl.TextXAlignment        = Enum.TextXAlignment.Center
                 lbl.TextYAlignment        = Enum.TextYAlignment.Center
-                -- Shadow for readability (built-in stroke)
                 lbl.TextStrokeColor3      = Color3.new(0, 0, 0)
                 lbl.TextStrokeTransparency = 0.35
                 lbl.ZIndex                = 5
@@ -913,14 +893,10 @@ task.spawn(function()
                 ca = ESPCache[p]
             end
 
-            -- Update values
-            -- Smart HP read: handles MaxHealth=math.huge, custom attributes, IntValues
             local rawHp    = hum.Health
             local rawMaxHp = hum.MaxHealth
 
-            -- If MaxHealth is infinite/huge, try to find a custom max from character
             if rawMaxHp == math.huge or rawMaxHp <= 0 then
-                -- look for IntValue/NumberValue named MaxHealth/MaxHP/HealthMax inside char
                 local found = false
                 for _, v in pairs(char:GetDescendants()) do
                     if (v:IsA("IntValue") or v:IsA("NumberValue")) and
@@ -928,20 +904,17 @@ task.spawn(function()
                         rawMaxHp = v.Value; found = true; break
                     end
                 end
-                -- check attributes too
                 if not found then
                     local attrMax = char:GetAttribute("MaxHealth")
                         or char:GetAttribute("MaxHP")
                         or hum:GetAttribute("MaxHealth")
                     if attrMax then rawMaxHp = attrMax end
                 end
-                -- last resort: use current HP as max so ratio = 1
                 if rawMaxHp == math.huge or rawMaxHp <= 0 then
                     rawMaxHp = math.max(rawHp, 1)
                 end
             end
 
-            -- Try attribute-based current HP (some games store real HP in attributes)
             local attrHp = char:GetAttribute("Health")
                 or char:GetAttribute("HP")
                 or hum:GetAttribute("Health")
@@ -957,20 +930,16 @@ task.spawn(function()
             local ratio = math.clamp(hp / maxHp, 0, 1)
             local col   = GetESPColor(ratio)
 
-            -- Keep MaxDistance in sync with slider (instant effect, no rebuild)
             ca.bb.MaxDistance = Config.ESPDistance
 
-            -- Format: "PlayerName  HP/MaxHP  Xm"
             ca.lbl.Text       = string.format("%s  %d/%d  %dm", p.Name, hp, maxHp, dist)
             ca.lbl.TextColor3 = col
 
-            -- Update highlight colour to match health
             ca.hl.FillColor = ratio >= 0.5
                 and Color3.fromRGB(40, 180, 80)
                 or Color3.fromRGB(200, 40, 40)
         end
 
-        -- Prune players who left but weren't caught by PlayerRemoving
         for p, ca in pairs(ESPCache) do
             if not p or not p.Parent then
                 pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
@@ -1047,19 +1016,17 @@ end)
 local savedShd, savedQ = true, Enum.QualityLevel.Automatic
 
 local function DoPotato()
-    -- Apply Lighting settings immediately (no cost)
     pcall(function()
         savedShd = Lighting.GlobalShadows
         savedQ = settings().Rendering.QualityLevel
         Lighting.GlobalShadows = false
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     end)
-    -- Gradually process workspace objects in small batches to avoid a freeze spike
     task.spawn(function()
-        local BATCH = 60   -- objects per frame
+        local BATCH = 60
         local count = 0
         for _, v in pairs(Workspace:GetDescendants()) do
-            if not State.Potato then break end  -- cancelled
+            if not State.Potato then break end
             pcall(function()
                 if v:IsA("BasePart") then
                     v.CastShadow = false; v.Reflectance = 0
@@ -1069,7 +1036,7 @@ local function DoPotato()
             end)
             count += 1
             if count % BATCH == 0 then
-                RunService.Heartbeat:Wait()  -- yield every BATCH objects
+                RunService.Heartbeat:Wait()
             end
         end
     end)
@@ -1118,7 +1085,6 @@ local function DoFullBright()
         Lighting.EnvironmentDiffuseScale  = 0
         Lighting.EnvironmentSpecularScale = 0
     end)
-    -- Disable all Lighting post-effects (Blur, Bloom, ColorCorrection, etc.)
     for _, v in pairs(Lighting:GetChildren()) do
         pcall(function()
             if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
@@ -1174,14 +1140,12 @@ local function ForceRestore()
         for _, v in pairs(R:GetChildren()) do
             if v:IsA("BodyMover") then SafeDel(v) end
         end
-        -- Kill any accumulated velocity from noclip movement
         pcall(function()
             R.AssemblyLinearVelocity  = Vector3.zero
             R.AssemblyAngularVelocity = Vector3.zero
         end)
     end
 
-    -- Also zero velocity on all other parts so ragdoll/limbs don't fly
     for _, v in pairs(C:GetDescendants()) do
         pcall(function()
             if v:IsA("BasePart") and v ~= R then
@@ -1191,13 +1155,10 @@ local function ForceRestore()
         end)
     end
 
-    -- Restore all parts: collision group back to Default, CanCollide restored
     for _, v in pairs(C:GetDescendants()) do
         pcall(function()
             if v:IsA("BasePart") then
-                -- Method 1: collision group reset
                 pcall(function() v.CollisionGroup = "Default" end)
-                -- Method 2: restore original CanCollide
                 local orig = ncOrigCanCollide[v]
                 if orig ~= nil then
                     v.CanCollide = orig
@@ -1269,26 +1230,22 @@ local function UpdVis(nm)
 end
 
 local function RestoreMouse()
-    -- Step 1: immediately unlock mouse behavior to prevent freeze
     pcall(function()
         UIS.MouseBehavior    = Enum.MouseBehavior.Default
         UIS.MouseIconEnabled = true
     end)
     task.delay(0.05, function()
-        -- Step 2: restore camera to follow humanoid
         local C = LP.Character
         local H = C and C:FindFirstChildOfClass("Humanoid")
         pcall(function()
             Camera.CameraType = Enum.CameraType.Custom
             if H then Camera.CameraSubject = H end
         end)
-        -- Step 3: send a tiny neutral mouse delta so shift-lock snaps back correctly
         pcall(function()
             UIS.MouseBehavior = Enum.MouseBehavior.Default
         end)
     end)
     task.delay(0.15, function()
-        -- Step 4: final safety reset after camera settles
         pcall(function()
             UIS.MouseBehavior    = Enum.MouseBehavior.Default
             UIS.MouseIconEnabled = true
@@ -1407,10 +1364,8 @@ local function Toggle(nm)
             pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
         elseif nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0
-            -- Restore camera/mouse so shift-lock doesn't stay broken
             RestoreMouse()
         elseif nm == "SilentAim" then
-            -- nothing extra, but also fix mouse if shift-lock was affected
             RestoreMouse()
         end
     else
@@ -1463,14 +1418,9 @@ local function Toggle(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
-            -- REAL LAG SIMULATION
-            -- Buffers your position history. Every 150-400ms triggers a "lag spike":
-            -- freezes ALL parts (including in air/ragdoll) for 60-180ms then snaps
-            -- to your real current position — looks exactly like high-ping rubber-band.
             _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
-                -- Position ring-buffer (last 60 frames)
                 local posBuffer = {}
                 local bufSize   = 60
                 local bufIdx    = 0
@@ -1485,7 +1435,6 @@ local function Toggle(nm)
                         RunService.Heartbeat:Wait(); continue
                     end
 
-                    -- Record current position into buffer every frame
                     bufIdx = (bufIdx % bufSize) + 1
                     posBuffer[bufIdx] = {
                         cf  = rp.CFrame,
@@ -1495,7 +1444,6 @@ local function Toggle(nm)
 
                     local now = tick()
                     if now >= nextSpike then
-                        -- === LAG SPIKE: freeze all parts for spike duration ===
                         local parts = {}
                         for _, v in pairs(cr:GetDescendants()) do
                             if v:IsA("BasePart") then
@@ -1503,12 +1451,11 @@ local function Toggle(nm)
                             end
                         end
 
-                        local spikeDur = math.random(6, 18) / 100  -- 60-180ms
+                        local spikeDur = math.random(6, 18) / 100
                         local spikeEnd = now + spikeDur
                         local frozenCF  = rp.CFrame
                         local frozenVel = rp.AssemblyLinearVelocity
 
-                        -- Freeze every part
                         for _, v in ipairs(parts) do
                             pcall(function()
                                 v.Anchored                = true
@@ -1517,7 +1464,6 @@ local function Toggle(nm)
                             end)
                         end
 
-                        -- Hold freeze, re-enforce each frame so physics can't escape
                         while tick() < spikeEnd do
                             for _, v in ipairs(parts) do
                                 pcall(function()
@@ -1530,13 +1476,12 @@ local function Toggle(nm)
                             if not (State.FakeLag and _fakeLagToken == myToken) then break end
                         end
 
-                        -- Release with original velocity (snap-forward pop)
                         for _, v in ipairs(parts) do
                             pcall(function() v.Anchored = false end)
                         end
                         pcall(function()
                             rp.AssemblyLinearVelocity  = frozenVel
-                            rp.AssemblyAngularVelocity = frozenVel * 0  -- zero ang
+                            rp.AssemblyAngularVelocity = frozenVel * 0
                         end)
 
                         nextSpike = tick() + math.random(15, 40) / 100
@@ -1545,7 +1490,6 @@ local function Toggle(nm)
                     end
                 end
 
-                -- Cleanup on disable
                 local cr2 = LP.Character
                 if cr2 then
                     for _, v in pairs(cr2:GetDescendants()) do
@@ -1558,7 +1502,6 @@ local function Toggle(nm)
                 end
             end)
         elseif nm == "Noclip" then
-            -- Fresh noclip init: store originals
             ncStuck = 0; lastNcPos = Vector3.zero; ncOrigCanCollide = {}
             if C then
                 for _, v in pairs(C:GetDescendants()) do
@@ -2087,11 +2030,6 @@ local function CloseMenu()
     task.delay(0.15, function() Main.Visible = false end)
 end
 
--- Tap-outside overlay — sits behind menu, closes it on tap
--- Close menu when tapping outside — checked via UIS, not an overlay button
--- (overlay buttons intercept ALL taps including ones on the menu itself)
--- (outside-click-to-close removed: caused buttons inside menu to stop working)
-
 local function OpenMenu()
     local vp = Camera.ViewportSize
     local cx = math.floor(vp.X / 2 - MW / 2)
@@ -2189,7 +2127,7 @@ for _, n in ipairs(tNames) do
     TabPages[n] = s
 end
 
--- Draggable title bar (UIS-based for reliable Touch tracking on mobile/exploit)
+-- Draggable title bar
 do
     local dr, ds, dpX, dpY = false, nil, 0, 0
 
@@ -2203,7 +2141,6 @@ do
         end
     end)
 
-    -- Use UIS.InputChanged so Touch move is always captured regardless of UI state
     UIS.InputChanged:Connect(function(inp)
         if not dr then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
@@ -2272,11 +2209,6 @@ exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60); exDiv.BorderSizePixel = 0; 
 local exPingRow, eP = MkStat(exS, "📶", "PING", 21)
 exPingRow.Position = UDim2.new(0, 8, 0, 33)
 
--- Sync exS visibility with FPSDisplay state on startup
--- (done in startup block after state load)
-
--- Stats widget: no close button — use FPSDisplay toggle in Misc tab
-
 do
     local exDr, exDs, exDpX, exDpY = false, nil, 0, 0
     exS.InputBegan:Connect(function(inp)
@@ -2288,7 +2220,6 @@ do
             exDpY = exS.AbsolutePosition.Y
         end
     end)
-    -- Use UIS.InputChanged (global) so Touch movement is always captured on mobile
     UIS.InputChanged:Connect(function(inp)
         if not exDr then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
@@ -2356,7 +2287,7 @@ do
                 else
                     OpenMenu()
                     -- Re-show stats widget if it was closed
-                    exS.Visible = true
+                    exS.Visible = State.FPSDisplay
                 end
             end
             dr = false
@@ -2443,22 +2374,14 @@ end)
 -- ============================================================
 -- 26B. MOBILE HUD BUTTONS (touch only)
 -- ============================================================
--- "HUD" button (bottom-left, above M) opens a chooser panel.
--- In the panel: tap any feature chip to show/hide its button.
--- "✏ Move" = enter drag mode to reposition visible buttons.
--- "✓ Done" = close panel + save.
--- By default ALL buttons are hidden — user picks what they want.
--- ============================================================
-
 local MobHUDEditMode  = false
-local MobHUDBtns      = {}   -- keyed by id, stores {btn, btnSt, dot, editOverlay}
+local MobHUDBtns      = {}   
 
 local HUD_SZ          = 58
 local HUD_COL_OFF     = Color3.fromRGB(18, 18, 30)
 local HUD_COL_ON      = Color3.fromRGB(14, 58, 36)
 local HUD_COL_EDT     = Color3.fromRGB(42, 36, 8)
 
--- Which buttons are shown on screen (persisted in Config.MobHUDEnabled)
 if not Config.MobHUDEnabled then Config.MobHUDEnabled = {} end
 
 local MobHUDDefs = {
@@ -2480,7 +2403,6 @@ local MobHUDDefs = {
     {id = "FPSDisplay",   icon = "📊", short = "FPSw"},
 }
 
--- Default positions: stacked right edge, spacing from top
 local function GetHUDDefaultPos(idx)
     local vp = Camera.ViewportSize
     return vp.X - HUD_SZ - 8, 120 + (idx - 1) * (HUD_SZ + 6)
@@ -2513,8 +2435,6 @@ local function RefreshHUDVisibility()
 end
 
 if IsTab then
-
-    -- ── Build all 13 HUD buttons (hidden by default) ─────────
     for idx, def in ipairs(MobHUDDefs) do
         local saved = Config.MobHUDPositions and Config.MobHUDPositions[def.id]
         local defX, defY = GetHUDDefaultPos(idx)
@@ -2532,7 +2452,7 @@ if IsTab then
         btn.AutoButtonColor    = false
         btn.Text               = ""
         btn.ZIndex             = 62
-        btn.Visible            = false   -- hidden until user enables it
+        btn.Visible            = false
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
         local btnSt = Instance.new("UIStroke", btn)
         btnSt.Color = Color3.fromRGB(44, 44, 62); btnSt.Thickness = 1.5
@@ -2614,10 +2534,8 @@ if IsTab then
         end)
     end
 
-    -- Apply saved visibility
     RefreshHUDVisibility()
 
-    -- ── Sync colors every 0.3s ────────────────────────────────
     task.spawn(function()
         while task.wait(0.3) do
             if not MobHUDEditMode then
@@ -2628,9 +2546,6 @@ if IsTab then
         end
     end)
 
-    -- ═══════════════════════════════════════════════════════════
-    -- HUD CHOOSER PANEL
-    -- ═══════════════════════════════════════════════════════════
     local hudPanel = Instance.new("Frame", Scr)
     hudPanel.Size               = UDim2.new(0, 300, 0, 0)
     hudPanel.Position           = UDim2.new(0.5, -150, 1, -10)
@@ -2643,7 +2558,6 @@ if IsTab then
     local hudPanelSt = Instance.new("UIStroke", hudPanel)
     hudPanelSt.Color = P.acc; hudPanelSt.Thickness = 1.5
 
-    -- Panel title bar
     local hudTitleBar = Instance.new("Frame", hudPanel)
     hudTitleBar.Size             = UDim2.new(1, 0, 0, 38)
     hudTitleBar.BackgroundColor3 = Color3.fromRGB(18, 18, 30)
@@ -2665,7 +2579,6 @@ if IsTab then
     hudTitleLbl.TextXAlignment    = Enum.TextXAlignment.Left
     hudTitleLbl.ZIndex            = 302
 
-    -- "✏ Move" toggle inside panel title bar
     local moveTogBtn = Instance.new("TextButton", hudTitleBar)
     moveTogBtn.Size             = UDim2.new(0, 64, 0, 26)
     moveTogBtn.Position         = UDim2.new(1, -130, 0.5, -13)
@@ -2680,7 +2593,6 @@ if IsTab then
     Instance.new("UICorner", moveTogBtn).CornerRadius = UDim.new(0, 7)
     Instance.new("UIStroke", moveTogBtn).Color = P.dim
 
-    -- "✓ Done" close button
     local hudDoneBtn = Instance.new("TextButton", hudTitleBar)
     hudDoneBtn.Size             = UDim2.new(0, 54, 0, 26)
     hudDoneBtn.Position         = UDim2.new(1, -62, 0.5, -13)
@@ -2695,7 +2607,6 @@ if IsTab then
     Instance.new("UICorner", hudDoneBtn).CornerRadius = UDim.new(0, 7)
     Instance.new("UIStroke", hudDoneBtn).Color = Color3.fromRGB(0, 180, 80)
 
-    -- Chips grid
     local chipsFrame = Instance.new("ScrollingFrame", hudPanel)
     chipsFrame.Position               = UDim2.new(0, 0, 0, 40)
     chipsFrame.Size                   = UDim2.new(1, 0, 1, -40)
@@ -2717,12 +2628,11 @@ if IsTab then
     chipsPad.PaddingBottom = UDim.new(0, 8)
     chipsPad.PaddingLeft   = UDim.new(0, 6)
     chipsPad.PaddingRight  = UDim.new(0, 6)
-    -- Auto-update canvas height when grid content changes
     chipsGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         chipsFrame.CanvasSize = UDim2.new(0, 0, 0, chipsGrid.AbsoluteContentSize.Y + 16)
     end)
 
-    local ChipRefs = {}   -- {chip, dot} keyed by id
+    local ChipRefs = {}
 
     for _, def in ipairs(MobHUDDefs) do
         local chip = Instance.new("TextButton", chipsFrame)
@@ -2757,7 +2667,6 @@ if IsTab then
         chipLbl.TextXAlignment    = Enum.TextXAlignment.Left
         chipLbl.ZIndex            = 303
 
-        -- small toggle indicator (right side)
         local chipDot = Instance.new("Frame", chip)
         chipDot.Size              = UDim2.new(0, 8, 0, 8)
         chipDot.Position          = UDim2.new(1, -11, 0.5, -4)
@@ -2783,7 +2692,6 @@ if IsTab then
         end)
     end
 
-    -- Auto-size panel height based on chips grid
     local function ResizeHudPanel()
         local rows = math.ceil(#MobHUDDefs / 3)
         local contentH = 40 + rows * 38 + (rows - 1) * 6 + 20
@@ -2794,7 +2702,6 @@ if IsTab then
         chipsFrame.Size = UDim2.new(1, 0, 0, h - 40)
     end
 
-    -- ── "HUD" open button ─────────────────────────────────────
     local hudOpenBtn = Instance.new("TextButton", Scr)
     hudOpenBtn.Size             = UDim2.new(0, MBS, 0, 34)
     hudOpenBtn.Position         = UDim2.new(0, 10, 0.5, MBS / 2 + 8)
@@ -2830,7 +2737,6 @@ if IsTab then
         task.delay(0.15, function() hudPanel.Visible = false end)
         hudOpenBtn.TextColor3 = P.acc
         hudOpenBtnSt.Color    = P.acc
-        -- exit move mode too
         if MobHUDEditMode then
             MobHUDEditMode = false
             moveTogBtn.Text             = "✏ Move"
@@ -2863,7 +2769,7 @@ if IsTab then
         end
     end)
 
-end -- IsTab
+end
 
 -- ============================================================
 -- 27. DESCRIPTION POPUP
@@ -2993,10 +2899,7 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
     swDot.BackgroundColor3 = P.wht; swDot.BorderSizePixel = 0
     Instance.new("UICorner", swDot).CornerRadius = UDim.new(1, 0)
 
-    -- Use InputBegan/InputEnded instead of MouseButton1Click
-    -- so that ScrollingFrame can still detect swipe-to-scroll gestures on mobile
     do
-        -- Activated fires for clean tap/click only (ScrollingFrame won't block it)
         row.Activated:Connect(function()
             if waitingBind then return end
             Toggle(logicName)
@@ -3371,7 +3274,6 @@ end)
 AddHdr("Config", "👁", "hdr_hitbox_esp")
 MkSlider("Config", "👁", "sl_esp_dist", 50, 2000, Config.ESPDistance, "ESPDistance", function(v)
     Config.ESPDistance = v
-    -- apply instantly to all active ESP entries
     for _, ca in pairs(ESPCache) do
         pcall(function()
             if ca.bb and ca.bb.Parent then
@@ -3408,7 +3310,6 @@ MkToggle("Config", "🎯", "lbl_aim_anti", "AimAntiDetect", "desc_aim_anti")
 UIS.InputBegan:Connect(function(inp, gpe)
     if waitingBind then
         if inp.UserInputType == Enum.UserInputType.Keyboard then
-            -- PC: assign the pressed key as bind
             local key = inp.KeyCode; local nm = waitingBind
             Binds[nm] = key
             local d = AllRows[nm]
@@ -3420,7 +3321,6 @@ UIS.InputBegan:Connect(function(inp, gpe)
             waitingBind = nil
         elseif inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
-            -- Mobile/mouse: cancel bind waiting so buttons don't freeze
             local nm = waitingBind
             local d = AllRows[nm]
             if d and d.bindBtn then
@@ -3442,7 +3342,7 @@ UIS.InputBegan:Connect(function(inp, gpe)
                     CloseMenu()
                 else
                     OpenMenu()
-                    exS.Visible = true
+                    exS.Visible = State.FPSDisplay
                 end
             else
                 Toggle(act)
@@ -3790,16 +3690,6 @@ end)
 -- ============================================================
 -- 36. STEPPED — NOCLIP (MULTI-METHOD BYPASS)
 -- ============================================================
---[[
-  Three-layer bypass to handle all places:
-  Layer 1 (best): CollisionGroup method — character assigned to a group
-                  that doesn't collide with Default. Works on most places.
-  Layer 2 (fallback): Direct CanCollide = false on every BasePart every frame.
-                      Works when collision groups aren't available.
-  Layer 3 (anti-stuck): If character stops moving but inputs are pressed,
-                        raycast forward and nudge CFrame through the wall.
-]]
-
 RunService.Stepped:Connect(function()
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3809,11 +3699,9 @@ RunService.Stepped:Connect(function()
         for _, v in pairs(Char:GetDescendants()) do
             if v:IsA("BasePart") then
                 pcall(function()
-                    -- Layer 1: collision group (random name, unblockable by name filter)
                     if ncGroupReady then
                         v.CollisionGroup = SafeGroup
                     end
-                    -- Layer 2: direct CanCollide override (belt-and-suspenders)
                     if ncOrigCanCollide[v] == nil then
                         ncOrigCanCollide[v] = v.CanCollide
                     end
@@ -3822,7 +3710,6 @@ RunService.Stepped:Connect(function()
             end
         end
 
-        -- Layer 3: anti-stuck nudge
         local moving = Hum.MoveDirection.Magnitude > 0.05
             or HRP.AssemblyLinearVelocity.Magnitude > 5
         local delta = (HRP.Position - lastNcPos).Magnitude
@@ -3880,7 +3767,6 @@ task.spawn(function()
     end
     UpdateFOVCircle()
     RefreshLanguage()
-    -- Restore mobile HUD button positions if available
     if IsTab then
         local vp = Camera.ViewportSize
         for id, entry in pairs(MobHUDBtns) do
@@ -3892,7 +3778,6 @@ task.spawn(function()
             end
         end
     end
-    -- Sync FPS widget visibility with loaded state
     exS.Visible = (State.FPSDisplay ~= false)
     Notify("OMNI", L("ntf_loaded"), 3)
 end)
@@ -3901,7 +3786,6 @@ end)
 -- 38. STARTUP
 -- ============================================================
 Notify("OMNI V305", L("ntf_startup"), 5)
--- Sync FPS widget visibility with saved state
 task.spawn(function()
     task.wait(0.8)
     if exS then exS.Visible = (State.FPSDisplay ~= false) end
