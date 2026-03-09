@@ -764,7 +764,7 @@ local function GetBestAimTarget()
                     aimLostFrames = 0
                     return char
                 end
-                aimLostFrames += 1
+                aimLostFrames = aimLostFrames + (1)
                 if aimLostFrames < (vis and 8 or 15) then return char end
             end
         end
@@ -1067,7 +1067,7 @@ local function DoPotato()
                     v.Enabled = false
                 end
             end)
-            count += 1
+            count = count + (1)
             if count % BATCH == 0 then
                 RunService.Heartbeat:Wait()  -- yield every BATCH objects
             end
@@ -1390,7 +1390,7 @@ local function Toggle(nm)
                 if v.Name == "OmniSpin" then SafeDel(v) end
             end
         elseif nm == "FakeLag" then
-            _fakeLagToken += 1
+            _fakeLagToken = _fakeLagToken + (1)
             local cr = LP.Character
             if cr then
                 for _, v in pairs(cr:GetDescendants()) do
@@ -1467,7 +1467,7 @@ local function Toggle(nm)
             -- Buffers your position history. Every 150-400ms triggers a "lag spike":
             -- freezes ALL parts (including in air/ragdoll) for 60-180ms then snaps
             -- to your real current position — looks exactly like high-ping rubber-band.
-            _fakeLagToken += 1
+            _fakeLagToken = _fakeLagToken + (1)
             local myToken = _fakeLagToken
             task.spawn(function()
                 -- Position ring-buffer (last 60 frames)
@@ -1690,7 +1690,7 @@ LP.CharacterAdded:Connect(function(char)
             UpdVis(n)
         end
     end
-    _fakeLagToken += 1
+    _fakeLagToken = _fakeLagToken + (1)
 
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum then
@@ -2330,7 +2330,7 @@ mCnt.TextColor3 = P.grn; mCnt.ZIndex = 101; mCnt.Text = ""
 task.spawn(function()
     while task.wait(0.6) do
         local c = 0
-        for _, v in pairs(State) do if v then c += 1 end end
+        for _, v in pairs(State) do if v then c = c + 1 end end
         mCnt.Text = c > 0 and ("●" .. c) or ""
     end
 end)
@@ -3541,7 +3541,7 @@ task.spawn(function()
     local t = 0
     while true do
         task.wait(0.033)
-        t += 0.02
+        t = t + (0.02)
         local pulse = (math.sin(t * 2) + 1) / 2
         local aR = math.floor(0 + pulse * 15)
         local aG = math.floor(180 + pulse * 30)
@@ -3645,10 +3645,10 @@ RunService.RenderStepped:Connect(function(dt)
             local mx, mz = GetDir()
             local dir = Camera.CFrame.LookVector * -mz + Camera.CFrame.RightVector * mx
             if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then
-                dir += Camera.CFrame.UpVector
+                dir = dir + (Camera.CFrame.UpVector)
             end
             if UIS:IsKeyDown(Enum.KeyCode.Q) or UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then
-                dir -= Camera.CFrame.UpVector
+                dir = dir - (Camera.CFrame.UpVector)
             end
             if dir.Magnitude > 1 then dir = dir.Unit end
             Camera.CFrame = CFrame.new(Camera.CFrame.Position + dir * (Config.FlySpeed / 25) * dt * 60)
@@ -3668,14 +3668,14 @@ RunService.RenderStepped:Connect(function(dt)
                 local predMul = math.clamp(dist / 100, 0.3, 1.5) * ((Config.AimPredMult or 10) / 10)
                 local predictedPos = part.Position + vel * predTime * predMul
                 if vel.Y < -5 then
-                    predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0)
+                    predictedPos = predictedPos + (Vector3.new(0, -4.9 * predTime * predTime, 0))
                 end
                 local smooth = Config.AimSmooth
                 local sd = ScreenDist(part)
                 if sd < 30 then smooth = smooth * 0.3
                 elseif sd < 80 then smooth = smooth * 0.6 end
                 if Config.AimAntiDetect then
-                    predictedPos += Vector3.new(
+                    predictedPos = predictedPos + Vector3.new(
                         (math.random() - 0.5) * 0.12,
                         (math.random() - 0.5) * 0.08,
                         (math.random() - 0.5) * 0.12
@@ -3864,7 +3864,7 @@ RunService.Stepped:Connect(function()
         local delta = (HRP.Position - lastNcPos).Magnitude
 
         if moving and delta < 0.06 then
-            ncStuck += 1
+            ncStuck = ncStuck + (1)
         else
             ncStuck = 0
         end
@@ -3878,9 +3878,9 @@ RunService.Stepped:Connect(function()
                 return Workspace:Raycast(HRP.Position, md * 8, ncRay)
             end)
             if ok and r then
-                HRP.CFrame += md * (r.Distance + 2.5)
+                HRP.CFrame = HRP.CFrame + (md * (r.Distance + 2.5))
             else
-                HRP.CFrame += md * 0.6 + Vector3.new(0, 0.15, 0)
+                HRP.CFrame = HRP.CFrame + (md * 0.6 + Vector3.new(0, 0.15, 0))
             end
             if ncStuck >= 6 then
                 HRP.AssemblyLinearVelocity = Vector3.new(
