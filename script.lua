@@ -701,7 +701,7 @@ local function UpdateESP()
             infoLbl.TextScaled = false
             infoLbl.TextXAlignment = Enum.TextXAlignment.Center
             -- AutoSize щоб широкий текст не обрізався
-            infoLbl.AutomaticSize = Enum.AutomaticSize.X
+            -- AutomaticSize not supported in all games
 
             -- HP бар
             local barBg = Instance.new("Frame", bb)
@@ -940,7 +940,7 @@ end
 -- ============================================================
 local ncOrigCanCollide = {}
 local ncStuck = 0
-local lastNcPos = Vector3.zero
+local lastNcPos = Vector3.new(0,0,0)
 local ncRay = RaycastParams.new()
 ncRay.FilterType = Enum.RaycastFilterType.Exclude
 
@@ -1015,7 +1015,7 @@ local function ForceRestore()
             end)
         end)
     end
-    ncStuck = 0; lastNcPos = Vector3.zero
+    ncStuck = 0; lastNcPos = Vector3.new(0,0,0)
 end
 
 local _fakeLagToken = 0
@@ -1140,7 +1140,7 @@ local function Toggle(nm)
     if not State[nm] then
         if nm == "Fly" then
             pcall(function()
-                if R then R.Anchored = false; R.AssemblyLinearVelocity = Vector3.zero end
+                if R then R.Anchored = false; R.AssemblyLinearVelocity = Vector3.new(0,0,0) end
                 if H then H.PlatformStand = false end
             end)
         elseif nm == "Speed" then
@@ -1299,7 +1299,7 @@ local function Toggle(nm)
             end)
 
         elseif nm == "Noclip" then
-            ncStuck = 0; lastNcPos = Vector3.zero; ncOrigCanCollide = {}
+            ncStuck = 0; lastNcPos = Vector3.new(0,0,0); ncOrigCanCollide = {}
             if C then NoclipApply(C) end
         elseif nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0; aimLastSwitch = 0
@@ -1371,7 +1371,7 @@ task.spawn(function()
                 if _lastSafePos then
                     pcall(function()
                         R.CFrame = _lastSafePos + Vector3.new(0, 3, 0)
-                        R.AssemblyLinearVelocity = Vector3.zero
+                        R.AssemblyLinearVelocity = Vector3.new(0,0,0)
                     end)
                     Notify("Anti-Void", L("ntf_anti_void"), 2)
                 end
@@ -1431,7 +1431,7 @@ local silentAimMethod = "none"  -- для дебагу: який метод вс
 
 local function _SilentAimRedirectDir(origin, partPos, partVel)
     -- Повертає змінений напрям пострілу з предіктом і анти-детектом
-    local predPos = partPos + (partVel or Vector3.zero) * 0.05
+    local predPos = partPos + (partVel or Vector3.new(0,0,0)) * 0.05
     local dir = (predPos - origin)
     if Config.AimAntiDetect then
         dir = dir + Vector3.new(
@@ -1505,7 +1505,7 @@ local function SetupSilentAimHook()
                             local newDir, mag = _SilentAimRedirectDir(
                                 origin, part.Position, part.AssemblyLinearVelocity)
                             args[2] = newDir * mag
-                            return oldNC(self, table.unpack(args))
+                            return oldNC(self, unpack(args))
                         end
                     end
                 end
@@ -1522,7 +1522,7 @@ local function SetupSilentAimHook()
                             local newDir, _ = _SilentAimRedirectDir(
                                 ray.Origin, part.Position, part.AssemblyLinearVelocity)
                             args[1] = Ray.new(ray.Origin, newDir * 5000)
-                            return oldNC(self, table.unpack(args))
+                            return oldNC(self, unpack(args))
                         end
                     end
                 end
@@ -2855,7 +2855,7 @@ RunService.RenderStepped:Connect(function(dt)
 
             if lv and lv:IsA("LinearVelocity") and lv.Parent then
                 -- Плавний lerp щоб уникнути різких стрибків швидкості
-                local cur = lv.VectorVelocity or Vector3.zero
+                local cur = lv.VectorVelocity or Vector3.new(0,0,0)
                 lv.VectorVelocity = cur:Lerp(target_vel, math.clamp(dt * 20, 0, 1))
                 -- Обертаємо тільки якщо рухаємось горизонтально
                 if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
@@ -2875,7 +2875,7 @@ RunService.RenderStepped:Connect(function(dt)
 
             -- Не чіпаємо AngularVelocity якщо Spin активний
             if not State.Spin then
-                pcall(function() HRP.AssemblyAngularVelocity = Vector3.zero end)
+                pcall(function() HRP.AssemblyAngularVelocity = Vector3.new(0,0,0) end)
             end
         end)
     else
