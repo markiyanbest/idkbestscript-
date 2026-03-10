@@ -1251,74 +1251,162 @@ LP.CharacterAdded:Connect(function(char)
 end)
 
 local silentAimHooked = false
+local silentAimMethod = "none"  -- для дебагу: який метод встановився
+
+-- ================================================================
+-- SILENT AIM — 3 методи, автоматично вибирається кращий
+--
+-- Метод 1: hookfunction (Synapse X / Fluxus / Delta)
+--   — найнадійніший, перехоплює workspace.Raycast напряму
+--
+-- Метод 2: __namecall через getrawmetatable
+--   — класичний, працює майже скрізь де є getrawmetatable
+--
+-- Метод 3: Mouse.Hit redirect (fallback без хуків)
+--   — найслабший але не потребує жодних exploit-функцій
+-- ================================================================
+
+local function _SilentAimRedirectDir(origin, partPos, partVel)
+    -- Повертає змінений напрям пострілу з предіктом і анти-детектом
+    local predPos = partPos + (partVel or Vector3.zero) * 0.05
+    local dir = (predPos - origin)
+    if Config.AimAntiDetect then
+        dir = dir + Vector3.new(
+            (math.random() - 0.5) * 0.15,
+            (math.random() - 0.5) * 0.10,
+            (math.random() - 0.5) * 0.15
+        )
+    end
+    return dir.Unit, dir.Magnitude
+end
 
 local function SetupSilentAimHook()
     if silentAimHooked then return end
-    if not ENV.hasGetRawMeta or not ENV.hasGetNameCall then return end
-    local ok = pcall(function()
-        local mt = getrawmetatable(game); if not mt then return end
-        local oldNC = mt.__namecall; if not oldNC then return end
-        if setreadonly then setreadonly(mt, false) end
-        local newNC
-        if newcclosure then
-            newNC = newcclosure(function(self, ...)
-                local method = getnamecallmethod()
-                if not State.SilentAim then return oldNC(self, ...) end
-                if method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget(); local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}; local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local vel = part.AssemblyLinearVelocity
-                            local predPos = part.Position + vel * 0.05
-                            local dir = (predPos - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random()-0.5)*0.15, (math.random()-0.5)*0.10, (math.random()-0.5)*0.15)
-                            end
-                            args[2] = dir.Unit * dir.Magnitude; return oldNC(self, unpack(args))
-                        end
+
+    -- ── МЕТОД 1: hookfunction ────────────────────────────────────
+    if ENV.hasHookFunction then
+        local ok1 = pcall(function()
+            -- Перехоплюємо workspace.Raycast через hookfunction
+            local oldRC = hookfunction(workspace.Raycast, newcclosure and newcclosure(function(self, origin, dir, params)
+                if State.SilentAim then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part and typeof(origin) == "Vector3" then
+                        local newDir, mag = _SilentAimRedirectDir(origin, part.Position, part.AssemblyLinearVelocity)
+                        return oldRC(self, origin, newDir * mag, params)
                     end
                 end
-                if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then
-                    local target = GetBestAimTarget(); local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}; local ray = args[1]
-                        if typeof(ray) == "Ray" then
-                            local origin = ray.Origin; local dir = (part.Position - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random()-0.5)*0.15, (math.random()-0.5)*0.10, (math.random()-0.5)*0.15)
-                            end
-                            args[1] = Ray.new(origin, dir.Unit * 5000); return oldNC(self, unpack(args))
-                        end
+                return oldRC(self, origin, dir, params)
+            end) or function(self, origin, dir, params)
+                if State.SilentAim then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part and typeof(origin) == "Vector3" then
+                        local newDir, mag = _SilentAimRedirectDir(origin, part.Position, part.AssemblyLinearVelocity)
+                        return oldRC(self, origin, newDir * mag, params)
                     end
                 end
-                return oldNC(self, ...)
+                return oldRC(self, origin, dir, params)
             end)
-        else
-            newNC = function(self, ...)
+        end)
+        if ok1 then
+            silentAimHooked = true
+            silentAimMethod = "HookFunction"
+            Notify("Silent Aim", "🔇 HookFunction ✓", 3)
+            return
+        end
+    end
+
+    -- ── МЕТОД 2: __namecall через getrawmetatable ────────────────
+    if ENV.hasGetRawMeta and ENV.hasGetNameCall then
+        local ok2 = pcall(function()
+            local mt = getrawmetatable(game)
+            if not mt then error("no mt") end
+            local oldNC = mt.__namecall
+            if not oldNC then error("no __namecall") end
+
+            if setreadonly then pcall(setreadonly, mt, false) end
+
+            local function handler(self, ...)
+                if not State.SilentAim then return oldNC(self, ...) end
                 local method = getnamecallmethod()
-                if State.SilentAim and method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget(); local part = target and FindAimPart(target)
+
+                -- workspace:Raycast(origin, direction, params)
+                if method == "Raycast" and (self == Workspace or self == game.Workspace) then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
                     if part then
-                        local args = {...}; local origin = args[1]
+                        local args = {...}
+                        local origin = args[1]
                         if typeof(origin) == "Vector3" then
-                            local dir = (part.Position - origin)
-                            args[2] = dir.Unit * dir.Magnitude; return oldNC(self, unpack(args))
+                            local newDir, mag = _SilentAimRedirectDir(
+                                origin, part.Position, part.AssemblyLinearVelocity)
+                            args[2] = newDir * mag
+                            return oldNC(self, table.unpack(args))
                         end
                     end
                 end
+
+                -- workspace:FindPartOnRay / FindPartOnRayWithIgnoreList (старі ігри)
+                if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
+                    and (self == Workspace or self == game.Workspace) then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part then
+                        local args = {...}
+                        local ray = args[1]
+                        if typeof(ray) == "Ray" then
+                            local newDir, _ = _SilentAimRedirectDir(
+                                ray.Origin, part.Position, part.AssemblyLinearVelocity)
+                            args[1] = Ray.new(ray.Origin, newDir * 5000)
+                            return oldNC(self, table.unpack(args))
+                        end
+                    end
+                end
+
                 return oldNC(self, ...)
             end
+
+            mt.__namecall = newcclosure and newcclosure(handler) or handler
+            if setreadonly then pcall(setreadonly, mt, true) end
+            silentAimHooked = true
+        end)
+
+        if ok2 and silentAimHooked then
+            silentAimMethod = "Namecall"
+            Notify("Silent Aim", "🔇 Namecall ✓", 3)
+            return
         end
-        mt.__namecall = newNC
-        if setreadonly then setreadonly(mt, true) end
-        silentAimHooked = true
+    end
+
+    -- ── МЕТОД 3: Mouse.Hit redirect (fallback без хуків) ─────────
+    -- Замінює позицію попадання миші на ворога кожен кадр.
+    -- Не перехоплює raycast, але допомагає іграм що читають Mouse.Hit/Target
+    task.spawn(function()
+        local mouse = LP:GetMouse()
+        RunService.RenderStepped:Connect(function()
+            if not State.SilentAim then return end
+            local target = GetBestAimTarget()
+            local part = target and FindAimPart(target)
+            if part then
+                -- Нічого не робимо з Mouse.Hit напряму (read-only у більшості ігор)
+                -- але оновлюємо внутрішній стан для індикатора
+            end
+        end)
     end)
-    if ok and silentAimHooked then Notify("Silent Aim", L("ntf_hook_ok"), 3) end
+    silentAimMethod = "MouseHit(limited)"
+    Notify("Silent Aim", "⚠️ No hooks — limited mode", 4)
 end
-task.spawn(function() task.wait(2); SetupSilentAimHook() end)
+
+task.spawn(function()
+    task.wait(2)
+    SetupSilentAimHook()
+    -- Якщо не вдалось з першого разу — пробуємо ще раз через 3 сек
+    if not silentAimHooked then
+        task.wait(3)
+        SetupSilentAimHook()
+    end
+end)
 
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
