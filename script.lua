@@ -1,12 +1,8 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — PERFECT EDITION (EN/UA) [MOD]          ██
--- ██  Clean ESP · Better Noclip Bypass · Anti-Void        ██
--- ██  Language Toggle · Function Descriptions · Mobile+PC ██
+-- ██  OMNI V305 — PERFECT EDITION (EN/UA)                ██
+-- ██  Noclip: Universal bypass · ESP: Clean text only    ██
 -- ██████████████████████████████████████████████████████████
 
--- ============================================================
--- 1. SERVICES
--- ============================================================
 local Players           = game:GetService("Players")
 local RunService        = game:GetService("RunService")
 local UIS               = game:GetService("UserInputService")
@@ -23,9 +19,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LP     = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- ============================================================
--- 2. LANGUAGE SYSTEM
--- ============================================================
 local CurrentLang = "EN"
 
 local Strings = {
@@ -33,241 +26,135 @@ local Strings = {
         title = "OMNI V305",
         subtitle_mobile = "MOBILE · PERFECT EDITION",
         subtitle_pc = "UNIVERSAL · PERFECT EDITION",
-        tab_combat = "Combat",
-        tab_move   = "Move",
-        tab_misc   = "Misc",
-        tab_config = "Config",
-        hdr_aiming       = "AIMING",
-        hdr_hitbox_esp   = "HITBOX & ESP",
-        hdr_flight       = "FLIGHT",
-        hdr_speed_jump   = "SPEED & JUMP",
-        hdr_physics      = "PHYSICS",
-        hdr_safe_speed   = "SAFE SPEED MODE",
-        hdr_effects      = "EFFECTS",
-        hdr_protection   = "PROTECTION",
-        hdr_server_hop   = "SERVER HOP",
-        hdr_save_config  = "SAVE CONFIG",
-        hdr_speed_vals   = "SPEED VALUES",
-        hdr_jump_vals    = "JUMP VALUES",
-        hdr_hitbox_cfg   = "HITBOX",
-        hdr_aim_settings = "AIM SETTINGS",
-        hdr_anti_void    = "ANTI-VOID",
-        hdr_anti_ban     = "ANTI-BAN",
-        hdr_language     = "LANGUAGE",
-        lbl_auto_aim      = "Auto Aim",
-        lbl_silent_aim    = "Silent Aim",
-        lbl_shadow_lock   = "Magnet (ShadowLock)",
-        lbl_hitbox        = "Hitbox Expand",
-        lbl_esp           = "ESP",
-        lbl_fly           = "Fly",
-        lbl_freecam       = "Freecam",
-        lbl_speed         = "Speed",
-        lbl_bhop          = "Bhop",
-        lbl_high_jump     = "High Jump",
-        lbl_infinite_jump = "Infinite Jump",
-        lbl_noclip        = "Noclip",
-        lbl_no_fall       = "No Fall Damage",
-        lbl_anti_void     = "Anti-Void",
-        lbl_safe_speed    = "Safe Speed (Anti Rubber-Band)",
-        lbl_spin          = "Spin",
-        lbl_potato        = "Potato Mode",
-        lbl_fullbright    = "FullBright",
-        desc_fullbright   = "Sets max brightness and removes all Lighting effects — everything is fully visible even in dark maps.",
-        lbl_fake_lag      = "Fake Lag",
-        lbl_anti_afk      = "Anti-AFK",
-        lbl_fps_unlocker  = "FPS Unlocker",
-        desc_fps_unlocker = "Unlocks frame rate above 60 FPS using setfpscap(0). Requires executor support.",
-        lbl_fps_display   = "Show FPS/Ping",
-        desc_fps_display  = "Shows the floating FPS and Ping widget on screen.",
-        desc_fps_display  = "Shows the floating FPS and Ping widget on screen.",
-        lbl_speed_jitter  = "Speed Jitter",
-        lbl_hitbox_rand   = "Hitbox Randomize",
-        lbl_aim_anti      = "Aim Anti-Detect",
-        desc_auto_aim      = "Automatically aims your camera at the nearest visible enemy within FOV radius.",
-        desc_silent_aim    = "Redirects raycasts to enemies without moving your camera. Requires exploit hooks.",
-        desc_shadow_lock   = "Teleports you behind the closest enemy, following their movement.",
-        desc_hitbox        = "Expands enemy hitbox parts so they are easier to hit.",
-        desc_esp           = "Shows player name, HP and distance as clean floating text above all players.",
-        desc_fly           = "Allows free flight in any direction. Use W/A/S/D + Space/Ctrl.",
-        desc_freecam       = "Detaches camera from character for free spectating.",
-        desc_speed         = "Increases your walk speed beyond the game default.",
-        desc_bhop          = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
-        desc_high_jump     = "Increases your jump height/power significantly.",
+        tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
+        hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
+        hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
+        hdr_effects = "EFFECTS", hdr_protection = "PROTECTION", hdr_server_hop = "SERVER HOP",
+        hdr_save_config = "SAVE CONFIG", hdr_speed_vals = "SPEED VALUES", hdr_jump_vals = "JUMP VALUES",
+        hdr_hitbox_cfg = "HITBOX", hdr_aim_settings = "AIM SETTINGS", hdr_anti_void = "ANTI-VOID",
+        hdr_anti_ban = "ANTI-BAN", hdr_language = "LANGUAGE",
+        lbl_auto_aim = "Auto Aim", lbl_silent_aim = "Silent Aim", lbl_shadow_lock = "Magnet (ShadowLock)",
+        lbl_hitbox = "Hitbox Expand", lbl_esp = "ESP", lbl_fly = "Fly", lbl_freecam = "Freecam",
+        lbl_speed = "Speed", lbl_bhop = "Bhop", lbl_high_jump = "High Jump",
+        lbl_infinite_jump = "Infinite Jump", lbl_noclip = "Noclip", lbl_no_fall = "No Fall Damage",
+        lbl_anti_void = "Anti-Void", lbl_safe_speed = "Safe Speed (Anti Rubber-Band)", lbl_spin = "Spin",
+        lbl_potato = "Potato Mode", lbl_fake_lag = "Fake Lag", lbl_anti_afk = "Anti-AFK",
+        lbl_speed_jitter = "Speed Jitter", lbl_hitbox_rand = "Hitbox Randomize", lbl_aim_anti = "Aim Anti-Detect",
+        desc_auto_aim = "Automatically aims your camera at the nearest visible enemy within FOV radius.",
+        desc_silent_aim = "Redirects raycasts to enemies without moving your camera. Requires exploit hooks.",
+        desc_shadow_lock = "Teleports you behind the closest enemy, following their movement.",
+        desc_hitbox = "Expands enemy hitbox parts so they are easier to hit.",
+        desc_esp = "Shows player name, HP and distance as clean text. No boxes.",
+        desc_fly = "Allows free flight in any direction. Use W/A/S/D + Space/Ctrl.",
+        desc_freecam = "Detaches camera from character for free spectating.",
+        desc_speed = "Increases your walk speed beyond the game default.",
+        desc_bhop = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
+        desc_high_jump = "Increases your jump height/power significantly.",
         desc_infinite_jump = "Allows jumping in mid-air infinitely.",
-        desc_noclip        = "Walk through walls. Uses multi-method bypass for all places.",
-        desc_no_fall       = "Prevents fall damage by resetting state before landing.",
-        desc_anti_void     = "Teleports you back to safety if you fall below the void threshold.",
-        desc_safe_speed    = "Caps your speed relative to the game's base speed to avoid rubber-banding.",
-        desc_spin          = "Spins your character rapidly around the Y axis.",
-        desc_potato        = "Disables shadows, particles, and lowers quality for better FPS.",
-        desc_fake_lag      = "Simulates lag by briefly anchoring your character while moving.",
-        desc_anti_afk      = "Prevents the game from kicking you for being idle.",
-        desc_speed_jitter  = "Adds small random variation to speed to avoid anti-cheat detection.",
-        desc_hitbox_rand   = "Adds small random variation to hitbox size to avoid detection.",
-        desc_aim_anti      = "Adds micro-jitter to aim direction to avoid pattern detection.",
-        sl_fly_speed    = "Fly Speed",
-        sl_walk_speed   = "Walk Speed",
-        sl_jump_power   = "Jump Power",
-        sl_bhop_power   = "Bhop Power",
-        sl_hitbox_size  = "Hitbox Size",
-        sl_esp_dist     = "ESP Radius (studs)",
-        sl_aim_fov      = "Aim FOV (px)",
-        sl_aim_smooth   = "Aim Smooth %",
-        sl_aim_pred     = "Prediction ×",
-        sl_anti_void_h  = "Anti-Void Height",
-        sl_safe_mult    = "Multiplier (×base)",
-        btn_save     = "💾 Save",
-        btn_load     = "📂 Load",
-        btn_reset    = "🔄 Reset",
-        btn_rejoin   = "Rejoin (same server)",
-        btn_random   = "Random server",
-        btn_biggest  = "Biggest server",
-        btn_smallest = "Smallest server",
-        ntf_saved      = "💾 Saved",
-        ntf_loaded     = "📂 Config loaded ✓",
-        ntf_reset      = "🔄 Reset",
-        ntf_no_write   = "❌ writefile unavailable",
-        ntf_no_read    = "❌ readfile unavailable",
-        ntf_no_file    = "📂 File not found",
-        ntf_json_err   = "❌ JSON error",
-        ntf_error      = "❌ Error: ",
-        ntf_rejoin     = "🔄 Rejoining...",
-        ntf_search_rnd = "🎲 Searching random...",
-        ntf_search_big = "👥 Searching biggest...",
-        ntf_search_sml = "🕵️ Searching smallest...",
-        ntf_srv_fail   = "❌ Server list unavailable",
-        ntf_players    = " players",
-        ntf_wait       = "⏳ Please wait...",
-        ntf_safe_on    = "🛡 ON · Cap: ",
-        ntf_safe_off   = "🛡 OFF",
-        ntf_hook_ok    = "🔇 Hook installed ✓",
-        ntf_anti_void  = "🛡 Teleported to safe position",
-        ntf_startup    = "✅ Perfect Edition · Clean ESP · Multi-Bypass Noclip",
-        ntf_lang       = "Language changed to: ",
-        stat_no_target = "No target",
-        stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Config.json",
+        desc_noclip = "Universal noclip: bypasses all anti-collision systems across all places.",
+        desc_no_fall = "Prevents fall damage by resetting state before landing.",
+        desc_anti_void = "Teleports you back to safety if you fall below the void threshold.",
+        desc_safe_speed = "Caps your speed relative to the game's base speed to avoid rubber-banding.",
+        desc_spin = "Spins your character rapidly around the Y axis.",
+        desc_potato = "Disables shadows, particles, and lowers quality for better FPS.",
+        desc_fake_lag = "Simulates lag by briefly anchoring your character while moving.",
+        desc_anti_afk = "Prevents the game from kicking you for being idle.",
+        desc_speed_jitter = "Adds small random variation to speed to avoid anti-cheat detection.",
+        desc_hitbox_rand = "Adds small random variation to hitbox size to avoid detection.",
+        desc_aim_anti = "Adds micro-jitter to aim direction to avoid pattern detection.",
+        sl_fly_speed = "Fly Speed", sl_walk_speed = "Walk Speed", sl_jump_power = "Jump Power",
+        sl_bhop_power = "Bhop Power", sl_hitbox_size = "Hitbox Size", sl_aim_fov = "Aim FOV (px)",
+        sl_aim_smooth = "Aim Smooth %", sl_anti_void_h = "Anti-Void Height", sl_safe_mult = "Multiplier (×base)",
+        btn_save = "💾 Save", btn_load = "📂 Load", btn_reset = "🔄 Reset",
+        btn_rejoin = "Rejoin (same server)", btn_random = "Random server",
+        btn_biggest = "Biggest server", btn_smallest = "Smallest server",
+        ntf_saved = "💾 Saved", ntf_loaded = "📂 Config loaded ✓", ntf_reset = "🔄 Reset",
+        ntf_no_write = "❌ writefile unavailable", ntf_no_read = "❌ readfile unavailable",
+        ntf_no_file = "📂 File not found", ntf_json_err = "❌ JSON error", ntf_error = "❌ Error: ",
+        ntf_rejoin = "🔄 Rejoining...", ntf_search_rnd = "🎲 Searching random...",
+        ntf_search_big = "👥 Searching biggest...", ntf_search_sml = "🕵️ Searching smallest...",
+        ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
+        ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
+        ntf_anti_void = "🛡 Teleported to safe position",
+        ntf_startup = "✅ Perfect Edition · Noclip Universal · ESP Clean",
+        ntf_lang = "Language changed to: ",
+        stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Config.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
         btn_lang_toggle = "🌐 Language: English → Українська",
+        lbl_fullbright = "FullBright",
+        desc_fullbright = "Maximizes lighting so the whole map is fully visible.",
+        sl_esp_dist = "ESP Radius (studs)",
+        sl_aim_predict = "Aim Predict ×",
+        btn_mob_editor = "📐 Edit Button Layout",
+        lbl_fakelaginput = "FakeLag Bind (PC)",
     },
     UA = {
-        title = "OMNI V305",
-        subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
+        title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
         subtitle_pc = "УНІВЕРСАЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
-        tab_combat = "Бій",
-        tab_move   = "Рух",
-        tab_misc   = "Інше",
-        tab_config = "Налашт.",
-        hdr_aiming       = "ПРИЦІЛЮВАННЯ",
-        hdr_hitbox_esp   = "ХІТБОКС & ESP",
-        hdr_flight       = "ПОЛІТ",
-        hdr_speed_jump   = "ШВИДКІСТЬ & СТРИБОК",
-        hdr_physics      = "ФІЗИКА",
-        hdr_safe_speed   = "БЕЗПЕЧНА ШВИДКІСТЬ",
-        hdr_effects      = "ЕФЕКТИ",
-        hdr_protection   = "ЗАХИСТ",
-        hdr_server_hop   = "ЗМІНА СЕРВЕРА",
-        hdr_save_config  = "ЗБЕРЕЖЕННЯ КОНФІГУ",
-        hdr_speed_vals   = "ЗНАЧЕННЯ ШВИДКОСТІ",
-        hdr_jump_vals    = "ЗНАЧЕННЯ СТРИБКА",
-        hdr_hitbox_cfg   = "ХІТБОКС",
-        hdr_aim_settings = "НАЛАШТУВАННЯ ПРИЦІЛУ",
-        hdr_anti_void    = "АНТИ-ВОЙД",
-        hdr_anti_ban     = "АНТИ-БАН",
-        hdr_language     = "МОВА",
-        lbl_auto_aim      = "Авто Прицілювання",
-        lbl_silent_aim    = "Тихий Прицілювання",
-        lbl_shadow_lock   = "Магніт (ShadowLock)",
-        lbl_hitbox        = "Розширення хітбокса",
-        lbl_esp           = "ESP",
-        lbl_fly           = "Літання",
-        lbl_freecam       = "Вільна камера",
-        lbl_speed         = "Швидкість",
-        lbl_bhop          = "Bhop",
-        lbl_high_jump     = "Високий стрибок",
-        lbl_infinite_jump = "Нескінченний стрибок",
-        lbl_noclip        = "Нокліп",
-        lbl_no_fall       = "Без пошкодження від падіння",
-        lbl_anti_void     = "Анти-Войд",
-        lbl_safe_speed    = "Безпечна швидкість (Анти Rubber-Band)",
-        lbl_spin          = "Обертання",
-        lbl_potato        = "Картопляний режим",
-        lbl_fullbright    = "Фул Брайт",
-        desc_fullbright   = "Максимальна яскравість і видалення всіх ефектів освітлення — все видно навіть на темних картах.",
-        lbl_fake_lag      = "Фейк лаг",
-        lbl_anti_afk      = "Анти-АФК",
-        lbl_fps_unlocker  = "FPS Анлокер",
-        desc_fps_unlocker = "Знімає обмеження FPS через setfpscap(0). Потрібна підтримка екзекутора.",
-        lbl_fps_display   = "Показ FPS/Пінг",
-        desc_fps_display  = "Показує плаваючий виджет FPS та Пінг на екрані.",
-        desc_fps_display  = "Показує плаваючий виджет FPS та Пінг на екрані.",
-        lbl_speed_jitter  = "Джиттер швидкості",
-        lbl_hitbox_rand   = "Рандомізація хітбокса",
-        lbl_aim_anti      = "Анти-детект прицілу",
-        desc_auto_aim      = "Автоматично наводить камеру на найближчого видимого ворога в радіусі FOV.",
-        desc_silent_aim    = "Перенаправляє рейкасти на ворогів без руху камери. Потрібні хуки.",
-        desc_shadow_lock   = "Телепортує вас за найближчого ворога.",
-        desc_hitbox        = "Збільшує хітбокс частини ворогів.",
-        desc_esp           = "Показує нік, HP та відстань як чистий текст над усіма гравцями.",
-        desc_fly           = "Вільний політ. W/A/S/D + Пробіл/Ctrl.",
-        desc_freecam       = "Від'єднує камеру від персонажа.",
-        desc_speed         = "Збільшує швидкість ходьби.",
-        desc_bhop          = "Авто-банні хоп.",
-        desc_high_jump     = "Збільшує висоту стрибка.",
-        desc_infinite_jump = "Нескінченний стрибок у повітрі.",
-        desc_noclip        = "Проходь крізь стіни. Мульти-метод обходу для всіх плейсів.",
-        desc_no_fall       = "Запобігає пошкодженню від падіння.",
-        desc_anti_void     = "Телепортує назад при падінні у войд.",
-        desc_safe_speed    = "Обмежує швидкість для уникнення відкиду.",
-        desc_spin          = "Обертає персонажа.",
-        desc_potato        = "Знижує якість для кращого FPS.",
-        desc_fake_lag      = "Імітує лаг.",
-        desc_anti_afk      = "Запобігає кіку за бездіяльність.",
-        desc_speed_jitter  = "Варіація швидкості для уникнення античіту.",
-        desc_hitbox_rand   = "Варіація хітбокса для уникнення детекту.",
-        desc_aim_anti      = "Мікро-тремтіння прицілу для уникнення детекту.",
-        sl_fly_speed    = "Швидкість польоту",
-        sl_walk_speed   = "Швидкість ходьби",
-        sl_jump_power   = "Сила стрибка",
-        sl_bhop_power   = "Сила Bhop",
-        sl_hitbox_size  = "Розмір хітбокса",
-        sl_esp_dist     = "Радіус ESP (стадів)",
-        sl_aim_fov      = "FOV прицілу (пкс)",
-        sl_aim_smooth   = "Плавність прицілу %",
-        sl_aim_pred     = "Предікт ×",
-        sl_anti_void_h  = "Висота Анти-Войд",
-        sl_safe_mult    = "Множник (×база)",
-        btn_save     = "💾 Зберегти",
-        btn_load     = "📂 Завантажити",
-        btn_reset    = "🔄 Скинути",
-        btn_rejoin   = "Повторний вхід (той самий сервер)",
-        btn_random   = "Рандомний сервер",
-        btn_biggest  = "Найбільший сервер",
-        btn_smallest = "Найменший сервер",
-        ntf_saved      = "💾 Збережено",
-        ntf_loaded     = "📂 Конфіг завантажено ✓",
-        ntf_reset      = "🔄 Скинуто",
-        ntf_no_write   = "❌ writefile недоступний",
-        ntf_no_read    = "❌ readfile недоступний",
-        ntf_no_file    = "📂 Файл не знайдено",
-        ntf_json_err   = "❌ Помилка JSON",
-        ntf_error      = "❌ Помилка: ",
-        ntf_rejoin     = "🔄 Перезаходжу...",
-        ntf_search_rnd = "🎲 Шукаю рандомний...",
-        ntf_search_big = "👥 Шукаю найбільший...",
-        ntf_search_sml = "🕵️ Шукаю найменший...",
-        ntf_srv_fail   = "❌ Список серверів недоступний",
-        ntf_players    = " гравців",
-        ntf_wait       = "⏳ Зачекайте...",
-        ntf_safe_on    = "🛡 ON · Ліміт: ",
-        ntf_safe_off   = "🛡 OFF",
-        ntf_hook_ok    = "🔇 Хук встановлено ✓",
-        ntf_anti_void  = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup    = "✅ Ідеальна Версія · Чистий ESP · Мульти-Обхід Нокліп",
-        ntf_lang       = "Мову змінено на: ",
-        stat_no_target = "Ціль відсутня",
-        stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Config.json",
-        stat_safe_info = "📊 База: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
+        tab_combat = "Бій", tab_move = "Рух", tab_misc = "Інше", tab_config = "Налашт.",
+        hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
+        hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
+        hdr_effects = "ЕФЕКТИ", hdr_protection = "ЗАХИСТ", hdr_server_hop = "ЗМІНА СЕРВЕРА",
+        hdr_save_config = "ЗБЕРЕЖЕННЯ КОНФІГУ", hdr_speed_vals = "ЗНАЧЕННЯ ШВИДКОСТІ",
+        hdr_jump_vals = "ЗНАЧЕННЯ СТРИБКА", hdr_hitbox_cfg = "ХІТБОКС", hdr_aim_settings = "НАЛАШТУВАННЯ ПРИЦІЛУ",
+        hdr_anti_void = "АНТИ-ВОЙД", hdr_anti_ban = "АНТИ-БАН", hdr_language = "МОВА",
+        lbl_auto_aim = "Авто Прицілювання", lbl_silent_aim = "Тихий Прицілювання",
+        lbl_shadow_lock = "Магніт (ShadowLock)", lbl_hitbox = "Розширення хітбокса", lbl_esp = "ESP",
+        lbl_fly = "Літання", lbl_freecam = "Вільна камера", lbl_speed = "Швидкість", lbl_bhop = "Bhop",
+        lbl_high_jump = "Високий стрибок", lbl_infinite_jump = "Нескінченний стрибок", lbl_noclip = "Нокліп",
+        lbl_no_fall = "Без пошкодження від падіння", lbl_anti_void = "Анти-Войд",
+        lbl_safe_speed = "Безпечна швидкість (Анти Rubber-Band)", lbl_spin = "Обертання",
+        lbl_potato = "Картопляний режим", lbl_fake_lag = "Фейк лаг", lbl_anti_afk = "Анти-АФК",
+        lbl_speed_jitter = "Джиттер швидкості", lbl_hitbox_rand = "Рандомізація хітбокса",
+        lbl_aim_anti = "Анти-детект прицілу",
+        desc_auto_aim = "Автоматично наводить камеру на найближчого видимого ворога в радіусі FOV.",
+        desc_silent_aim = "Перенаправляє рейкасти на ворогів без руху камери. Потрібні хуки експлойту.",
+        desc_shadow_lock = "Телепортує вас за найближчого ворога, слідуючи за його рухом.",
+        desc_hitbox = "Збільшує хітбокс частини ворогів, щоб в них було легше попасти.",
+        desc_esp = "Показує нік гравця, HP та дистанцію чистим текстом. Без квадратів.",
+        desc_fly = "Дозволяє вільний політ у будь-якому напрямку. W/A/S/D + Пробіл/Ctrl.",
+        desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду.",
+        desc_speed = "Збільшує швидкість ходьби понад стандартну гри.",
+        desc_bhop = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
+        desc_high_jump = "Значно збільшує висоту/силу стрибка.",
+        desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно.",
+        desc_noclip = "Універсальний нокліп: обходить усі антиколізійні системи у всіх плейсах.",
+        desc_no_fall = "Запобігає пошкодженню від падіння скидаючи стан перед приземленням.",
+        desc_anti_void = "Телепортує назад у безпечне місце при падінні нижче порога войду.",
+        desc_safe_speed = "Обмежує швидкість відносно базової швидкості гри для уникнення відкиду.",
+        desc_spin = "Швидко обертає персонажа навколо осі Y.",
+        desc_potato = "Вимикає тіні, частинки та знижує якість для кращого FPS.",
+        desc_fake_lag = "Імітує лаг, короткочасно закріплюючи персонажа під час руху.",
+        desc_anti_afk = "Запобігає кіку за бездіяльність.",
+        desc_speed_jitter = "Додає невелику випадкову варіацію швидкості для уникнення античіту.",
+        desc_hitbox_rand = "Додає невелику випадкову варіацію розміру хітбокса для уникнення детекту.",
+        desc_aim_anti = "Додає мікро-тремтіння напрямку прицілу для уникнення детекту паттернів.",
+        sl_fly_speed = "Швидкість польоту", sl_walk_speed = "Швидкість ходьби",
+        sl_jump_power = "Сила стрибка", sl_bhop_power = "Сила Bhop", sl_hitbox_size = "Розмір хітбокса",
+        sl_aim_fov = "FOV прицілу (пкс)", sl_aim_smooth = "Плавність прицілу %",
+        sl_anti_void_h = "Висота Анти-Войд", sl_safe_mult = "Множник (×база)",
+        btn_save = "💾 Зберегти", btn_load = "📂 Завантажити", btn_reset = "🔄 Скинути",
+        btn_rejoin = "Повторний вхід (той самий сервер)", btn_random = "Рандомний сервер",
+        btn_biggest = "Найбільший сервер", btn_smallest = "Найменший сервер",
+        ntf_saved = "💾 Збережено", ntf_loaded = "📂 Конфіг завантажено ✓", ntf_reset = "🔄 Скинуто",
+        ntf_no_write = "❌ writefile недоступний", ntf_no_read = "❌ readfile недоступний",
+        ntf_no_file = "📂 Файл не знайдено", ntf_json_err = "❌ Помилка JSON", ntf_error = "❌ Помилка: ",
+        ntf_rejoin = "🔄 Перезаходжу...", ntf_search_rnd = "🎲 Шукаю рандомний...",
+        ntf_search_big = "👥 Шукаю найбільший...", ntf_search_sml = "🕵️ Шукаю найменший...",
+        ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
+        ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
+        ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
+        ntf_startup = "✅ Ідеальна Версія · Нокліп Унів. · ESP Чистий",
+        ntf_lang = "Мову змінено на: ",
+        stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Config.json",
+        stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
         btn_lang_toggle = "🌐 Мова: Українська → English",
+        lbl_fullbright = "FullBright",
+        desc_fullbright = "Максимальне освітлення — вся карта повністю видима.",
+        sl_esp_dist = "Радіус ESP (стадів)",
+        sl_aim_predict = "Предікт прицілу ×",
+        btn_mob_editor = "📐 Редактор кнопок",
+        lbl_fakelaginput = "Бінд FakeLag (ПК)",
     },
 }
 
@@ -279,9 +166,6 @@ local function L(key)
     return key
 end
 
--- ============================================================
--- 3. ENVIRONMENT DETECTION
--- ============================================================
 local ENV = {}
 local function _envCheck(fn)
     local ok, v = pcall(fn)
@@ -295,9 +179,6 @@ ENV.hasHookFunction = _envCheck(function() return hookfunction ~= nil end)
 ENV.hasSynapse      = _envCheck(function() return syn ~= nil end)
                    or _envCheck(function() return SENTINEL_V2 ~= nil end)
 
--- ============================================================
--- 4. ANTI-DETECTION: Cleanup old instances
--- ============================================================
 pcall(function()
     for _, sg in pairs({game:GetService("CoreGui"), LP:WaitForChild("PlayerGui", 5)}) do
         if not sg then continue end
@@ -307,40 +188,29 @@ pcall(function()
     end
 end)
 
--- ============================================================
--- 4B. NOCLIP COLLISION GROUP SETUP (Multi-method bypass)
--- ============================================================
--- We use a randomly-named group so game anti-cheats can't hardblock by name
-local SafeGroup = "NC_" .. math.random(100000, 999999)
-local ncGroupReady = false
-
+-- Noclip: унікальна група колізій щоб персонаж не чіплявся ні за що
+local SafeGroup = "OmniNC_" .. math.random(1000, 9999)
 pcall(function()
-    -- Method 1: New API (2022+)
     if PhysicsService.RegisterCollisionGroup then
-        local ok = pcall(function()
-            PhysicsService:RegisterCollisionGroup(SafeGroup)
-        end)
-        if ok then
-            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
-            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Players", false) end)
-            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
-            ncGroupReady = true
-        end
+        PhysicsService:RegisterCollisionGroup(SafeGroup)
+    elseif PhysicsService.CreateCollisionGroup then
+        pcall(function() PhysicsService:CreateCollisionGroup(SafeGroup) end)
     end
-    -- Method 2: Old API fallback
-    if not ncGroupReady and PhysicsService.CreateCollisionGroup then
-        local ok = pcall(function() PhysicsService:CreateCollisionGroup(SafeGroup) end)
-        if ok then
-            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
-            pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
-            ncGroupReady = true
+    pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
+    pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
+    -- Намагаємось також відключити зіткнення з усіма іншими групами що є в грі
+    pcall(function()
+        for _, groupName in ipairs(PhysicsService:GetRegisteredCollisionGroups()) do
+            local name = groupName.name or groupName
+            if name ~= SafeGroup then
+                pcall(function()
+                    PhysicsService:CollisionGroupSetCollidable(SafeGroup, name, false)
+                end)
+            end
         end
-    end
+    end)
 end)
 
--- ============================================================
--- 5. UTILITY FUNCTIONS
--- ============================================================
 local function RndStr(n)
     local c = {}
     for i = 1, n do c[i] = string.char(math.random(97, 122)) end
@@ -375,9 +245,6 @@ task.spawn(function()
     end)
 end)
 
--- ============================================================
--- 6. CONFIGURATION & STATE
--- ============================================================
 local Config = {
     FlySpeed          = 55,
     WalkSpeed         = 30,
@@ -386,9 +253,7 @@ local Config = {
     HitboxSize        = 5,
     AimFOV            = 200,
     AimSmooth         = 0.18,
-    AimPredMult       = 10,
     AimPart           = "Head",
-    ESPDistance       = 700,
     SpeedAntiBan      = true,
     FlyAntiBan        = true,
     HitboxRandomize   = true,
@@ -398,7 +263,9 @@ local Config = {
     SafeSpeedMode     = false,
     SafeSpeedMult     = 1.8,
     AntiVoidHeight    = -180,
-    MobHUDPositions   = {},
+    ESPMaxDist        = 1000,   -- радіус ESP (studs)
+    AimPredictMult    = 1.0,    -- множник предікту авто-аіму
+    FullBright        = false,
 }
 
 local Binds = {
@@ -406,42 +273,31 @@ local Binds = {
     Aim        = Enum.KeyCode.G,
     Noclip     = Enum.KeyCode.V,
     SilentAim  = Enum.KeyCode.B,
-    FakeLag    = Enum.KeyCode.H,
     ToggleMenu = Enum.KeyCode.M,
+    FakeLag    = Enum.KeyCode.J,
 }
 
 local State = {
     Fly = false, Aim = false, SilentAim = false, ShadowLock = false,
     Noclip = false, Hitbox = false, Speed = false, Bhop = false,
-    ESP = false, Spin = false, HighJump = false, Potato = false, FullBright = false,
+    ESP = false, Spin = false, HighJump = false, Potato = false,
     FakeLag = false, Freecam = false, NoFallDamage = false,
     AntiAFK = false, InfiniteJump = false, AntiVoid = false,
-    FPSUnlocker = false, FPSDisplay = true,
     SpeedAntiBan = true, HitboxRandomize = true,
     AimAntiDetect = true, SafeSpeedMode = false,
+    FullBright = false,
 }
 
--- ============================================================
-local HasFileSystem
-local SaveConfig
-local ApplyLoadedConfig
-local UpdateAllSliders
-local LoadConfig
-local ResetConfig
-do
--- 7. CONFIG PERSISTENCE
--- ============================================================
 local CFG_FILE = "OmniV305_Config.json"
 local SAVE_STATE_KEYS = {
-    "AntiAFK", "FPSDisplay", "FPSUnlocker", "ESP", "Hitbox", "Speed", "HighJump",
-    "Bhop", "NoFallDamage", "InfiniteJump", "Potato",
-    "AntiVoid",
+    "AntiAFK", "ESP", "Hitbox", "Speed", "HighJump",
+    "Bhop", "NoFallDamage", "InfiniteJump", "Potato", "AntiVoid",
 }
 local SAVE_CFG_KEYS = {
     "SpeedAntiBan", "HitboxRandomize", "AimAntiDetect", "SafeSpeedMode",
 }
 
-HasFileSystem = function()
+local function HasFileSystem()
     return (writefile ~= nil and readfile ~= nil)
 end
 
@@ -462,62 +318,27 @@ end
 
 local SliderRefs = {}
 
-SaveConfig = function()
-    if not HasFileSystem() then
-        Notify("Config", L("ntf_no_write"), 3)
-        return false
-    end
-    local data = {
-        version = "v305",
-        config = {},
-        binds  = SerializeBinds(),
-        state  = {},
-        lang   = CurrentLang,
-    }
+local function SaveConfig()
+    if not HasFileSystem() then Notify("Config", L("ntf_no_write"), 3); return false end
+    local data = { version = "v305", config = {}, binds = SerializeBinds(), state = {}, lang = CurrentLang }
     for k, v in pairs(Config) do data.config[k] = v end
     for _, k in pairs(SAVE_STATE_KEYS) do data.state[k] = State[k] or false end
     for _, k in pairs(SAVE_CFG_KEYS) do data.state[k] = State[k] or false end
-
-    local ok, err = pcall(function()
-        writefile(CFG_FILE, HttpService:JSONEncode(data))
-    end)
-    if ok then
-        Notify("Config", L("ntf_saved"), 2)
-        return true
-    else
-        Notify("Config", L("ntf_error") .. (err or "?"), 3)
-        return false
-    end
+    local ok, err = pcall(function() writefile(CFG_FILE, HttpService:JSONEncode(data)) end)
+    if ok then Notify("Config", L("ntf_saved"), 2); return true
+    else Notify("Config", L("ntf_error") .. (err or "?"), 3); return false end
 end
 
-ApplyLoadedConfig = function(data)
+local function ApplyLoadedConfig(data)
     if data.config then
         for k, v in pairs(data.config) do
-            if Config[k] ~= nil then
-                -- MobHUDPositions is a nested table — merge it, don't replace whole Config entry with a raw JSON table
-                if k == "MobHUDPositions" and type(v) == "table" then
-                    Config.MobHUDPositions = {}
-                    for id, pos in pairs(v) do
-                        if type(pos) == "table" and pos[1] and pos[2] then
-                            Config.MobHUDPositions[id] = {pos[1], pos[2]}
-                        end
-                    end
-                elseif k == "MobHUDEnabled" and type(v) == "table" then
-                    Config.MobHUDEnabled = {}
-                    for id, en in pairs(v) do
-                        Config.MobHUDEnabled[id] = (en == true)
-                    end
-                else
-                    Config[k] = v
-                end
-            end
+            if Config[k] ~= nil then Config[k] = v end
         end
     end
     if data.binds then DeserializeBinds(data.binds) end
     for _, k in pairs(SAVE_CFG_KEYS) do
         if data.state and data.state[k] ~= nil then
-            State[k] = data.state[k]
-            Config[k] = data.state[k]
+            State[k] = data.state[k]; Config[k] = data.state[k]
         end
     end
     if data.lang and (data.lang == "EN" or data.lang == "UA") then
@@ -525,7 +346,7 @@ ApplyLoadedConfig = function(data)
     end
 end
 
-UpdateAllSliders = function()
+local function UpdateAllSliders()
     for key, ref in pairs(SliderRefs) do
         if ref and ref.update then
             pcall(ref.update, Config[key] or ref.default)
@@ -533,42 +354,29 @@ UpdateAllSliders = function()
     end
 end
 
-LoadConfig = function()
-    if not HasFileSystem() then
-        Notify("Config", L("ntf_no_read"), 3)
-        return false
-    end
+local function LoadConfig()
+    if not HasFileSystem() then Notify("Config", L("ntf_no_read"), 3); return false end
     local ok, content = pcall(readfile, CFG_FILE)
-    if not ok or not content or content == "" then
-        Notify("Config", L("ntf_no_file"), 2)
-        return false
-    end
+    if not ok or not content or content == "" then Notify("Config", L("ntf_no_file"), 2); return false end
     local ok2, data = pcall(function() return HttpService:JSONDecode(content) end)
-    if not ok2 or not data then
-        Notify("Config", L("ntf_json_err"), 3)
-        return false
-    end
-    ApplyLoadedConfig(data)
-    UpdateAllSliders()
-    Notify("Config", L("ntf_loaded"), 2)
-    return true
+    if not ok2 or not data then Notify("Config", L("ntf_json_err"), 3); return false end
+    ApplyLoadedConfig(data); UpdateAllSliders()
+    Notify("Config", L("ntf_loaded"), 2); return true
 end
 
-ResetConfig = function()
+local function ResetConfig()
     Config.FlySpeed = 55; Config.WalkSpeed = 30; Config.JumpPower = 125
     Config.BhopPower = 62; Config.HitboxSize = 5; Config.AimFOV = 200
-    Config.AimSmooth = 0.18; Config.AimPredMult = 10; Config.SpeedAntiBan = true; Config.FlyAntiBan = true
+    Config.AimSmooth = 0.18; Config.SpeedAntiBan = true; Config.FlyAntiBan = true
     Config.HitboxRandomize = true; Config.AimAntiDetect = true
     Config.SpeedJitter = 1.5; Config.FlyHeightMax = 1800
-    Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8
-    Config.AntiVoidHeight = -180; Config.ESPDistance = 700
+    Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8; Config.AntiVoidHeight = -180
+    Config.ESPMaxDist = 1000; Config.AimPredictMult = 1.0; Config.FullBright = false
     Binds.Fly = Enum.KeyCode.F; Binds.Aim = Enum.KeyCode.G
-    Binds.Noclip = Enum.KeyCode.V; Binds.SilentAim = Enum.KeyCode.B
-    Binds.FakeLag = Enum.KeyCode.H; Binds.ToggleMenu = Enum.KeyCode.M
+    Binds.Noclip = Enum.KeyCode.V; Binds.SilentAim = Enum.KeyCode.B; Binds.ToggleMenu = Enum.KeyCode.M
     State.SpeedAntiBan = true; State.HitboxRandomize = true
     State.AimAntiDetect = true; State.SafeSpeedMode = false
-    UpdateAllSliders()
-    Notify("Config", L("ntf_reset"), 2)
+    UpdateAllSliders(); Notify("Config", L("ntf_reset"), 2)
 end
 
 task.spawn(function()
@@ -577,11 +385,6 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
-end -- do -- 7. CONFIG
-
--- 8. NOISE GENERATOR
--- ============================================================
 local _pSeed = math.random(1, 99999)
 local function PseudoNoise(x)
     local xi = math.floor(x) % 256
@@ -597,9 +400,6 @@ end
 local _speedNoiseT = 0
 local _flyNoiseT   = 100
 
--- ============================================================
--- 9. SPEED SYSTEM
--- ============================================================
 local gameBaseSpeed = 16
 
 task.spawn(function()
@@ -618,9 +418,7 @@ task.spawn(function()
             end
             if #samples > 0 then
                 local maxSpd = 0
-                for _, v in pairs(samples) do
-                    if v > maxSpd then maxSpd = v end
-                end
+                for _, v in pairs(samples) do if v > maxSpd then maxSpd = v end end
                 if maxSpd >= 4 and maxSpd <= 100 then gameBaseSpeed = maxSpd end
             end
         end
@@ -641,9 +439,6 @@ local function GetSafeSpeed()
     return math.clamp(base + n * jit, base * 0.9, base * 1.12)
 end
 
--- ============================================================
--- 10. CORE HELPER FUNCTIONS
--- ============================================================
 local function IsAlive(c)
     if not c or not c.Parent then return false end
     local h = c:FindFirstChildOfClass("Humanoid")
@@ -732,9 +527,6 @@ local function GetDir()
     return mx, mz
 end
 
--- ============================================================
--- 11. AIM TARGETING SYSTEM
--- ============================================================
 local aimTarget      = nil
 local aimLastSwitch  = 0
 local aimLocked      = false
@@ -761,7 +553,6 @@ end
 local function GetBestAimTarget()
     local now = tick()
     local fov = Config.AimFOV
-
     if aimTarget and aimLocked then
         local char = aimTarget.Character
         if IsAlive(char) then
@@ -770,18 +561,15 @@ local function GetBestAimTarget()
                 local sd  = ScreenDist(part)
                 local vis = IsVisible(char)
                 if sd <= fov * 1.8 and vis then
-                    aimLostFrames = 0
-                    return char
+                    aimLostFrames = 0; return char
                 end
-                aimLostFrames = aimLostFrames + (1)
+                aimLostFrames += 1
                 if aimLostFrames < (vis and 8 or 15) then return char end
             end
         end
         aimTarget = nil; aimLocked = false; aimLostFrames = 0
     end
-
     if now - aimLastSwitch < aimSwitchCD then return nil end
-
     local best = FindNewTarget()
     if best then
         aimTarget = best; aimLocked = true
@@ -792,210 +580,205 @@ local function GetBestAimTarget()
 end
 
 -- ============================================================
--- 12. ESP SYSTEM — CLEAN FLOATING TEXT, NO BOX, LOW LAG
+-- ESP SYSTEM — ЧИСТИЙ ТЕКСТ, БЕЗ КВАДРАТІВ, БЕЗ HIGHLIGHT
+-- Показує ВСІХ гравців (не тільки видимих)
+-- Оновлення через RunService а не через task.wait щоб не лагало
 -- ============================================================
--- Design: no background frame, just shadow text floating above head
--- Shows: "PlayerName  HP/MaxHP  Xm" colour-coded by health
--- Uses a single TextLabel per player, cached, updated every 0.2s
-
 local ESPCache = {}
-
-local function GetESPColor(ratio)
-    if ratio >= 0.6 then
-        return Color3.fromRGB(80, 255, 120)
-    elseif ratio >= 0.3 then
-        return Color3.fromRGB(255, 220, 40)
-    else
-        return Color3.fromRGB(255, 60, 60)
-    end
-end
+local ESP_UPDATE_INTERVAL = 0.1  -- оновлення кожні 0.1 сек, не кожен кадр
+local _espLastUpdate = 0
 
 local function ClearESP()
     for _, d in pairs(ESPCache) do
-        pcall(function() if d.hl and d.hl.Parent then d.hl:Destroy() end end)
         pcall(function() if d.bb and d.bb.Parent then d.bb:Destroy() end end)
     end
     ESPCache = {}
 end
 
--- ESP update loop — runs every 0.2s to avoid lag
--- Also listens to CharacterAdded so ESP rebuilds instantly on respawn
+local function UpdateESP()
+    local now = tick()
+    if now - _espLastUpdate < ESP_UPDATE_INTERVAL then return end
+    _espLastUpdate = now
 
-local function ESP_RemovePlayer(p)
-    local ca = ESPCache[p]
-    if ca then
-        pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
-        pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
-        ESPCache[p] = nil
-    end
-end
+    if not State.ESP then return end
 
--- Hook CharacterAdded for all current + future players
-local function ESP_HookPlayer(p)
-    if p == LP then return end
-    p.CharacterAdded:Connect(function()
-        -- Wipe old ESP entry so the update loop rebuilds it for the new character
-        ESP_RemovePlayer(p)
-    end)
-    p.CharacterRemoving:Connect(function()
-        ESP_RemovePlayer(p)
-    end)
-end
+    local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 
-for _, p in pairs(Players:GetPlayers()) do
-    ESP_HookPlayer(p)
-end
-Players.PlayerAdded:Connect(ESP_HookPlayer)
+    for _, p in pairs(Players:GetPlayers()) do
+        if p == LP then continue end
 
-task.spawn(function()
-    while task.wait(0.2) do
-        if not State.ESP then continue end
+        local char = p.Character
+        local head = char and FindHead(char)
+        local hum  = char and char:FindFirstChildOfClass("Humanoid")
 
-        local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-
-        for _, p in pairs(Players:GetPlayers()) do
-            if p == LP then continue end
-
-            local char = p.Character
-            local head = char and FindHead(char)
-            local hum  = char and char:FindFirstChildOfClass("Humanoid")
-
-            -- Player has no valid character → remove entry
-            if not char or not head or not hum then
-                ESP_RemovePlayer(p)
-                continue
-            end
-
-            -- Detect character swap (respawn = new char object)
-            local ca = ESPCache[p]
-            if ca and ca.char ~= char then
-                -- Character changed — wipe and rebuild
-                ESP_RemovePlayer(p)
-                ca = nil
-            end
-
-            -- Check if cache is still valid
-            local needRebuild = not ca
-                or not ca.bb or not ca.bb.Parent
-                or not ca.lbl or not ca.lbl.Parent
-
-            if needRebuild then
-                -- Clean up old
-                if ca then
-                    pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
-                    pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
-                end
-
-                -- Highlight (fills character with colour, no outline box on screen)
-                local hl = Instance.new("Highlight")
-                hl.FillTransparency    = 0.55
-                hl.OutlineTransparency = 1     -- no outline = less visual clutter
-                hl.FillColor           = Color3.fromRGB(40, 180, 80)
-                hl.Parent              = char
-
-                -- BillboardGui: wide enough for text, no background
-                local bb = Instance.new("BillboardGui")
-                bb.Size          = UDim2.new(0, 200, 0, 36)
-                bb.StudsOffset   = Vector3.new(0, 2.8, 0)
-                bb.AlwaysOnTop   = true
-                bb.MaxDistance   = Config.ESPDistance
-                bb.LightInfluence = 0
-                bb.Parent        = head
-
-                -- Single TextLabel — no background frame
-                local lbl = Instance.new("TextLabel")
-                lbl.Name                  = "ESPLabel"
-                lbl.Size                  = UDim2.new(1, 0, 1, 0)
-                lbl.BackgroundTransparency = 1
-                lbl.Font                  = Enum.Font.GothamBold
-                lbl.TextSize              = IsMob and 12 or 11
-                lbl.TextWrapped           = false
-                lbl.TextXAlignment        = Enum.TextXAlignment.Center
-                lbl.TextYAlignment        = Enum.TextYAlignment.Center
-                -- Shadow for readability (built-in stroke)
-                lbl.TextStrokeColor3      = Color3.new(0, 0, 0)
-                lbl.TextStrokeTransparency = 0.35
-                lbl.ZIndex                = 5
-                lbl.Parent                = bb
-
-                ESPCache[p] = {hl = hl, bb = bb, lbl = lbl, char = char}
-                ca = ESPCache[p]
-            end
-
-            -- Update values
-            -- Smart HP read: handles MaxHealth=math.huge, custom attributes, IntValues
-            local rawHp    = hum.Health
-            local rawMaxHp = hum.MaxHealth
-
-            -- If MaxHealth is infinite/huge, try to find a custom max from character
-            if rawMaxHp == math.huge or rawMaxHp <= 0 then
-                -- look for IntValue/NumberValue named MaxHealth/MaxHP/HealthMax inside char
-                local found = false
-                for _, v in pairs(char:GetDescendants()) do
-                    if (v:IsA("IntValue") or v:IsA("NumberValue")) and
-                        (v.Name == "MaxHealth" or v.Name == "MaxHP" or v.Name == "HealthMax") then
-                        rawMaxHp = v.Value; found = true; break
+        -- Якщо гравець мертвий або немає персонажа — прибираємо ESP
+        if not char or not head or not hum or hum.Health <= 0 then
+            if ESPCache[p] then
+                pcall(function()
+                    if ESPCache[p].bb and ESPCache[p].bb.Parent then
+                        ESPCache[p].bb:Destroy()
                     end
-                end
-                -- check attributes too
-                if not found then
-                    local attrMax = char:GetAttribute("MaxHealth")
-                        or char:GetAttribute("MaxHP")
-                        or hum:GetAttribute("MaxHealth")
-                    if attrMax then rawMaxHp = attrMax end
-                end
-                -- last resort: use current HP as max so ratio = 1
-                if rawMaxHp == math.huge or rawMaxHp <= 0 then
-                    rawMaxHp = math.max(rawHp, 1)
-                end
-            end
-
-            -- Try attribute-based current HP (some games store real HP in attributes)
-            local attrHp = char:GetAttribute("Health")
-                or char:GetAttribute("HP")
-                or hum:GetAttribute("Health")
-            if attrHp and type(attrHp) == "number" then
-                rawHp = attrHp
-            end
-
-            local hp    = math.floor(rawHp)
-            local maxHp = math.max(math.floor(rawMaxHp), 1)
-            local dist  = myHRP
-                and math.floor((myHRP.Position - head.Position).Magnitude)
-                or 0
-            local ratio = math.clamp(hp / maxHp, 0, 1)
-            local col   = GetESPColor(ratio)
-
-            -- Keep MaxDistance in sync with slider (instant effect, no rebuild)
-            ca.bb.MaxDistance = Config.ESPDistance
-
-            -- Format: "PlayerName  HP/MaxHP  Xm"
-            ca.lbl.Text       = string.format("%s  %d/%d  %dm", p.Name, hp, maxHp, dist)
-            ca.lbl.TextColor3 = col
-
-            -- Update highlight colour to match health
-            ca.hl.FillColor = ratio >= 0.5
-                and Color3.fromRGB(40, 180, 80)
-                or Color3.fromRGB(200, 40, 40)
-        end
-
-        -- Prune players who left but weren't caught by PlayerRemoving
-        for p, ca in pairs(ESPCache) do
-            if not p or not p.Parent then
-                pcall(function() if ca.hl and ca.hl.Parent then ca.hl:Destroy() end end)
-                pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end)
+                end)
                 ESPCache[p] = nil
             end
+            continue
         end
+
+        -- Створюємо BillboardGui якщо ще немає або знищено
+        local ca = ESPCache[p]
+        if not ca or not ca.bb or not ca.bb.Parent then
+            -- Чистимо старе
+            if ca then
+                pcall(function()
+                    if ca.bb and ca.bb.Parent then ca.bb:Destroy() end
+                end)
+            end
+
+            -- BillboardGui прямо на голову
+            local bb = Instance.new("BillboardGui")
+            bb.Name = "OmniESP"
+            bb.Size = UDim2.new(0, 120, 0, 44)
+            bb.StudsOffset = Vector3.new(0, 2.8, 0)
+            bb.AlwaysOnTop = true
+            bb.MaxDistance = Config.ESPMaxDist
+            bb.LightInfluence = 0
+            bb.ResetOnSpawn = false
+            bb.Parent = head
+
+            -- Нік
+            local nameLbl = Instance.new("TextLabel", bb)
+            nameLbl.Name = "NameLbl"
+            nameLbl.Size = UDim2.new(1, 0, 0, 18)
+            nameLbl.Position = UDim2.new(0, 0, 0, 0)
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Text = p.Name
+            nameLbl.Font = Enum.Font.GothamBold
+            nameLbl.TextSize = 13
+            nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nameLbl.TextStrokeTransparency = 0.3
+            nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            nameLbl.TextScaled = false
+
+            -- HP + дистанція
+            local infoLbl = Instance.new("TextLabel", bb)
+            infoLbl.Name = "InfoLbl"
+            infoLbl.Size = UDim2.new(1, 0, 0, 14)
+            infoLbl.Position = UDim2.new(0, 0, 0, 20)
+            infoLbl.BackgroundTransparency = 1
+            infoLbl.Text = "HP: ? | ?m"
+            infoLbl.Font = Enum.Font.Gotham
+            infoLbl.TextSize = 11
+            infoLbl.TextColor3 = Color3.fromRGB(130, 255, 170)
+            infoLbl.TextStrokeTransparency = 0.3
+            infoLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            infoLbl.TextScaled = false
+
+            -- HP бар (тонка лінія під текстом)
+            local barBg = Instance.new("Frame", bb)
+            barBg.Name = "BarBg"
+            barBg.Size = UDim2.new(1, 0, 0, 3)
+            barBg.Position = UDim2.new(0, 0, 0, 36)
+            barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            barBg.BorderSizePixel = 0
+            Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+
+            local barFill = Instance.new("Frame", barBg)
+            barFill.Name = "BarFill"
+            barFill.Size = UDim2.new(1, 0, 1, 0)
+            barFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100)
+            barFill.BorderSizePixel = 0
+            Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
+
+            ESPCache[p] = {
+                bb      = bb,
+                nameLbl = nameLbl,
+                infoLbl = infoLbl,
+                barFill = barFill,
+            }
+            ca = ESPCache[p]
+        end
+
+        -- Оновлюємо дальність зі слайдера (динамічно)
+        ca.bb.MaxDistance = Config.ESPMaxDist
+
+        -- Оновлення даних (HP може бути будь-яким: 100, 500, 1000...)
+        local hp  = math.max(0, math.floor(hum.Health))
+        local mxh = math.max(1, math.floor(hum.MaxHealth))
+        local ds  = myHRP and math.floor((myHRP.Position - head.Position).Magnitude) or 0
+        -- ratio відносно maxHP — правильно показує навіть якщо HP > 100
+        local ratio = hp / mxh
+
+        -- Колір ніку залежно від дистанції
+        local nameColor
+        if ds <= 30 then
+            nameColor = Color3.fromRGB(255, 100, 100) -- близько — червоний
+        elseif ds <= 80 then
+            nameColor = Color3.fromRGB(255, 220, 50)  -- середньо — жовтий
+        else
+            nameColor = Color3.fromRGB(255, 255, 255) -- далеко — білий
+        end
+        ca.nameLbl.TextColor3 = nameColor
+        ca.nameLbl.Text = p.Name
+
+        -- HP колір (на основі ratio — 50/500 = червоний, 400/500 = зелений)
+        local hpColor = ratio >= 0.6
+            and Color3.fromRGB(80, 255, 120)
+            or ratio >= 0.3
+                and Color3.fromRGB(255, 220, 40)
+                or Color3.fromRGB(255, 60, 60)
+
+        ca.infoLbl.TextColor3 = hpColor
+        -- Показуємо точне значення HP навіть якщо > 100
+        ca.infoLbl.Text = "HP: " .. hp .. "/" .. mxh .. " | " .. ds .. "m"
+
+        -- HP бар
+        ca.barFill.Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0)
+        ca.barFill.BackgroundColor3 = hpColor
+    end
+end
+
+-- Чистимо ESP коли гравець виходить
+Players.PlayerRemoving:Connect(function(p)
+    if ESPCache[p] then
+        pcall(function()
+            if ESPCache[p].bb and ESPCache[p].bb.Parent then
+                ESPCache[p].bb:Destroy()
+            end
+        end)
+        ESPCache[p] = nil
     end
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-    ESP_RemovePlayer(p)
+-- ESP: очищаємо кеш при рееспауні щоб BillboardGui підхопився на нову голову
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function()
+        if ESPCache[p] then
+            pcall(function()
+                if ESPCache[p].bb and ESPCache[p].bb.Parent then
+                    ESPCache[p].bb:Destroy()
+                end
+            end)
+            ESPCache[p] = nil
+        end
+    end)
 end)
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= LP then
+        p.CharacterAdded:Connect(function()
+            if ESPCache[p] then
+                pcall(function()
+                    if ESPCache[p].bb and ESPCache[p].bb.Parent then
+                        ESPCache[p].bb:Destroy()
+                    end
+                end)
+                ESPCache[p] = nil
+            end
+        end)
+    end
+end
 
 -- ============================================================
--- 13. HITBOX SYSTEM
+-- HITBOX SYSTEM
 -- ============================================================
 local hbParts = {}
 
@@ -1050,115 +833,122 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
--- 14. POTATO MODE
--- ============================================================
 local savedShd, savedQ = true, Enum.QualityLevel.Automatic
 
+-- Potato: поступове застосування щоб не залагати при вмиканні
+local _potatoToken = 0
+
 local function DoPotato()
-    -- Apply Lighting settings immediately (no cost)
     pcall(function()
         savedShd = Lighting.GlobalShadows
         savedQ = settings().Rendering.QualityLevel
         Lighting.GlobalShadows = false
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     end)
-    -- Gradually process workspace objects in small batches to avoid a freeze spike
+    _potatoToken += 1
+    local myToken = _potatoToken
     task.spawn(function()
-        local BATCH = 60   -- objects per frame
-        local count = 0
-        for _, v in pairs(Workspace:GetDescendants()) do
-            if not State.Potato then break end  -- cancelled
-            pcall(function()
-                if v:IsA("BasePart") then
-                    v.CastShadow = false; v.Reflectance = 0
-                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-                    v.Enabled = false
-                end
-            end)
-            count = count + (1)
-            if count % BATCH == 0 then
-                RunService.Heartbeat:Wait()  -- yield every BATCH objects
+        local all = Workspace:GetDescendants()
+        local CHUNK = 60  -- обробляємо по 60 об'єктів за раз
+        for i = 1, #all, CHUNK do
+            if _potatoToken ~= myToken then return end  -- скасовано
+            for j = i, math.min(i + CHUNK - 1, #all) do
+                local v = all[j]
+                pcall(function()
+                    if v:IsA("BasePart") then
+                        v.CastShadow = false; v.Reflectance = 0
+                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+                        v.Enabled = false
+                    elseif v:IsA("SpecialMesh") or v:IsA("SurfaceAppearance") then
+                        -- нічого, залишаємо
+                    end
+                end)
             end
+            task.wait()  -- даємо один кадр подихати між chunk-ами
         end
     end)
 end
 
 local function UndoPotato()
+    _potatoToken += 1  -- скасовує DoPotato якщо ще йде
     pcall(function()
         Lighting.GlobalShadows = savedShd
         settings().Rendering.QualityLevel = savedQ
     end)
-    for _, v in pairs(Workspace:GetDescendants()) do
-        pcall(function()
-            if v:IsA("BasePart") then v.CastShadow = true
-            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-                v.Enabled = true
+    local myToken = _potatoToken
+    task.spawn(function()
+        local all = Workspace:GetDescendants()
+        local CHUNK = 60
+        for i = 1, #all, CHUNK do
+            if _potatoToken ~= myToken then return end
+            for j = i, math.min(i + CHUNK - 1, #all) do
+                local v = all[j]
+                pcall(function()
+                    if v:IsA("BasePart") then v.CastShadow = true
+                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+                        v.Enabled = true
+                    end
+                end)
             end
-        end)
-    end
-end
-
--- ============================================================
--- 14B. FULLBRIGHT SYSTEM
--- ============================================================
-local _fbSaved = {}
-
-local function DoFullBright()
-    _fbSaved = {
-        Ambient              = Lighting.Ambient,
-        OutdoorAmbient       = Lighting.OutdoorAmbient,
-        Brightness           = Lighting.Brightness,
-        ClockTime            = Lighting.ClockTime,
-        FogEnd               = Lighting.FogEnd,
-        FogStart             = Lighting.FogStart,
-        GlobalShadows        = Lighting.GlobalShadows,
-        EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale,
-        EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
-    }
-    pcall(function()
-        Lighting.Ambient              = Color3.fromRGB(178, 178, 178)
-        Lighting.OutdoorAmbient       = Color3.fromRGB(178, 178, 178)
-        Lighting.Brightness           = 10
-        Lighting.ClockTime            = 14
-        Lighting.FogEnd               = 100000
-        Lighting.FogStart             = 100000
-        Lighting.GlobalShadows        = false
-        Lighting.EnvironmentDiffuseScale  = 0
-        Lighting.EnvironmentSpecularScale = 0
+            task.wait()
+        end
     end)
-    -- Disable all Lighting post-effects (Blur, Bloom, ColorCorrection, etc.)
-    for _, v in pairs(Lighting:GetChildren()) do
-        pcall(function()
-            if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
-                v.Enabled = false
-            end
-        end)
-    end
 end
 
-local function UndoFullBright()
-    for k, v in pairs(_fbSaved) do
-        pcall(function() Lighting[k] = v end)
-    end
-    _fbSaved = {}
-    for _, v in pairs(Lighting:GetChildren()) do
-        pcall(function()
-            if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
-                v.Enabled = true
-            end
-        end)
-    end
-end
-local ncStuck        = 0
-local lastNcPos      = Vector3.zero
+-- ============================================================
+-- NOCLIP — ПОВНІСТЮ ПЕРЕПИСАНИЙ
+-- Метод 1: CollisionGroup (основний)
+-- Метод 2: CanCollide = false на кожному кроці (fallback)
+-- Метод 3: Обхід застрягань через рейкаст
+-- Оновлюємо групу колізій для НОВИХ частин що з'являються (деякі ігри спавнять нові BasePart)
+-- ============================================================
 local ncOrigCanCollide = {}
-local ncRay          = RaycastParams.new()
-ncRay.FilterType     = Enum.RaycastFilterType.Exclude
+local ncStuck = 0
+local lastNcPos = Vector3.zero
+local ncRay = RaycastParams.new()
+ncRay.FilterType = Enum.RaycastFilterType.Exclude
 
--- ============================================================
--- 16. FORCE RESTORE
--- ============================================================
+-- Перевіряємо чи підтримується CollisionGroup
+local _ncGroupWorks = false
+task.spawn(function()
+    task.wait(1)
+    pcall(function()
+        local testPart = Instance.new("Part")
+        testPart.CollisionGroup = SafeGroup
+        testPart.Parent = Workspace
+        _ncGroupWorks = (testPart.CollisionGroup == SafeGroup)
+        testPart:Destroy()
+    end)
+end)
+
+local function NoclipApply(char)
+    if not char then return end
+    for _, v in pairs(char:GetDescendants()) do
+        if v:IsA("BasePart") then
+            pcall(function()
+                -- Зберігаємо оригінал
+                if ncOrigCanCollide[v] == nil then
+                    ncOrigCanCollide[v] = v.CanCollide
+                end
+                -- Метод 1: CollisionGroup
+                if _ncGroupWorks then
+                    v.CollisionGroup = SafeGroup
+                end
+                -- Метод 2: CanCollide = false (завжди, як backup)
+                v.CanCollide = false
+            end)
+        end
+    end
+    -- Також ставимо на HumanoidRootPart явно
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        pcall(function()
+            if _ncGroupWorks then hrp.CollisionGroup = SafeGroup end
+            hrp.CanCollide = false
+        end)
+    end
+end
+
 local function ForceRestore()
     local C = LP.Character
     if not C then return end
@@ -1168,12 +958,9 @@ local function ForceRestore()
     if H then
         pcall(function()
             H.PlatformStand = false
-            if not State.Speed then
-                H.WalkSpeed = gameBaseSpeed
-            end
+            if not State.Speed then H.WalkSpeed = gameBaseSpeed end
             if not State.HighJump then
-                H.UseJumpPower = true
-                H.JumpPower = 50
+                H.UseJumpPower = true; H.JumpPower = 50
             end
         end)
     end
@@ -1183,37 +970,14 @@ local function ForceRestore()
         for _, v in pairs(R:GetChildren()) do
             if v:IsA("BodyMover") then SafeDel(v) end
         end
-        -- Kill any accumulated velocity from noclip movement
-        pcall(function()
-            R.AssemblyLinearVelocity  = Vector3.zero
-            R.AssemblyAngularVelocity = Vector3.zero
-        end)
     end
 
-    -- Also zero velocity on all other parts so ragdoll/limbs don't fly
-    for _, v in pairs(C:GetDescendants()) do
+    -- Відновлюємо колізії
+    for v, orig in pairs(ncOrigCanCollide) do
         pcall(function()
-            if v:IsA("BasePart") and v ~= R then
-                v.AssemblyLinearVelocity  = Vector3.zero
-                v.AssemblyAngularVelocity = Vector3.zero
-            end
-        end)
-    end
-
-    -- Restore all parts: collision group back to Default, CanCollide restored
-    for _, v in pairs(C:GetDescendants()) do
-        pcall(function()
-            if v:IsA("BasePart") then
-                -- Method 1: collision group reset
-                pcall(function() v.CollisionGroup = "Default" end)
-                -- Method 2: restore original CanCollide
-                local orig = ncOrigCanCollide[v]
-                if orig ~= nil then
-                    v.CanCollide = orig
-                else
-                    local isLimb = v.Parent == C or v.Name == "HumanoidRootPart"
-                    v.CanCollide = isLimb
-                end
+            if v and v.Parent then
+                v.CollisionGroup = "Default"
+                v.CanCollide = orig
             end
         end)
     end
@@ -1225,9 +989,19 @@ local function ForceRestore()
             pcall(function()
                 if R and R.Parent then
                     local vel = R.AssemblyLinearVelocity
+                    -- Скидаємо горизонтальну швидкість яку нокліп міг накопичити
+                    local hSpd = Vector2.new(vel.X, vel.Z).Magnitude
+                    if hSpd > 30 then
+                        -- Різо гасимо щоб не летіти після вимкнення
+                        R.AssemblyLinearVelocity = Vector3.new(
+                            vel.X * 0.05, vel.Y, vel.Z * 0.05
+                        )
+                    end
                     if math.abs(vel.Y) < 1 then
                         R.CFrame = R.CFrame + Vector3.new(0, 2.5, 0)
-                        R.AssemblyLinearVelocity = Vector3.new(vel.X, -1, vel.Z)
+                        R.AssemblyLinearVelocity = Vector3.new(
+                            R.AssemblyLinearVelocity.X, -1, R.AssemblyLinearVelocity.Z
+                        )
                     end
                 end
             end)
@@ -1238,21 +1012,14 @@ local function ForceRestore()
     lastNcPos = Vector3.zero
 end
 
--- ============================================================
--- 17. FAKELAG TOKEN & MOBILE FLY & FREECAM
--- ============================================================
 local _fakeLagToken = 0
 local MobUp, MobDn = false, false
 local FC_P, FC_Y = 0, 0
 
--- ============================================================
--- 18. UI VISUAL STATE
--- ============================================================
 local AllRows  = {}
 local TabPages = {}
 local TabBtns  = {}
 local CurTab   = "Combat"
-
 local LocalizableElements = {}
 
 local function UpdVis(nm)
@@ -1278,26 +1045,46 @@ local function UpdVis(nm)
 end
 
 local function RestoreMouse()
-    -- Step 1: immediately unlock mouse behavior to prevent freeze
-    pcall(function()
-        UIS.MouseBehavior    = Enum.MouseBehavior.Default
-        UIS.MouseIconEnabled = true
-    end)
-    task.delay(0.05, function()
-        -- Step 2: restore camera to follow humanoid
-        local C = LP.Character
-        local H = C and C:FindFirstChildOfClass("Humanoid")
+    -- Повний скид mouse lock / shift-lock щоб не залипала
+    task.spawn(function()
+        task.wait(0.05)
         pcall(function()
+            -- Скидаємо shift-lock якщо є
+            local ok, pm = pcall(function()
+                return require(LP.PlayerScripts:WaitForChild("PlayerModule", 3))
+            end)
+            if ok and pm then
+                pcall(function()
+                    local controls = pm:GetControls()
+                    if controls and controls.updateMouseBehavior then
+                        controls:updateMouseBehavior()
+                    end
+                end)
+                pcall(function()
+                    local camera = pm:GetCameras()
+                    if camera and camera.activeCameraController then
+                        camera.activeCameraController:Reset()
+                    end
+                end)
+            end
+        end)
+        task.wait(0.05)
+        pcall(function()
+            -- Явно відпускаємо мишку
+            UIS.MouseBehavior    = Enum.MouseBehavior.Default
+            UIS.MouseIconEnabled = true
+        end)
+        task.wait(0.05)
+        pcall(function()
+            local C = LP.Character
+            local H = C and C:FindFirstChildOfClass("Humanoid")
             Camera.CameraType = Enum.CameraType.Custom
-            if H then Camera.CameraSubject = H end
+            if H then
+                Camera.CameraSubject = H
+            end
         end)
-        -- Step 3: send a tiny neutral mouse delta so shift-lock snaps back correctly
-        pcall(function()
-            UIS.MouseBehavior = Enum.MouseBehavior.Default
-        end)
-    end)
-    task.delay(0.15, function()
-        -- Step 4: final safety reset after camera settles
+        -- Повторюємо через 0.3 сек на випадок якщо Roblox перехопив
+        task.wait(0.3)
         pcall(function()
             UIS.MouseBehavior    = Enum.MouseBehavior.Default
             UIS.MouseIconEnabled = true
@@ -1306,46 +1093,55 @@ local function RestoreMouse()
 end
 
 local UpdFly
-
--- ============================================================
-local Toggle
-do
--- 19. UNIFIED TOGGLE FUNCTION
--- ============================================================
 local LockedTarget = nil
 local lastBhop     = 0
 
-Toggle = function(nm)
+local function Toggle(nm)
     if nm == "SpeedAntiBan" then
-        Config.SpeedAntiBan = not Config.SpeedAntiBan
-        State.SpeedAntiBan = Config.SpeedAntiBan
-        UpdVis(nm)
-        Notify(nm, Config.SpeedAntiBan and "ON ✓" or "OFF ✗", 1)
-        return
+        Config.SpeedAntiBan = not Config.SpeedAntiBan; State.SpeedAntiBan = Config.SpeedAntiBan
+        UpdVis(nm); Notify(nm, Config.SpeedAntiBan and "ON ✓" or "OFF ✗", 1); return
     end
     if nm == "HitboxRandomize" then
-        Config.HitboxRandomize = not Config.HitboxRandomize
-        State.HitboxRandomize = Config.HitboxRandomize
-        UpdVis(nm)
-        Notify(nm, Config.HitboxRandomize and "ON ✓" or "OFF ✗", 1)
-        return
+        Config.HitboxRandomize = not Config.HitboxRandomize; State.HitboxRandomize = Config.HitboxRandomize
+        UpdVis(nm); Notify(nm, Config.HitboxRandomize and "ON ✓" or "OFF ✗", 1); return
     end
     if nm == "AimAntiDetect" then
-        Config.AimAntiDetect = not Config.AimAntiDetect
-        State.AimAntiDetect = Config.AimAntiDetect
-        UpdVis(nm)
-        Notify(nm, Config.AimAntiDetect and "ON ✓" or "OFF ✗", 1)
-        return
+        Config.AimAntiDetect = not Config.AimAntiDetect; State.AimAntiDetect = Config.AimAntiDetect
+        UpdVis(nm); Notify(nm, Config.AimAntiDetect and "ON ✓" or "OFF ✗", 1); return
     end
     if nm == "SafeSpeedMode" then
-        Config.SafeSpeedMode = not Config.SafeSpeedMode
-        State.SafeSpeedMode = Config.SafeSpeedMode
+        Config.SafeSpeedMode = not Config.SafeSpeedMode; State.SafeSpeedMode = Config.SafeSpeedMode
         UpdVis(nm)
         if Config.SafeSpeedMode then
             local cap = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
             Notify("Safe Speed", L("ntf_safe_on") .. cap, 3)
+        else Notify("Safe Speed", L("ntf_safe_off"), 2) end
+        return
+    end
+    if nm == "FullBright" then
+        Config.FullBright = not Config.FullBright
+        State.FullBright = Config.FullBright
+        UpdVis(nm)
+        if Config.FullBright then
+            pcall(function()
+                Lighting.Brightness = 2
+                Lighting.ClockTime = 14
+                Lighting.FogEnd = 100000
+                Lighting.GlobalShadows = false
+                Lighting.Ambient = Color3.fromRGB(178, 178, 178)
+                Lighting.OutdoorAmbient = Color3.fromRGB(178, 178, 178)
+            end)
+            Notify("FullBright", "ON ✓", 1)
         else
-            Notify("Safe Speed", L("ntf_safe_off"), 2)
+            pcall(function()
+                Lighting.Brightness = 1
+                Lighting.ClockTime = 14
+                Lighting.FogEnd = 100000
+                Lighting.GlobalShadows = true
+                Lighting.Ambient = Color3.fromRGB(70, 70, 70)
+                Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+            end)
+            Notify("FullBright", "OFF ✗", 1)
         end
         return
     end
@@ -1370,9 +1166,7 @@ Toggle = function(nm)
                 end
             end)
         elseif nm == "HighJump" and H then
-            pcall(function()
-                H.UseJumpPower = true; H.JumpPower = 50; H.JumpHeight = 7.2
-            end)
+            pcall(function() H.UseJumpPower = true; H.JumpPower = 50; H.JumpHeight = 7.2 end)
         elseif nm == "Noclip" or nm == "ShadowLock" then
             ForceRestore()
         elseif nm == "ESP" then
@@ -1381,18 +1175,6 @@ Toggle = function(nm)
             RestoreHB()
         elseif nm == "Potato" then
             UndoPotato()
-        elseif nm == "FullBright" then
-            UndoFullBright()
-        elseif nm == "FPSUnlocker" then
-            pcall(function()
-                if setfpscap then setfpscap(60)
-                elseif settings and settings().Rendering then
-                    settings().Rendering.FrameRateManager = Enum.FrameRateManagerMode.On
-                end
-            end)
-            Notify("FPS", "FPS cap restored (60)", 2)
-        elseif nm == "FPSDisplay" then
-            exS.Visible = false
         elseif nm == "Freecam" then
             pcall(function() if R then R.Anchored = false end end)
             RestoreMouse()
@@ -1401,49 +1183,16 @@ Toggle = function(nm)
                 if v.Name == "OmniSpin" then SafeDel(v) end
             end
         elseif nm == "FakeLag" then
-            _fakeLagToken = _fakeLagToken + (1)
-            local cr = LP.Character
-            if cr then
-                for _, v in pairs(cr:GetDescendants()) do
-                    if v:IsA("BasePart") then
-                        pcall(function() v.Anchored = false end)
-                    end
-                end
-                local hm = cr:FindFirstChildOfClass("Humanoid")
-                if hm then
-                    pcall(function() hm.PlatformStand = false end)
-                end
-            end
+            _fakeLagToken += 1
+            if R then pcall(function() R.Anchored = false end) end
         elseif nm == "InfiniteJump" and H then
             pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
         elseif nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0
-            -- Restore camera/mouse so shift-lock doesn't stay broken
-            RestoreMouse()
-        elseif nm == "SilentAim" then
-            -- nothing extra, but also fix mouse if shift-lock was affected
-            RestoreMouse()
         end
     else
         if nm == "Potato" then
             DoPotato()
-        elseif nm == "FullBright" then
-            DoFullBright()
-        elseif nm == "FPSUnlocker" then
-            pcall(function()
-                if setfpscap then
-                    setfpscap(0)
-                    Notify("FPS", "FPS Unlocked ✓", 2)
-                elseif syn and syn.set_fps_cap then
-                    syn.set_fps_cap(0)
-                    Notify("FPS", "FPS Unlocked ✓", 2)
-                else
-                    pcall(function() settings().Rendering.FrameRateManager = Enum.FrameRateManagerMode.Off end)
-                    Notify("FPS", "setfpscap not supported on this executor", 3)
-                end
-            end)
-        elseif nm == "FPSDisplay" then
-            exS.Visible = true
         elseif nm == "ShadowLock" then
             LockedTarget = GetClosestEnemy()
         elseif nm == "Fly" and H then
@@ -1458,15 +1207,10 @@ Toggle = function(nm)
             end)
         elseif nm == "Spin" and R then
             local att = R:FindFirstChild("OmniSpinAtt")
-            if not att then
-                att = Instance.new("Attachment", R)
-                att.Name = "OmniSpinAtt"
-            end
+            if not att then att = Instance.new("Attachment", R); att.Name = "OmniSpinAtt" end
             local av = Instance.new("AngularVelocity", R)
-            av.Name = "OmniSpin"
-            av.Attachment0 = att
-            av.MaxTorque = math.huge
-            av.AngularVelocity = Vector3.new(0, 22, 0)
+            av.Name = "OmniSpin"; av.Attachment0 = att
+            av.MaxTorque = math.huge; av.AngularVelocity = Vector3.new(0, 22, 0)
         elseif nm == "Freecam" then
             Camera.CameraSubject = nil
             Camera.CameraType = Enum.CameraType.Scriptable
@@ -1474,112 +1218,41 @@ Toggle = function(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
-            -- REAL LAG SIMULATION
-            -- Buffers your position history. Every 150-400ms triggers a "lag spike":
-            -- freezes ALL parts (including in air/ragdoll) for 60-180ms then snaps
-            -- to your real current position — looks exactly like high-ping rubber-band.
-            _fakeLagToken = _fakeLagToken + (1)
+            _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
-                -- Position ring-buffer (last 60 frames)
-                local posBuffer = {}
-                local bufSize   = 60
-                local bufIdx    = 0
-
-                local nextSpike = tick() + math.random(15, 35) / 100
-
                 while State.FakeLag and _fakeLagToken == myToken do
                     local cr = LP.Character
                     local rp = cr and cr:FindFirstChild("HumanoidRootPart")
-
-                    if not cr or not rp then
-                        RunService.Heartbeat:Wait(); continue
+                    local hm = cr and cr:FindFirstChildOfClass("Humanoid")
+                    local inAir = false
+                    if hm then
+                        local st = hm:GetState()
+                        inAir = (hm.FloorMaterial == Enum.Material.Air)
+                            or st == Enum.HumanoidStateType.Jumping
+                            or st == Enum.HumanoidStateType.Freefall
                     end
-
-                    -- Record current position into buffer every frame
-                    bufIdx = (bufIdx % bufSize) + 1
-                    posBuffer[bufIdx] = {
-                        cf  = rp.CFrame,
-                        vel = rp.AssemblyLinearVelocity,
-                        ang = rp.AssemblyAngularVelocity,
-                    }
-
-                    local now = tick()
-                    if now >= nextSpike then
-                        -- === LAG SPIKE: freeze all parts for spike duration ===
-                        local parts = {}
-                        for _, v in pairs(cr:GetDescendants()) do
-                            if v:IsA("BasePart") then
-                                parts[#parts + 1] = v
-                            end
-                        end
-
-                        local spikeDur = math.random(6, 18) / 100  -- 60-180ms
-                        local spikeEnd = now + spikeDur
-                        local frozenCF  = rp.CFrame
-                        local frozenVel = rp.AssemblyLinearVelocity
-
-                        -- Freeze every part
-                        for _, v in ipairs(parts) do
-                            pcall(function()
-                                v.Anchored                = true
-                                v.AssemblyLinearVelocity  = Vector3.zero
-                                v.AssemblyAngularVelocity = Vector3.zero
-                            end)
-                        end
-
-                        -- Hold freeze, re-enforce each frame so physics can't escape
-                        while tick() < spikeEnd do
-                            for _, v in ipairs(parts) do
-                                pcall(function()
-                                    v.Anchored                = true
-                                    v.AssemblyLinearVelocity  = Vector3.zero
-                                    v.AssemblyAngularVelocity = Vector3.zero
-                                end)
-                            end
-                            RunService.Heartbeat:Wait()
-                            if not (State.FakeLag and _fakeLagToken == myToken) then break end
-                        end
-
-                        -- Release with original velocity (snap-forward pop)
-                        for _, v in ipairs(parts) do
-                            pcall(function() v.Anchored = false end)
-                        end
-                        pcall(function()
-                            rp.AssemblyLinearVelocity  = frozenVel
-                            rp.AssemblyAngularVelocity = frozenVel * 0  -- zero ang
-                        end)
-
-                        nextSpike = tick() + math.random(15, 40) / 100
+                    local isJumping = UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp
+                    if rp and hm and hm.MoveDirection.Magnitude > 0
+                        and not inAir and not isJumping
+                        and not State.Fly and not State.Freecam then
+                        pcall(function() rp.Anchored = true end)
+                        task.wait(math.random(35, 80) / 1000)
+                        pcall(function() rp.Anchored = false end)
+                        task.wait(math.random(90, 200) / 1000)
                     else
-                        RunService.Heartbeat:Wait()
+                        if rp then pcall(function() rp.Anchored = false end) end
+                        task.wait(0.1)
                     end
                 end
-
-                -- Cleanup on disable
-                local cr2 = LP.Character
-                if cr2 then
-                    for _, v in pairs(cr2:GetDescendants()) do
-                        if v:IsA("BasePart") then
-                            pcall(function() v.Anchored = false end)
-                        end
-                    end
-                    local hm = cr2:FindFirstChildOfClass("Humanoid")
-                    if hm then pcall(function() hm.PlatformStand = false end) end
-                end
+                local cr = LP.Character
+                local rp = cr and cr:FindFirstChild("HumanoidRootPart")
+                if rp then pcall(function() rp.Anchored = false end) end
             end)
         elseif nm == "Noclip" then
-            -- Fresh noclip init: store originals
+            -- Ініціалізація noclip
             ncStuck = 0; lastNcPos = Vector3.zero; ncOrigCanCollide = {}
-            if C then
-                for _, v in pairs(C:GetDescendants()) do
-                    pcall(function()
-                        if v:IsA("BasePart") then
-                            ncOrigCanCollide[v] = v.CanCollide
-                        end
-                    end)
-                end
-            end
+            if C then NoclipApply(C) end
         elseif nm == "Aim" then
             aimTarget = nil; aimLocked = false; aimLostFrames = 0; aimLastSwitch = 0
         end
@@ -1589,11 +1262,6 @@ Toggle = function(nm)
     Notify(nm, State[nm] and "ON ✓" or "OFF ✗", 1)
 end
 
--- ============================================================
-end -- do -- 19. UNIFIED
-
--- 20. HIGH JUMP DETECTOR
--- ============================================================
 local _hjConn = nil
 local _hjFired = false
 
@@ -1609,14 +1277,12 @@ local function SetupHJDetector()
         if newState == Enum.HumanoidStateType.Landed
             or newState == Enum.HumanoidStateType.Running
             or newState == Enum.HumanoidStateType.RunningNoPhysics then
-            _hjFired = false
-            return
+            _hjFired = false; return
         end
         if newState ~= Enum.HumanoidStateType.Jumping then return end
         if not State.HighJump or State.Fly then return end
         if _hjFired then return end
         _hjFired = true
-
         local R2 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if R2 then
             local v = R2.AssemblyLinearVelocity
@@ -1639,9 +1305,6 @@ local function SetupHJDetector()
 end
 task.spawn(SetupHJDetector)
 
--- ============================================================
--- 21. ANTI-AFK
--- ============================================================
 local _afkFlip = false
 local function DoAntiAFK()
     pcall(function()
@@ -1650,31 +1313,21 @@ local function DoAntiAFK()
         VirtualUser:MoveMouse(_afkFlip and Vector2.new(1, 0) or Vector2.new(-1, 0))
     end)
 end
-
-LP.Idled:Connect(function()
-    if State.AntiAFK then DoAntiAFK() end
-end)
-
+LP.Idled:Connect(function() if State.AntiAFK then DoAntiAFK() end end)
 task.spawn(function()
     while task.wait(48 + math.random() * 14) do
         if State.AntiAFK then DoAntiAFK() end
     end
 end)
 
--- ============================================================
--- 22. ANTI-VOID
--- ============================================================
 local _lastSafePos = nil
-
 task.spawn(function()
     while task.wait(0.5) do
         local C = LP.Character
         local R = C and C:FindFirstChild("HumanoidRootPart")
         local H = C and C:FindFirstChildOfClass("Humanoid")
         if R and H and H.Health > 0 then
-            if H.FloorMaterial ~= Enum.Material.Air then
-                _lastSafePos = R.CFrame
-            end
+            if H.FloorMaterial ~= Enum.Material.Air then _lastSafePos = R.CFrame end
             if State.AntiVoid and R.Position.Y < Config.AntiVoidHeight then
                 if _lastSafePos then
                     pcall(function()
@@ -1688,28 +1341,21 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
--- 23. CHARACTER RESPAWN HANDLER
--- ============================================================
 LP.CharacterAdded:Connect(function(char)
     char:WaitForChild("HumanoidRootPart", 5)
     MobUp = false; MobDn = false; ncStuck = 0
     aimTarget = nil; aimLocked = false; aimLostFrames = 0
     ncOrigCanCollide = {}; _lastSafePos = nil
 
-    for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag", "FullBright"}) do
-        if State[n] then
-            State[n] = false
-            UpdVis(n)
-        end
+    for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag"}) do
+        if State[n] then State[n] = false; UpdVis(n) end
     end
-    _fakeLagToken = _fakeLagToken + (1)
+    _fakeLagToken += 1
 
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum then
         Camera.CameraType = Enum.CameraType.Custom
         Camera.CameraSubject = hum
-
         task.spawn(function()
             task.wait(1.2)
             pcall(function()
@@ -1719,11 +1365,8 @@ LP.CharacterAdded:Connect(function(char)
                 end
             end)
         end)
-
         task.wait(0.5)
-        if State.Speed then
-            pcall(function() hum.WalkSpeed = GetSafeSpeed() end)
-        end
+        if State.Speed then pcall(function() hum.WalkSpeed = GetSafeSpeed() end) end
         if State.HighJump then
             pcall(function()
                 hum.UseJumpPower = true
@@ -1731,37 +1374,26 @@ LP.CharacterAdded:Connect(function(char)
                 hum.JumpHeight = Config.JumpPower * 0.35
             end)
         end
-        task.spawn(function()
-            task.wait(0.3)
-            SetupHJDetector()
-        end)
+        task.spawn(function() task.wait(0.3); SetupHJDetector() end)
     end
 end)
 
--- ============================================================
-
-do
--- 24. SILENT AIM HOOK
--- ============================================================
 local silentAimHooked = false
 
 local function SetupSilentAimHook()
     if silentAimHooked then return end
     if not ENV.hasGetRawMeta or not ENV.hasGetNameCall then return end
-
     local ok = pcall(function()
         local mt = getrawmetatable(game)
         if not mt then return end
         local oldNC = mt.__namecall
         if not oldNC then return end
         if setreadonly then setreadonly(mt, false) end
-
         local newNC
         if newcclosure then
             newNC = newcclosure(function(self, ...)
                 local method = getnamecallmethod()
                 if not State.SilentAim then return oldNC(self, ...) end
-
                 if method == "Raycast" and self == Workspace then
                     local target = GetBestAimTarget()
                     local part = target and FindAimPart(target)
@@ -1784,7 +1416,6 @@ local function SetupSilentAimHook()
                         end
                     end
                 end
-
                 if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
                     and self == Workspace then
                     local target = GetBestAimTarget()
@@ -1828,32 +1459,14 @@ local function SetupSilentAimHook()
                 return oldNC(self, ...)
             end
         end
-
         mt.__namecall = newNC
         if setreadonly then setreadonly(mt, true) end
         silentAimHooked = true
     end)
-
-    if ok and silentAimHooked then
-        Notify("Silent Aim", L("ntf_hook_ok"), 3)
-    end
+    if ok and silentAimHooked then Notify("Silent Aim", L("ntf_hook_ok"), 3) end
 end
+task.spawn(function() task.wait(2); SetupSilentAimHook() end)
 
-task.spawn(function()
-    task.wait(2)
-    SetupSilentAimHook()
-end)
-
--- ============================================================
-end -- do -- 24. SILENT
-
-local RejoinSameServer
-local JoinRandomServer
-local JoinBiggestServer
-local JoinSmallestServer
-do
--- 25. SERVER HOP FUNCTIONS
--- ============================================================
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
@@ -1880,26 +1493,21 @@ end
 
 local serverActionCooldown = false
 local function ServerCooldown()
-    if serverActionCooldown then
-        Notify("Server Hop", L("ntf_wait"), 2)
-        return true
-    end
+    if serverActionCooldown then Notify("Server Hop", L("ntf_wait"), 2); return true end
     serverActionCooldown = true
     task.delay(3, function() serverActionCooldown = false end)
     return false
 end
 
-RejoinSameServer = function()
+local function RejoinSameServer()
     if ServerCooldown() then return end
     Notify("Rejoin", L("ntf_rejoin"), 3)
     task.delay(1.5, function()
-        pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
-        end)
+        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP) end)
     end)
 end
 
-JoinRandomServer = function()
+local function JoinRandomServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_rnd"), 3)
     task.spawn(function()
@@ -1923,7 +1531,7 @@ JoinRandomServer = function()
     end)
 end
 
-JoinBiggestServer = function()
+local function JoinBiggestServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_big"), 3)
     task.spawn(function()
@@ -1938,9 +1546,7 @@ JoinBiggestServer = function()
             if best then
                 Notify("Server Hop", "👥 " .. bestCount .. L("ntf_players"), 2)
                 task.wait(1)
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP)
-                end)
+                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
                 return
             end
         end
@@ -1948,7 +1554,7 @@ JoinBiggestServer = function()
     end)
 end
 
-JoinSmallestServer = function()
+local function JoinSmallestServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_sml"), 3)
     task.spawn(function()
@@ -1963,9 +1569,7 @@ JoinSmallestServer = function()
             if best then
                 Notify("Server Hop", "🕵️ " .. bestCount .. L("ntf_players"), 2)
                 task.wait(1)
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP)
-                end)
+                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
                 return
             end
         end
@@ -1973,47 +1577,23 @@ JoinSmallestServer = function()
     end)
 end
 
--- ============================================================
-end -- do -- 25. SERVER
+-- GUI
+local GuiP = LP:WaitForChild("PlayerGui", 5)
+pcall(function() local c = game:GetService("CoreGui"); local _ = c.Name; GuiP = c end)
 
-local exS, MobHUDBtns, HUD_SZ
-do
--- 26. GUI CREATION
--- ============================================================
--- Try CoreGui first (exploit), fall back to PlayerGui
-local GuiP = nil
-pcall(function()
-    local c = game:GetService("CoreGui")
-    local _ = c.Name  -- will error if restricted
-    GuiP = c
-end)
-if not GuiP then
-    GuiP = LP:FindFirstChild("PlayerGui") or LP:WaitForChild("PlayerGui", 10)
-end
-if not GuiP then GuiP = LP:FindFirstChildWhichIsA("BasePlayerGui") end
-
-local Scr = Instance.new("ScreenGui", GuiP or game:GetService("CoreGui"))
-Scr.Name = RndStr(12)
-Scr.ResetOnSpawn = false
-Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Scr.IgnoreGuiInset = true
+local Scr = Instance.new("ScreenGui", GuiP)
+Scr.Name = RndStr(12); Scr.ResetOnSpawn = false
+Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; Scr.IgnoreGuiInset = true
 Instance.new("BoolValue", Scr).Name = "OmniMarker"
 
 local P = {
-    bg   = Color3.fromRGB(12, 12, 18),
-    card = Color3.fromRGB(20, 20, 30),
-    btn  = Color3.fromRGB(24, 24, 36),
-    dark = Color3.fromRGB(14, 14, 22),
-    acc  = Color3.fromRGB(0, 190, 110),
-    txt  = Color3.fromRGB(230, 230, 240),
-    dim  = Color3.fromRGB(120, 120, 145),
-    brd  = Color3.fromRGB(40, 40, 58),
-    grn  = Color3.fromRGB(0, 200, 100),
-    wht  = Color3.fromRGB(255, 255, 255),
-    swOff = Color3.fromRGB(50, 50, 65),
-    tabA  = Color3.fromRGB(32, 32, 48),
-    onBg  = Color3.fromRGB(30, 38, 34),
-    srvBtn = Color3.fromRGB(28, 28, 44),
+    bg   = Color3.fromRGB(12, 12, 18), card = Color3.fromRGB(20, 20, 30),
+    btn  = Color3.fromRGB(24, 24, 36), dark = Color3.fromRGB(14, 14, 22),
+    acc  = Color3.fromRGB(0, 190, 110), txt = Color3.fromRGB(230, 230, 240),
+    dim  = Color3.fromRGB(120, 120, 145), brd = Color3.fromRGB(40, 40, 58),
+    grn  = Color3.fromRGB(0, 200, 100), wht = Color3.fromRGB(255, 255, 255),
+    swOff = Color3.fromRGB(50, 50, 65), tabA = Color3.fromRGB(32, 32, 48),
+    onBg = Color3.fromRGB(30, 38, 34), srvBtn = Color3.fromRGB(28, 28, 44),
 }
 
 local VP  = Camera.ViewportSize
@@ -2023,7 +1603,6 @@ local BH  = IsMob and 44 or 34
 local FS  = IsMob and 13 or 11
 local MBS = IsMob and 58 or 48
 
--- FOV Circle
 local fovCircle = Instance.new("Frame", Scr)
 fovCircle.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
 fovCircle.Position = UDim2.new(0.5, -Config.AimFOV, 0.5, -Config.AimFOV)
@@ -2031,8 +1610,7 @@ fovCircle.BackgroundTransparency = 1; fovCircle.BorderSizePixel = 0
 fovCircle.Visible = false; fovCircle.ZIndex = 10
 Instance.new("UICorner", fovCircle).CornerRadius = UDim.new(1, 0)
 local fovStroke = Instance.new("UIStroke", fovCircle)
-fovStroke.Color = Color3.fromRGB(0, 200, 100)
-fovStroke.Thickness = 1.5; fovStroke.Transparency = 0.3
+fovStroke.Color = Color3.fromRGB(0, 200, 100); fovStroke.Thickness = 1.5; fovStroke.Transparency = 0.3
 
 local tgtInfo = Instance.new("TextLabel", Scr)
 tgtInfo.Size = UDim2.new(0, 200, 0, 22)
@@ -2051,17 +1629,18 @@ local function UpdateFOVCircle()
     tgtInfo.Position = UDim2.new(0.5, -100, 0.5, -r - 32)
 end
 
--- Main frame
 local Main = Instance.new("Frame", Scr)
 Main.Size = UDim2.new(0, MW, 0, MH)
-Main.Position = UDim2.new(0.5, -MW / 2, 0.5, -MH / 2)
+do
+    local vp = Camera.ViewportSize
+    Main.Position = UDim2.new(0, (vp.X - MW) / 2, 0, (vp.Y - MH) / 2)
+end
 Main.BackgroundColor3 = P.bg; Main.Visible = false; Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 local mainS = Instance.new("UIStroke", Main)
 mainS.Color = P.brd; mainS.Thickness = 1.5
 
--- Title bar
 local TB = Instance.new("Frame", Main)
 TB.Size = UDim2.new(1, 0, 0, 42)
 TB.BackgroundColor3 = P.dark; TB.BorderSizePixel = 0
@@ -2090,17 +1669,14 @@ tIco.Font = Enum.Font.GothamBlack; tIco.TextColor3 = P.acc; tIco.ZIndex = 3
 local tTit = Instance.new("TextLabel", TB)
 tTit.Size = UDim2.new(1, -90, 0, 18); tTit.Position = UDim2.new(0, 40, 0, 5)
 tTit.BackgroundTransparency = 1; tTit.TextColor3 = P.wht; tTit.Font = Enum.Font.GothamBlack
-tTit.TextSize = 14; tTit.Text = L("title"); tTit.TextXAlignment = Enum.TextXAlignment.Left
-tTit.ZIndex = 3
+tTit.TextSize = 14; tTit.Text = L("title"); tTit.TextXAlignment = Enum.TextXAlignment.Left; tTit.ZIndex = 3
 
 local tSub = Instance.new("TextLabel", TB)
 tSub.Size = UDim2.new(1, -90, 0, 12); tSub.Position = UDim2.new(0, 40, 0, 24)
-tSub.BackgroundTransparency = 1; tSub.TextColor3 = P.dim; tSub.Font = Enum.Font.Gotham
-tSub.TextSize = 9
+tSub.BackgroundTransparency = 1; tSub.TextColor3 = P.dim; tSub.Font = Enum.Font.Gotham; tSub.TextSize = 9
 tSub.Text = IsMob and L("subtitle_mobile") or L("subtitle_pc")
 tSub.TextXAlignment = Enum.TextXAlignment.Left; tSub.ZIndex = 3
 
--- Close button
 local clsB = Instance.new("TextButton", TB)
 clsB.Size = UDim2.new(0, 26, 0, 26); clsB.Position = UDim2.new(1, -32, 0.5, -13)
 clsB.BackgroundColor3 = Color3.fromRGB(40, 40, 55); clsB.Text = "✕"
@@ -2110,59 +1686,52 @@ Instance.new("UICorner", clsB).CornerRadius = UDim.new(1, 0)
 
 local function CloseMenu()
     local ap = Main.AbsolutePosition
-    local vp = Camera.ViewportSize
     TweenService:Create(Main, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
         Size = UDim2.new(0, MW, 0, 0),
-        Position = UDim2.new(0, ap.X, 0, math.floor(vp.Y / 2)),
+        Position = UDim2.new(0, ap.X, 0, ap.Y + MH / 2),
     }):Play()
     task.delay(0.15, function() Main.Visible = false end)
 end
 
--- Tap-outside overlay — sits behind menu, closes it on tap
--- Close menu when tapping outside — checked via UIS, not an overlay button
--- (overlay buttons intercept ALL taps including ones on the menu itself)
--- (outside-click-to-close removed: caused buttons inside menu to stop working)
-
 local function OpenMenu()
     local vp = Camera.ViewportSize
-    local cx = math.floor(vp.X / 2 - MW / 2)
-    local cy = math.floor(vp.Y / 2 - MH / 2)
+    local cx = math.clamp(Main.AbsolutePosition.X, 0, vp.X - MW)
+    local cy = math.clamp(Main.AbsolutePosition.Y, 0, vp.Y - MH)
+    -- Якщо меню ще не відкривалось — центруємо
+    if not Main.Visible and (Main.AbsoluteSize.Y < 10) then
+        cx = (vp.X - MW) / 2
+        cy = (vp.Y - MH) / 2
+    end
     Main.Size = UDim2.new(0, MW, 0, 0)
-    Main.Position = UDim2.new(0, cx, 0, math.floor(vp.Y / 2))
+    Main.Position = UDim2.new(0, cx, 0, cy + MH / 2)
     Main.Visible = true
     TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, MW, 0, MH),
         Position = UDim2.new(0, cx, 0, cy),
     }):Play()
 end
+clsB.MouseButton1Click:Connect(CloseMenu)
 
-clsB.MouseButton1Click:Connect(function()
-    CloseMenu()
-end)
-
--- Status bar
 local stB = Instance.new("Frame", Main)
 stB.Size = UDim2.new(1, -16, 0, 18); stB.Position = UDim2.new(0, 8, 0, 44)
 stB.BackgroundColor3 = P.card; stB.BorderSizePixel = 0
 Instance.new("UICorner", stB).CornerRadius = UDim.new(0, 5)
 local fpsL = Instance.new("TextLabel", stB)
 fpsL.Size = UDim2.new(0.5, 0, 1, 0); fpsL.BackgroundTransparency = 1
-fpsL.TextColor3 = P.txt; fpsL.Font = Enum.Font.GothamBold; fpsL.TextSize = 10
-fpsL.Text = "FPS: ..."
+fpsL.TextColor3 = P.txt; fpsL.Font = Enum.Font.GothamBold; fpsL.TextSize = 10; fpsL.Text = "FPS: ..."
 local pngL = Instance.new("TextLabel", stB)
 pngL.Size = UDim2.new(0.5, 0, 1, 0); pngL.Position = UDim2.new(0.5, 0, 0, 0)
 pngL.BackgroundTransparency = 1; pngL.TextColor3 = P.txt; pngL.Font = Enum.Font.GothamBold
 pngL.TextSize = 10; pngL.Text = "Ping: ..."
 
--- Tab bar
 local tabY  = 64
 local tabFr = Instance.new("Frame", Main)
 tabFr.Size = UDim2.new(1, -12, 0, 30); tabFr.Position = UDim2.new(0, 6, 0, tabY)
 tabFr.BackgroundColor3 = P.dark; tabFr.BorderSizePixel = 0
 Instance.new("UICorner", tabFr).CornerRadius = UDim.new(0, 6)
 
-local tNames    = {"Combat", "Move", "Misc", "Config"}
-local tIcons    = {"⚔", "🏃", "🔧", "⚙"}
+local tNames = {"Combat", "Move", "Misc", "Config"}
+local tIcons = {"⚔", "🏃", "🔧", "⚙"}
 local tLangKeys = {"tab_combat", "tab_move", "tab_misc", "tab_config"}
 local tW = 1 / #tNames
 
@@ -2181,10 +1750,8 @@ end
 
 for i, n in ipairs(tNames) do
     local b = Instance.new("TextButton", tabFr)
-    b.Size = UDim2.new(tW, -2, 1, -4)
-    b.Position = UDim2.new((i - 1) * tW, 1, 0, 2)
-    b.BackgroundColor3 = P.tabA
-    b.BackgroundTransparency = i == 1 and 0 or 1
+    b.Size = UDim2.new(tW, -2, 1, -4); b.Position = UDim2.new((i - 1) * tW, 1, 0, 2)
+    b.BackgroundColor3 = P.tabA; b.BackgroundTransparency = i == 1 and 0 or 1
     b.Text = tIcons[i] .. " " .. L(tLangKeys[i])
     b.TextColor3 = i == 1 and P.acc or P.dim
     b.Font = Enum.Font.GothamBold; b.TextSize = IsMob and 11 or 9
@@ -2195,7 +1762,6 @@ for i, n in ipairs(tNames) do
     table.insert(LocalizableElements, {type = "tab", obj = b, icon = tIcons[i], langKey = tLangKeys[i]})
 end
 
--- Content pages
 local cY = tabY + 34
 local cH = MH - cY - 4
 for _, n in ipairs(tNames) do
@@ -2212,45 +1778,35 @@ for _, n in ipairs(tNames) do
     ly.Padding = UDim.new(0, IsMob and 4 or 3)
     ly.HorizontalAlignment = Enum.HorizontalAlignment.Center
     local pd = Instance.new("UIPadding", s)
-    pd.PaddingTop = UDim.new(0, 4)
-    pd.PaddingBottom = UDim.new(0, IsMob and 16 or 8)
+    pd.PaddingTop = UDim.new(0, 4); pd.PaddingBottom = UDim.new(0, IsMob and 16 or 8)
     ly:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         s.CanvasSize = UDim2.new(0, 0, 0, ly.AbsoluteContentSize.Y + 20)
     end)
     TabPages[n] = s
 end
 
--- Draggable title bar (UIS-based for reliable Touch tracking on mobile/exploit)
 do
-    local dr, ds, dpX, dpY = false, nil, 0, 0
-
+    local dr, ds, dp = false, nil, nil
     TB.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
             dr = true
             ds = Vector2.new(inp.Position.X, inp.Position.Y)
-            dpX = Main.AbsolutePosition.X
-            dpY = Main.AbsolutePosition.Y
+            dp = Vector2.new(Main.AbsolutePosition.X, Main.AbsolutePosition.Y)
         end
     end)
-
-    -- Use UIS.InputChanged so Touch move is always captured regardless of UI state
+    -- ВАЖЛИВО: UIS.InputChanged а не TB.InputChanged
+    -- щоб drag працював навіть коли курсор вийшов за межі тайтлбару
     UIS.InputChanged:Connect(function(inp)
         if not dr then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
             or inp.UserInputType == Enum.UserInputType.Touch then
             local d = Vector2.new(inp.Position.X - ds.X, inp.Position.Y - ds.Y)
             local vp = Camera.ViewportSize
-            local ms = Main.AbsoluteSize
-            local newX = math.clamp(dpX + d.X, 0, vp.X - ms.X)
-            local newY = math.clamp(dpY + d.Y, 0, vp.Y - ms.Y)
+            local newX = math.clamp(dp.X + d.X, 0, vp.X - MW)
+            local newY = math.clamp(dp.Y + d.Y, 0, vp.Y - MH)
             Main.Position = UDim2.new(0, newX, 0, newY)
         end
-    end)
-
-    TB.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1
-            or inp.UserInputType == Enum.UserInputType.Touch then dr = false end
     end)
     UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
@@ -2258,10 +1814,8 @@ do
     end)
 end
 
--- External stats display
-exS = Instance.new("Frame", Scr)
-exS.Size = UDim2.new(0, 130, 0, 58)
-exS.Position = UDim2.new(1, -142, 0, 10)
+local exS = Instance.new("Frame", Scr)
+exS.Size = UDim2.new(0, 130, 0, 58); exS.Position = UDim2.new(1, -142, 0, 10)
 exS.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
 exS.BackgroundTransparency = 0; exS.BorderSizePixel = 0; exS.ZIndex = 20
 Instance.new("UICorner", exS).CornerRadius = UDim.new(0, 10)
@@ -2271,17 +1825,15 @@ exGrad.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 16)),
 }); exGrad.Rotation = 135
 local exStroke = Instance.new("UIStroke", exS)
-exStroke.Color = Color3.fromRGB(0, 200, 100)
-exStroke.Thickness = 1.5; exStroke.Transparency = 0.4
+exStroke.Color = Color3.fromRGB(0, 200, 100); exStroke.Thickness = 1.5; exStroke.Transparency = 0.4
 
 local function MkStat(parent, ico, lbl, zI)
     local row = Instance.new("Frame", parent)
-    row.Size = UDim2.new(1, -16, 0, 22)
-    row.BackgroundTransparency = 1; row.ZIndex = zI
+    row.Size = UDim2.new(1, -16, 0, 22); row.BackgroundTransparency = 1; row.ZIndex = zI
     local iL = Instance.new("TextLabel", row)
     iL.Size = UDim2.new(0, 18, 1, 0); iL.BackgroundTransparency = 1
-    iL.Text = ico; iL.TextSize = 12; iL.Font = Enum.Font.Gotham
-    iL.ZIndex = zI + 1; iL.TextColor3 = Color3.fromRGB(100, 200, 255)
+    iL.Text = ico; iL.TextSize = 12; iL.Font = Enum.Font.Gotham; iL.ZIndex = zI + 1
+    iL.TextColor3 = Color3.fromRGB(100, 200, 255)
     local nL = Instance.new("TextLabel", row)
     nL.Size = UDim2.new(0, 42, 1, 0); nL.Position = UDim2.new(0, 20, 0, 0)
     nL.BackgroundTransparency = 1; nL.Text = lbl; nL.TextSize = 10
@@ -2303,44 +1855,38 @@ exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60); exDiv.BorderSizePixel = 0; 
 local exPingRow, eP = MkStat(exS, "📶", "PING", 21)
 exPingRow.Position = UDim2.new(0, 8, 0, 33)
 
--- Sync exS visibility with FPSDisplay state on startup
--- (done in startup block after state load)
-
--- Stats widget: no close button — use FPSDisplay toggle in Misc tab
-
 do
-    local exDr, exDs, exDpX, exDpY = false, nil, 0, 0
+    local exDr, exDs, exAbsStart = false, nil, nil
     exS.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
             exDr = true
             exDs = Vector2.new(inp.Position.X, inp.Position.Y)
-            exDpX = exS.AbsolutePosition.X
-            exDpY = exS.AbsolutePosition.Y
+            exAbsStart = Vector2.new(exS.AbsolutePosition.X, exS.AbsolutePosition.Y)
         end
     end)
-    -- Use UIS.InputChanged (global) so Touch movement is always captured on mobile
+    -- UIS.InputChanged — глобально, не зупиняється коли виходиш за межі панелі
     UIS.InputChanged:Connect(function(inp)
-        if not exDr then return end
+        if not exDr or not exAbsStart then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
             or inp.UserInputType == Enum.UserInputType.Touch then
             local d = Vector2.new(inp.Position.X - exDs.X, inp.Position.Y - exDs.Y)
             local vp = Camera.ViewportSize
-            local newX = math.clamp(exDpX + d.X, 0, vp.X - exS.AbsoluteSize.X)
-            local newY = math.clamp(exDpY + d.Y, 0, vp.Y - exS.AbsoluteSize.Y)
+            local newX = math.clamp(exAbsStart.X + d.X, 0, vp.X - 130)
+            local newY = math.clamp(exAbsStart.Y + d.Y, 0, vp.Y - 58)
             exS.Position = UDim2.new(0, newX, 0, newY)
         end
     end)
     UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
-            or inp.UserInputType == Enum.UserInputType.Touch then exDr = false end
+            or inp.UserInputType == Enum.UserInputType.Touch then
+            exDr = false; exAbsStart = nil
+        end
     end)
 end
 
--- Menu toggle button
 local mB = Instance.new("TextButton", Scr)
-mB.Size = UDim2.new(0, MBS, 0, MBS)
-mB.Position = UDim2.new(0, 10, 0.5, -MBS / 2)
+mB.Size = UDim2.new(0, MBS, 0, MBS); mB.Position = UDim2.new(0, 10, 0.5, -MBS / 2)
 mB.BackgroundColor3 = P.bg; mB.Text = "M"; mB.TextColor3 = P.acc
 mB.Font = Enum.Font.GothamBlack; mB.TextSize = IsMob and 22 or 18
 mB.ZIndex = 100; mB.AutoButtonColor = false
@@ -2356,7 +1902,7 @@ mCnt.TextColor3 = P.grn; mCnt.ZIndex = 101; mCnt.Text = ""
 task.spawn(function()
     while task.wait(0.6) do
         local c = 0
-        for _, v in pairs(State) do if v then c = c + 1 end end
+        for _, v in pairs(State) do if v then c += 1 end end
         mCnt.Text = c > 0 and ("●" .. c) or ""
     end
 end)
@@ -2382,13 +1928,7 @@ do
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
             if dr and not mv and (tick() - mt) < 0.35 then
-                if Main.Visible then
-                    CloseMenu()
-                else
-                    OpenMenu()
-                    -- Re-show stats widget if it was closed
-                    exS.Visible = true
-                end
+                if Main.Visible then CloseMenu() else OpenMenu() end
             end
             dr = false
         end
@@ -2399,14 +1939,14 @@ do
     end)
 end
 
--- Fly mobile buttons
+-- Реєструємо mB для мобільного редактора
+if IsTab then table.insert(MobMovableBtns, {btn = mB, name = "MenuBtn"}) end
+
 local flyH = Instance.new("Frame", Scr)
-flyH.Size = UDim2.new(0, 140, 0, 64)
-flyH.Position = UDim2.new(1, -154, 1, -160)
+flyH.Size = UDim2.new(0, 140, 0, 64); flyH.Position = UDim2.new(1, -154, 1, -160)
 flyH.BackgroundTransparency = 1; flyH.Visible = false; flyH.ZIndex = 50
 local flyBG = Instance.new("Frame", flyH)
-flyBG.Size = UDim2.new(1, 0, 1, 0)
-flyBG.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
+flyBG.Size = UDim2.new(1, 0, 1, 0); flyBG.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
 flyBG.BackgroundTransparency = 0.3; flyBG.BorderSizePixel = 0; flyBG.ZIndex = 49
 Instance.new("UICorner", flyBG).CornerRadius = UDim.new(0, 12)
 Instance.new("UIStroke", flyBG).Color = P.brd
@@ -2447,11 +1987,185 @@ end
 MkFlyB("▲", 4, function(v) MobUp = v end)
 MkFlyB("▼", 72, function(v) MobDn = v end)
 
-function UpdFly()
-    flyH.Visible = State.Fly and IsTab
+-- Реєструємо flyH для редактора
+if IsTab then table.insert(MobMovableBtns, {btn = flyH, name = "FlyBtns"}) end
+-- Завантажуємо збережений layout
+task.spawn(function()
+    task.wait(0.5)
+    LoadMobLayout()
+end)
+
+function UpdFly() flyH.Visible = State.Fly and IsTab end
+
+-- ================================================================
+-- MOBILE BUTTON EDITOR — з збереженням позицій у файл
+-- Кожна кнопка має ім'я (MobBtnNames), позиції зберігаються в JSON
+-- ================================================================
+local MOB_LAYOUT_FILE = "OmniV305_MobLayout.json"
+local MobEditorActive  = false
+local MobEditorOverlays = {}
+-- { index = { btn=..., name=... } } — індексований список
+local MobMovableBtns   = {}  -- { {btn=Frame, name="mB"}, ... }
+-- Поточні збережені позиції { name = {xs,xo,ys,yo} }
+local MobSavedPositions = {}
+
+local function SaveMobLayout()
+    if not HasFileSystem() then return end
+    local data = {}
+    for _, entry in pairs(MobMovableBtns) do
+        local btn = entry.btn
+        if btn and btn.Parent then
+            data[entry.name] = {
+                xs = btn.Position.X.Scale,
+                xo = btn.Position.X.Offset,
+                ys = btn.Position.Y.Scale,
+                yo = btn.Position.Y.Offset,
+            }
+        end
+    end
+    pcall(function()
+        writefile(MOB_LAYOUT_FILE, HttpService:JSONEncode(data))
+    end)
 end
 
--- Freecam touch zone
+local function LoadMobLayout()
+    if not HasFileSystem() then return end
+    local ok, raw = pcall(readfile, MOB_LAYOUT_FILE)
+    if not ok or not raw or raw == "" then return end
+    local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
+    if not ok2 or not data then return end
+    MobSavedPositions = data
+    -- Відразу застосовуємо до існуючих кнопок
+    for _, entry in pairs(MobMovableBtns) do
+        local pos = data[entry.name]
+        if pos and entry.btn and entry.btn.Parent then
+            pcall(function()
+                entry.btn.Position = UDim2.new(pos.xs, pos.xo, pos.ys, pos.yo)
+            end)
+        end
+    end
+end
+
+local function MakeDraggableMob(entry)
+    local btn = entry.btn
+    if not btn or not btn.Parent then return end
+
+    local dr, ds, absStart = false, nil, nil
+
+    local ov = Instance.new("Frame", btn)
+    ov.Name = "EditorOverlay"
+    ov.Size = UDim2.new(1, 6, 1, 6)
+    ov.Position = UDim2.new(0, -3, 0, -3)
+    ov.BackgroundTransparency = 1; ov.BorderSizePixel = 0
+    ov.ZIndex = btn.ZIndex + 10
+    local ovStroke = Instance.new("UIStroke", ov)
+    ovStroke.Color = Color3.fromRGB(0, 200, 100); ovStroke.Thickness = 2.5
+    Instance.new("UICorner", ov).CornerRadius = UDim.new(0, 12)
+    -- Підпис
+    local ovLbl = Instance.new("TextLabel", ov)
+    ovLbl.Size = UDim2.new(1, 0, 0, 14)
+    ovLbl.Position = UDim2.new(0, 0, 0, -16)
+    ovLbl.BackgroundTransparency = 1
+    ovLbl.Text = entry.name
+    ovLbl.TextColor3 = Color3.fromRGB(0, 255, 130)
+    ovLbl.Font = Enum.Font.GothamBold; ovLbl.TextSize = 11
+    ovLbl.ZIndex = ov.ZIndex + 1
+
+    local conn1 = btn.InputBegan:Connect(function(inp)
+        if not MobEditorActive then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dr = true
+            ds = inp.Position
+            -- Використовуємо AbsolutePosition щоб уникнути стрибків при Scale≠0
+            absStart = Vector2.new(btn.AbsolutePosition.X, btn.AbsolutePosition.Y)
+        end
+    end)
+    local conn2 = btn.InputChanged:Connect(function(inp)
+        if not dr or not MobEditorActive or not absStart then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local d = inp.Position - ds
+            local vp = Camera.ViewportSize
+            local bsz = btn.AbsoluteSize
+            local newX = math.clamp(absStart.X + d.X, 0, vp.X - bsz.X)
+            local newY = math.clamp(absStart.Y + d.Y, 0, vp.Y - bsz.Y)
+            -- Зберігаємо як Scale=0, щоб позиція не прив'язувалась до краю
+            btn.Position = UDim2.new(0, newX, 0, newY)
+        end
+    end)
+    local conn3 = btn.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dr = false; absStart = nil
+        end
+    end)
+
+    table.insert(MobEditorOverlays, {
+        ov = ov, conn1 = conn1, conn2 = conn2, conn3 = conn3
+    })
+end
+
+local function EnterMobEditor()
+    MobEditorActive = true
+    for _, d in pairs(MobEditorOverlays) do
+        pcall(function() d.ov:Destroy() end)
+        pcall(function() d.conn1:Disconnect() end)
+        pcall(function() d.conn2:Disconnect() end)
+        pcall(function() d.conn3:Disconnect() end)
+    end
+    MobEditorOverlays = {}
+    for _, entry in pairs(MobMovableBtns) do
+        MakeDraggableMob(entry)
+    end
+    Notify("Editor", "📐 Drag buttons · tap 📐 to save", 3)
+end
+
+local function ExitMobEditor()
+    MobEditorActive = false
+    for _, d in pairs(MobEditorOverlays) do
+        pcall(function() d.ov:Destroy() end)
+        pcall(function() d.conn1:Disconnect() end)
+        pcall(function() d.conn2:Disconnect() end)
+        pcall(function() d.conn3:Disconnect() end)
+    end
+    MobEditorOverlays = {}
+    SaveMobLayout()
+    Notify("Editor", "✅ Layout saved!", 2)
+end
+
+local mobEditorBtn = nil
+if IsTab then
+    mobEditorBtn = Instance.new("TextButton", Scr)
+    mobEditorBtn.Size = UDim2.new(0, MBS, 0, MBS)
+    mobEditorBtn.Position = UDim2.new(0, 10, 0.5, MBS + 10 - MBS / 2)
+    mobEditorBtn.BackgroundColor3 = Color3.fromRGB(18, 28, 40)
+    mobEditorBtn.Text = "📐"
+    mobEditorBtn.TextColor3 = Color3.fromRGB(0, 180, 100)
+    mobEditorBtn.Font = Enum.Font.GothamBlack
+    mobEditorBtn.TextSize = IsMob and 20 or 16
+    mobEditorBtn.ZIndex = 100; mobEditorBtn.AutoButtonColor = false
+    Instance.new("UICorner", mobEditorBtn).CornerRadius = UDim.new(0, 12)
+    local edStroke = Instance.new("UIStroke", mobEditorBtn)
+    edStroke.Thickness = 2; edStroke.Color = Color3.fromRGB(0, 180, 100)
+
+    mobEditorBtn.MouseButton1Click:Connect(function()
+        if MobEditorActive then
+            ExitMobEditor()
+            TweenService:Create(mobEditorBtn, TweenInfo.new(0.15), {
+                BackgroundColor3 = Color3.fromRGB(18, 28, 40),
+            }):Play()
+            edStroke.Color = Color3.fromRGB(0, 180, 100)
+        else
+            EnterMobEditor()
+            TweenService:Create(mobEditorBtn, TweenInfo.new(0.15), {
+                BackgroundColor3 = Color3.fromRGB(0, 80, 40),
+            }):Play()
+            edStroke.Color = Color3.fromRGB(0, 255, 120)
+        end
+    end)
+end
+
 local fcZ = Instance.new("TextButton", Scr)
 fcZ.Size = UDim2.new(0.5, 0, 1, -100); fcZ.Position = UDim2.new(0.5, 0, 0, 0)
 fcZ.BackgroundTransparency = 1; fcZ.Text = ""; fcZ.ZIndex = 5; fcZ.Visible = false
@@ -2471,433 +2185,6 @@ fcZ.InputEnded:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.Touch then fcL = nil end
 end)
 
--- ============================================================
--- 26B. MOBILE HUD BUTTONS (touch only)
--- ============================================================
--- "HUD" button (bottom-left, above M) opens a chooser panel.
--- In the panel: tap any feature chip to show/hide its button.
--- "✏ Move" = enter drag mode to reposition visible buttons.
--- "✓ Done" = close panel + save.
--- By default ALL buttons are hidden — user picks what they want.
--- ============================================================
-
-local MobHUDEditMode  = false
-MobHUDBtns = {}   -- keyed by id, stores {btn, btnSt, dot, editOverlay}
-HUD_SZ = 58
-local HUD_COL_OFF     = Color3.fromRGB(18, 18, 30)
-local HUD_COL_ON      = Color3.fromRGB(14, 58, 36)
-local HUD_COL_EDT     = Color3.fromRGB(42, 36, 8)
-
--- Which buttons are shown on screen (persisted in Config.MobHUDEnabled)
-if not Config.MobHUDEnabled then Config.MobHUDEnabled = {} end
-
-local MobHUDDefs = {
-    {id = "Fly",          icon = "✈",  short = "Fly"},
-    {id = "Speed",        icon = "👟", short = "Speed"},
-    {id = "Bhop",         icon = "🐇", short = "Bhop"},
-    {id = "Aim",          icon = "🎯", short = "Aim"},
-    {id = "SilentAim",    icon = "🔇", short = "S.Aim"},
-    {id = "Noclip",       icon = "👻", short = "NC"},
-    {id = "ESP",          icon = "👁",  short = "ESP"},
-    {id = "Hitbox",       icon = "📦", short = "HBox"},
-    {id = "HighJump",     icon = "⬆",  short = "HJump"},
-    {id = "InfiniteJump", icon = "♾",  short = "∞Jump"},
-    {id = "AntiVoid",     icon = "🌊", short = "AVoid"},
-    {id = "FakeLag",      icon = "📡", short = "FLag"},
-    {id = "ShadowLock",   icon = "🧲", short = "SLock"},
-    {id = "FullBright",   icon = "☀",  short = "FBrt"},
-    {id = "FPSUnlocker",  icon = "🔓", short = "FPS+"},
-    {id = "FPSDisplay",   icon = "📊", short = "FPSw"},
-}
-
--- Default positions: stacked right edge, spacing from top
-local function GetHUDDefaultPos(idx)
-    local vp = Camera.ViewportSize
-    return vp.X - HUD_SZ - 8, 120 + (idx - 1) * (HUD_SZ + 6)
-end
-
-local function ApplyHUDBtnColor(entry)
-    if MobHUDEditMode then
-        entry.btn.BackgroundColor3     = HUD_COL_EDT
-        entry.btnSt.Color              = Color3.fromRGB(255, 200, 50)
-        entry.dot.TextColor3           = Color3.fromRGB(255, 200, 50)
-        entry.editOverlay.Visible      = true
-    else
-        local on = State[entry.id]
-        entry.btn.BackgroundColor3     = on and HUD_COL_ON or HUD_COL_OFF
-        entry.btnSt.Color              = on and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(44, 44, 62)
-        entry.dot.TextColor3           = on and Color3.fromRGB(0, 255, 130) or Color3.fromRGB(50, 50, 68)
-        entry.editOverlay.Visible      = false
-    end
-end
-
-local function SetHUDBtnVisible(id, visible)
-    local entry = MobHUDBtns[id]
-    if entry then entry.btn.Visible = visible end
-end
-
-local function RefreshHUDVisibility()
-    for _, def in ipairs(MobHUDDefs) do
-        SetHUDBtnVisible(def.id, Config.MobHUDEnabled[def.id] == true)
-    end
-end
-
-if IsTab then
-
-    -- ── Build all 13 HUD buttons (hidden by default) ─────────
-    for idx, def in ipairs(MobHUDDefs) do
-        local saved = Config.MobHUDPositions and Config.MobHUDPositions[def.id]
-        local defX, defY = GetHUDDefaultPos(idx)
-        local posX = (saved and saved[1]) or defX
-        local posY = (saved and saved[2]) or defY
-        local vp = Camera.ViewportSize
-        posX = math.clamp(posX, 0, vp.X - HUD_SZ)
-        posY = math.clamp(posY, 0, vp.Y - HUD_SZ)
-
-        local btn = Instance.new("TextButton", Scr)
-        btn.Size               = UDim2.new(0, HUD_SZ, 0, HUD_SZ)
-        btn.Position           = UDim2.new(0, posX, 0, posY)
-        btn.BackgroundColor3   = HUD_COL_OFF
-        btn.BorderSizePixel    = 0
-        btn.AutoButtonColor    = false
-        btn.Text               = ""
-        btn.ZIndex             = 62
-        btn.Visible            = false   -- hidden until user enables it
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
-        local btnSt = Instance.new("UIStroke", btn)
-        btnSt.Color = Color3.fromRGB(44, 44, 62); btnSt.Thickness = 1.5
-
-        local icoLbl = Instance.new("TextLabel", btn)
-        icoLbl.Size               = UDim2.new(1, 0, 0, 32)
-        icoLbl.Position           = UDim2.new(0, 0, 0, 4)
-        icoLbl.BackgroundTransparency = 1
-        icoLbl.Text               = def.icon
-        icoLbl.TextSize           = 22
-        icoLbl.Font               = Enum.Font.Gotham
-        icoLbl.TextColor3         = P.txt
-        icoLbl.ZIndex             = 63
-
-        local shortLbl = Instance.new("TextLabel", btn)
-        shortLbl.Size             = UDim2.new(1, 0, 0, 14)
-        shortLbl.Position         = UDim2.new(0, 0, 1, -16)
-        shortLbl.BackgroundTransparency = 1
-        shortLbl.Text             = def.short
-        shortLbl.TextSize         = 8
-        shortLbl.Font             = Enum.Font.GothamBold
-        shortLbl.TextColor3       = Color3.fromRGB(120, 120, 150)
-        shortLbl.ZIndex           = 63
-
-        local dot = Instance.new("TextLabel", btn)
-        dot.Size                  = UDim2.new(0, 10, 0, 10)
-        dot.Position              = UDim2.new(1, -13, 0, 3)
-        dot.BackgroundTransparency = 1
-        dot.Text                  = "●"
-        dot.TextSize              = 9
-        dot.Font                  = Enum.Font.GothamBold
-        dot.TextColor3            = Color3.fromRGB(50, 50, 68)
-        dot.ZIndex                = 64
-
-        local editOverlay = Instance.new("TextLabel", btn)
-        editOverlay.Size          = UDim2.new(1, 0, 1, 0)
-        editOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        editOverlay.BackgroundTransparency = 0.42
-        editOverlay.Text          = "✥"
-        editOverlay.TextSize      = 26
-        editOverlay.Font          = Enum.Font.GothamBlack
-        editOverlay.TextColor3    = Color3.fromRGB(255, 200, 50)
-        editOverlay.ZIndex        = 65
-        editOverlay.Visible       = false
-        Instance.new("UICorner", editOverlay).CornerRadius = UDim.new(0, 12)
-
-        local entry = {id = def.id, btn = btn, btnSt = btnSt, dot = dot, editOverlay = editOverlay}
-        MobHUDBtns[def.id] = entry
-        ApplyHUDBtnColor(entry)
-
-        local tStart, tMoved, tOrigin, tBtnOrigin = nil, false, nil, nil
-        btn.InputBegan:Connect(function(inp)
-            if inp.UserInputType ~= Enum.UserInputType.Touch then return end
-            tStart = tick(); tMoved = false
-            tOrigin = inp.Position
-            tBtnOrigin = Vector2.new(btn.Position.X.Offset, btn.Position.Y.Offset)
-        end)
-        btn.InputChanged:Connect(function(inp)
-            if inp.UserInputType ~= Enum.UserInputType.Touch or not MobHUDEditMode or not tStart then return end
-            local delta = inp.Position - tOrigin
-            if delta.Magnitude > 5 then tMoved = true end
-            local vp2 = Camera.ViewportSize
-            btn.Position = UDim2.new(0,
-                math.clamp(tBtnOrigin.X + delta.X, 0, vp2.X - HUD_SZ), 0,
-                math.clamp(tBtnOrigin.Y + delta.Y, 0, vp2.Y - HUD_SZ))
-        end)
-        btn.InputEnded:Connect(function(inp)
-            if inp.UserInputType ~= Enum.UserInputType.Touch then return end
-            if MobHUDEditMode then
-                if not Config.MobHUDPositions then Config.MobHUDPositions = {} end
-                Config.MobHUDPositions[def.id] = {btn.Position.X.Offset, btn.Position.Y.Offset}
-            elseif tStart and not tMoved and (tick() - tStart) < 0.35 then
-                Toggle(def.id)
-                if def.id == "Fly" then UpdFly() end
-                if def.id == "Freecam" then fcZ.Visible = State.Freecam end
-                ApplyHUDBtnColor(entry)
-            end
-            tStart = nil; tMoved = false
-        end)
-    end
-
-    -- Apply saved visibility
-    RefreshHUDVisibility()
-
-    -- ── Sync colors every 0.3s ────────────────────────────────
-    task.spawn(function()
-        while task.wait(0.3) do
-            if not MobHUDEditMode then
-                for _, entry in pairs(MobHUDBtns) do
-                    if entry.btn.Visible then pcall(ApplyHUDBtnColor, entry) end
-                end
-            end
-        end
-    end)
-
-    -- ═══════════════════════════════════════════════════════════
-    -- HUD CHOOSER PANEL
-    -- ═══════════════════════════════════════════════════════════
-    local hudPanel = Instance.new("Frame", Scr)
-    hudPanel.Size               = UDim2.new(0, 300, 0, 0)
-    hudPanel.Position           = UDim2.new(0.5, -150, 1, -10)
-    hudPanel.BackgroundColor3   = Color3.fromRGB(12, 12, 20)
-    hudPanel.BorderSizePixel    = 0
-    hudPanel.Visible            = false
-    hudPanel.ZIndex             = 300
-    hudPanel.ClipsDescendants   = true
-    Instance.new("UICorner", hudPanel).CornerRadius = UDim.new(0, 14)
-    local hudPanelSt = Instance.new("UIStroke", hudPanel)
-    hudPanelSt.Color = P.acc; hudPanelSt.Thickness = 1.5
-
-    -- Panel title bar
-    local hudTitleBar = Instance.new("Frame", hudPanel)
-    hudTitleBar.Size             = UDim2.new(1, 0, 0, 38)
-    hudTitleBar.BackgroundColor3 = Color3.fromRGB(18, 18, 30)
-    hudTitleBar.BorderSizePixel  = 0
-    hudTitleBar.ZIndex           = 301
-    Instance.new("UICorner", hudTitleBar).CornerRadius = UDim.new(0, 14)
-    local hudTitleFix = Instance.new("Frame", hudTitleBar)
-    hudTitleFix.Size = UDim2.new(1, 0, 0, 14); hudTitleFix.Position = UDim2.new(0, 0, 1, -14)
-    hudTitleFix.BackgroundColor3 = Color3.fromRGB(18, 18, 30); hudTitleFix.BorderSizePixel = 0
-
-    local hudTitleLbl = Instance.new("TextLabel", hudTitleBar)
-    hudTitleLbl.Size              = UDim2.new(1, -80, 1, 0)
-    hudTitleLbl.Position          = UDim2.new(0, 12, 0, 0)
-    hudTitleLbl.BackgroundTransparency = 1
-    hudTitleLbl.Text              = "⚙  HUD Buttons"
-    hudTitleLbl.TextColor3        = P.acc
-    hudTitleLbl.Font              = Enum.Font.GothamBlack
-    hudTitleLbl.TextSize          = 13
-    hudTitleLbl.TextXAlignment    = Enum.TextXAlignment.Left
-    hudTitleLbl.ZIndex            = 302
-
-    -- "✏ Move" toggle inside panel title bar
-    local moveTogBtn = Instance.new("TextButton", hudTitleBar)
-    moveTogBtn.Size             = UDim2.new(0, 64, 0, 26)
-    moveTogBtn.Position         = UDim2.new(1, -130, 0.5, -13)
-    moveTogBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 44)
-    moveTogBtn.Text             = "✏ Move"
-    moveTogBtn.TextColor3       = P.dim
-    moveTogBtn.Font             = Enum.Font.GothamBold
-    moveTogBtn.TextSize         = 10
-    moveTogBtn.BorderSizePixel  = 0
-    moveTogBtn.AutoButtonColor  = false
-    moveTogBtn.ZIndex           = 303
-    Instance.new("UICorner", moveTogBtn).CornerRadius = UDim.new(0, 7)
-    Instance.new("UIStroke", moveTogBtn).Color = P.dim
-
-    -- "✓ Done" close button
-    local hudDoneBtn = Instance.new("TextButton", hudTitleBar)
-    hudDoneBtn.Size             = UDim2.new(0, 54, 0, 26)
-    hudDoneBtn.Position         = UDim2.new(1, -62, 0.5, -13)
-    hudDoneBtn.BackgroundColor3 = Color3.fromRGB(16, 55, 28)
-    hudDoneBtn.Text             = "✓ Done"
-    hudDoneBtn.TextColor3       = Color3.fromRGB(0, 220, 100)
-    hudDoneBtn.Font             = Enum.Font.GothamBold
-    hudDoneBtn.TextSize         = 10
-    hudDoneBtn.BorderSizePixel  = 0
-    hudDoneBtn.AutoButtonColor  = false
-    hudDoneBtn.ZIndex           = 303
-    Instance.new("UICorner", hudDoneBtn).CornerRadius = UDim.new(0, 7)
-    Instance.new("UIStroke", hudDoneBtn).Color = Color3.fromRGB(0, 180, 80)
-
-    -- Chips grid
-    local chipsFrame = Instance.new("ScrollingFrame", hudPanel)
-    chipsFrame.Position               = UDim2.new(0, 0, 0, 40)
-    chipsFrame.Size                   = UDim2.new(1, 0, 1, -40)
-    chipsFrame.BackgroundTransparency = 1
-    chipsFrame.ZIndex                 = 301
-    chipsFrame.ScrollBarThickness     = IsMob and 4 or 3
-    chipsFrame.ScrollBarImageColor3   = P.acc
-    chipsFrame.CanvasSize             = UDim2.new(0, 0, 0, 0)
-    chipsFrame.ScrollingDirection     = Enum.ScrollingDirection.Y
-    chipsFrame.BorderSizePixel        = 0
-    chipsFrame.ElasticBehavior        = Enum.ElasticBehavior.WhenScrollable
-    local chipsGrid = Instance.new("UIGridLayout", chipsFrame)
-    chipsGrid.CellSize           = UDim2.new(0, 84, 0, 38)
-    chipsGrid.CellPadding        = UDim2.new(0, 7, 0, 6)
-    chipsGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    chipsGrid.SortOrder          = Enum.SortOrder.LayoutOrder
-    local chipsPad = Instance.new("UIPadding", chipsFrame)
-    chipsPad.PaddingTop    = UDim.new(0, 6)
-    chipsPad.PaddingBottom = UDim.new(0, 8)
-    chipsPad.PaddingLeft   = UDim.new(0, 6)
-    chipsPad.PaddingRight  = UDim.new(0, 6)
-    -- Auto-update canvas height when grid content changes
-    chipsGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        chipsFrame.CanvasSize = UDim2.new(0, 0, 0, chipsGrid.AbsoluteContentSize.Y + 16)
-    end)
-
-    local ChipRefs = {}   -- {chip, dot} keyed by id
-
-    for _, def in ipairs(MobHUDDefs) do
-        local chip = Instance.new("TextButton", chipsFrame)
-        chip.Size               = UDim2.new(0, 84, 0, 38)
-        chip.BackgroundColor3   = Color3.fromRGB(22, 22, 36)
-        chip.BorderSizePixel    = 0
-        chip.AutoButtonColor    = false
-        chip.Text               = ""
-        chip.ZIndex             = 302
-        Instance.new("UICorner", chip).CornerRadius = UDim.new(0, 9)
-        local chipSt = Instance.new("UIStroke", chip)
-        chipSt.Color = Color3.fromRGB(44, 44, 62); chipSt.Thickness = 1.2
-
-        local chipIco = Instance.new("TextLabel", chip)
-        chipIco.Size              = UDim2.new(0, 28, 1, 0)
-        chipIco.Position          = UDim2.new(0, 4, 0, 0)
-        chipIco.BackgroundTransparency = 1
-        chipIco.Text              = def.icon
-        chipIco.TextSize          = 18
-        chipIco.Font              = Enum.Font.Gotham
-        chipIco.TextColor3        = P.txt
-        chipIco.ZIndex            = 303
-
-        local chipLbl = Instance.new("TextLabel", chip)
-        chipLbl.Size              = UDim2.new(1, -32, 1, 0)
-        chipLbl.Position          = UDim2.new(0, 30, 0, 0)
-        chipLbl.BackgroundTransparency = 1
-        chipLbl.Text              = def.short
-        chipLbl.TextSize          = 9
-        chipLbl.Font              = Enum.Font.GothamBold
-        chipLbl.TextColor3        = P.txt
-        chipLbl.TextXAlignment    = Enum.TextXAlignment.Left
-        chipLbl.ZIndex            = 303
-
-        -- small toggle indicator (right side)
-        local chipDot = Instance.new("Frame", chip)
-        chipDot.Size              = UDim2.new(0, 8, 0, 8)
-        chipDot.Position          = UDim2.new(1, -11, 0.5, -4)
-        chipDot.BackgroundColor3  = Color3.fromRGB(44, 44, 62)
-        chipDot.BorderSizePixel   = 0
-        chipDot.ZIndex            = 303
-        Instance.new("UICorner", chipDot).CornerRadius = UDim.new(1, 0)
-
-        ChipRefs[def.id] = {chip = chip, chipSt = chipSt, chipDot = chipDot}
-
-        local function RefreshChip()
-            local en = Config.MobHUDEnabled[def.id] == true
-            chip.BackgroundColor3 = en and Color3.fromRGB(16, 52, 30) or Color3.fromRGB(22, 22, 36)
-            chipSt.Color          = en and Color3.fromRGB(0, 180, 90) or Color3.fromRGB(44, 44, 62)
-            chipDot.BackgroundColor3 = en and Color3.fromRGB(0, 220, 100) or Color3.fromRGB(44, 44, 62)
-        end
-        RefreshChip()
-
-        chip.MouseButton1Click:Connect(function()
-            Config.MobHUDEnabled[def.id] = not (Config.MobHUDEnabled[def.id] == true)
-            RefreshChip()
-            RefreshHUDVisibility()
-        end)
-    end
-
-    -- Auto-size panel height based on chips grid
-    local function ResizeHudPanel()
-        local rows = math.ceil(#MobHUDDefs / 3)
-        local contentH = 40 + rows * 38 + (rows - 1) * 6 + 20
-        local vp = Camera.ViewportSize
-        local h = math.min(contentH, vp.Y * 0.55)
-        hudPanel.Size = UDim2.new(0, 300, 0, h)
-        hudPanel.Position = UDim2.new(0.5, -150, 1, -(h + 72))
-        chipsFrame.Size = UDim2.new(1, 0, 0, h - 40)
-    end
-
-    -- ── "HUD" open button ─────────────────────────────────────
-    local hudOpenBtn = Instance.new("TextButton", Scr)
-    hudOpenBtn.Size             = UDim2.new(0, MBS, 0, 34)
-    hudOpenBtn.Position         = UDim2.new(0, 10, 0.5, MBS / 2 + 8)
-    hudOpenBtn.BackgroundColor3 = P.bg
-    hudOpenBtn.Text             = "HUD"
-    hudOpenBtn.TextColor3       = P.acc
-    hudOpenBtn.Font             = Enum.Font.GothamBlack
-    hudOpenBtn.TextSize         = 11
-    hudOpenBtn.ZIndex           = 100
-    hudOpenBtn.AutoButtonColor  = false
-    Instance.new("UICorner", hudOpenBtn).CornerRadius = UDim.new(0, 10)
-    local hudOpenBtnSt = Instance.new("UIStroke", hudOpenBtn)
-    hudOpenBtnSt.Thickness = 1.5; hudOpenBtnSt.Color = P.acc
-
-    local hudPanelOpen = false
-    local function OpenHUDPanel()
-        hudPanelOpen = true
-        ResizeHudPanel()
-        hudPanel.Visible = true
-        hudPanel.Size = UDim2.new(0, 300, 0, 0)
-        local finalH = math.min(40 + math.ceil(#MobHUDDefs / 3) * 44 + 20, Camera.ViewportSize.Y * 0.55)
-        TweenService:Create(hudPanel, TweenInfo.new(0.22, Enum.EasingStyle.Quart), {
-            Size = UDim2.new(0, 300, 0, finalH),
-        }):Play()
-        hudOpenBtn.TextColor3 = Color3.fromRGB(255, 200, 50)
-        hudOpenBtnSt.Color    = Color3.fromRGB(255, 200, 50)
-    end
-    local function CloseHUDPanel()
-        hudPanelOpen = false
-        TweenService:Create(hudPanel, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 300, 0, 0),
-        }):Play()
-        task.delay(0.15, function() hudPanel.Visible = false end)
-        hudOpenBtn.TextColor3 = P.acc
-        hudOpenBtnSt.Color    = P.acc
-        -- exit move mode too
-        if MobHUDEditMode then
-            MobHUDEditMode = false
-            moveTogBtn.Text             = "✏ Move"
-            moveTogBtn.TextColor3       = P.dim
-            moveTogBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 44)
-            for _, entry in pairs(MobHUDBtns) do pcall(ApplyHUDBtnColor, entry) end
-        end
-        if HasFileSystem() then pcall(SaveConfig) end
-    end
-
-    hudOpenBtn.MouseButton1Click:Connect(function()
-        if hudPanelOpen then CloseHUDPanel() else OpenHUDPanel() end
-    end)
-
-    hudDoneBtn.MouseButton1Click:Connect(CloseHUDPanel)
-
-    moveTogBtn.MouseButton1Click:Connect(function()
-        MobHUDEditMode = not MobHUDEditMode
-        if MobHUDEditMode then
-            moveTogBtn.Text             = "● Moving"
-            moveTogBtn.TextColor3       = Color3.fromRGB(255, 200, 50)
-            moveTogBtn.BackgroundColor3 = Color3.fromRGB(40, 34, 8)
-        else
-            moveTogBtn.Text             = "✏ Move"
-            moveTogBtn.TextColor3       = P.dim
-            moveTogBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 44)
-        end
-        for _, entry in pairs(MobHUDBtns) do
-            if entry.btn.Visible then pcall(ApplyHUDBtnColor, entry) end
-        end
-    end)
-
-end -- IsTab
-
--- ============================================================
--- 27. DESCRIPTION POPUP
--- ============================================================
 local descPopup = Instance.new("Frame", Scr)
 descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
 descPopup.Position = UDim2.new(0.5, -(MW - 30) / 2, 0.5, -50)
@@ -2909,15 +2196,13 @@ local descStroke = Instance.new("UIStroke", descPopup)
 descStroke.Color = P.acc; descStroke.Thickness = 2
 
 local descTitle = Instance.new("TextLabel", descPopup)
-descTitle.Size = UDim2.new(1, -10, 0, 24)
-descTitle.Position = UDim2.new(0, 5, 0, 8)
+descTitle.Size = UDim2.new(1, -10, 0, 24); descTitle.Position = UDim2.new(0, 5, 0, 8)
 descTitle.BackgroundTransparency = 1; descTitle.TextColor3 = P.acc
 descTitle.Font = Enum.Font.GothamBlack; descTitle.TextSize = 13
 descTitle.TextXAlignment = Enum.TextXAlignment.Left; descTitle.ZIndex = 201
 
 local descBody = Instance.new("TextLabel", descPopup)
-descBody.Size = UDim2.new(1, -14, 0, 60)
-descBody.Position = UDim2.new(0, 7, 0, 34)
+descBody.Size = UDim2.new(1, -14, 0, 60); descBody.Position = UDim2.new(0, 7, 0, 34)
 descBody.BackgroundTransparency = 1; descBody.TextColor3 = P.txt
 descBody.Font = Enum.Font.Gotham; descBody.TextSize = IsMob and 11 or 10
 descBody.TextWrapped = true; descBody.TextXAlignment = Enum.TextXAlignment.Left
@@ -2931,12 +2216,10 @@ descClose.BorderSizePixel = 0; descClose.ZIndex = 202; descClose.AutoButtonColor
 Instance.new("UICorner", descClose).CornerRadius = UDim.new(1, 0)
 
 local function ShowDesc(title, descKey)
-    descTitle.Text = title
-    descBody.Text = L(descKey)
+    descTitle.Text = title; descBody.Text = L(descKey)
     local textH = math.max(60, math.min(descBody.TextBounds.Y + 10, 160))
     local totalH = textH + 48
-    descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
-    descPopup.Visible = true
+    descPopup.Size = UDim2.new(0, MW - 30, 0, 0); descPopup.Visible = true
     TweenService:Create(descPopup, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
         Size = UDim2.new(0, MW - 30, 0, totalH)
     }):Play()
@@ -2944,17 +2227,11 @@ local function ShowDesc(title, descKey)
 end
 
 local function HideDesc()
-    TweenService:Create(descPopup, TweenInfo.new(0.12), {
-        Size = UDim2.new(0, MW - 30, 0, 0)
-    }):Play()
+    TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
     task.delay(0.12, function() descPopup.Visible = false end)
 end
-
 descClose.MouseButton1Click:Connect(HideDesc)
 
--- ============================================================
--- 28. UI ELEMENT BUILDERS
--- ============================================================
 local waitingBind = nil
 
 local function AddHdr(tab, icon, langKey)
@@ -2970,44 +2247,6 @@ local function AddHdr(tab, icon, langKey)
     l.Text = icon .. "  " .. L(langKey); l.TextXAlignment = Enum.TextXAlignment.Left
     table.insert(LocalizableElements, {type = "header", obj = l, icon = icon, langKey = langKey})
 end
-
--- Single global tap registry — all toggle rows register here.
--- One UIS handler dispatches to the right row instead of 50+ connections.
-local _toggleRows = {}
-local _uTapOrigin = nil
-local _uTapStart  = 0
-
-UIS.InputBegan:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.Touch
-        or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        _uTapStart  = tick()
-        _uTapOrigin = Vector2.new(inp.Position.X, inp.Position.Y)
-    end
-end)
-UIS.InputEnded:Connect(function(inp)
-    if (inp.UserInputType ~= Enum.UserInputType.Touch
-        and inp.UserInputType ~= Enum.UserInputType.MouseButton1)
-        or _uTapOrigin == nil then return end
-    local endPos = Vector2.new(inp.Position.X, inp.Position.Y)
-    local travel = (endPos - _uTapOrigin).Magnitude
-    local dt     = tick() - _uTapStart
-    _uTapOrigin  = nil
-    if travel > 14 or dt > 0.55 then return end  -- scroll / long-press → skip
-    if waitingBind then return end
-    for _, entry in ipairs(_toggleRows) do
-        local r = entry.row
-        if not r or not r.Visible then continue end
-        local ap = r.AbsolutePosition
-        local as = r.AbsoluteSize
-        if endPos.X >= ap.X and endPos.X <= ap.X + as.X
-            and endPos.Y >= ap.Y and endPos.Y <= ap.Y + as.Y then
-            Toggle(entry.logicName)
-            if entry.logicName == "Fly"     then UpdFly() end
-            if entry.logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
-            break  -- only one row can be hit at a time
-        end
-    end
-end)
 
 local function MkToggle(tab, icon, lblKey, logicName, descKey)
     local pg = TabPages[tab]; if not pg then return end
@@ -3043,9 +2282,7 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
         infoBtn.Font = Enum.Font.GothamBold; infoBtn.TextSize = IsMob and 12 or 10
         infoBtn.BorderSizePixel = 0; infoBtn.AutoButtonColor = false; infoBtn.ZIndex = 5
         Instance.new("UICorner", infoBtn).CornerRadius = UDim.new(1, 0)
-        infoBtn.MouseButton1Click:Connect(function()
-            ShowDesc(L(lblKey), descKey)
-        end)
+        infoBtn.MouseButton1Click:Connect(function() ShowDesc(L(lblKey), descKey) end)
     end
 
     local swBG = Instance.new("Frame", row)
@@ -3061,10 +2298,12 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
     swDot.BackgroundColor3 = P.wht; swDot.BorderSizePixel = 0
     Instance.new("UICorner", swDot).CornerRadius = UDim.new(1, 0)
 
-    do
-        -- Store row + logicName for the single global tap dispatcher below
-        table.insert(_toggleRows, {row = row, logicName = logicName})
-    end
+    row.MouseButton1Click:Connect(function()
+        if waitingBind then return end
+        Toggle(logicName)
+        if logicName == "Fly" then UpdFly() end
+        if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
+    end)
 
     AllRows[logicName] = {swBG = swBG, swDot = swDot, accent = accent, row = row, lbl = lbl}
     table.insert(LocalizableElements, {type = "toggle", obj = lbl, langKey = lblKey})
@@ -3171,8 +2410,7 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
 
     local function SetValue(val)
         local t = math.clamp((val - minV) / (maxV - minV), 0, 1)
-        fill.Size = UDim2.new(t, 0, 1, 0)
-        dot.Position = UDim2.new(t, 0, 0.5, 0)
+        fill.Size = UDim2.new(t, 0, 1, 0); dot.Position = UDim2.new(t, 0, 0.5, 0)
         vl.Text = tostring(math.floor(val))
     end
 
@@ -3206,44 +2444,32 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
         SliderRefs[configKey] = {
             default = def,
             update = function(val)
-                val = math.clamp(val, minV, maxV)
-                SetValue(val)
+                val = math.clamp(val, minV, maxV); SetValue(val)
             end,
         }
     end
     table.insert(LocalizableElements, {type = "slider", obj = tl, langKey = lblKey})
 end
 
--- ============================================================
--- 29. LANGUAGE REFRESH
--- ============================================================
-local langBtnRef    = nil
+local langBtnRef = nil
 local autoSaveLblRef = nil
 local safeInfoLblRef = nil
 
 local function RefreshLanguage()
     for _, el in pairs(LocalizableElements) do
         pcall(function()
-            if el.type == "header" then
-                el.obj.Text = el.icon .. "  " .. L(el.langKey)
+            if el.type == "header" then el.obj.Text = el.icon .. "  " .. L(el.langKey)
             elseif el.type == "toggle" or el.type == "button" or el.type == "slider" then
                 el.obj.Text = L(el.langKey)
-            elseif el.type == "tab" then
-                el.obj.Text = el.icon .. " " .. L(el.langKey)
-            end
+            elseif el.type == "tab" then el.obj.Text = el.icon .. " " .. L(el.langKey) end
         end)
     end
-    pcall(function()
-        tTit.Text = L("title")
-        tSub.Text = IsMob and L("subtitle_mobile") or L("subtitle_pc")
-    end)
+    pcall(function() tTit.Text = L("title"); tSub.Text = IsMob and L("subtitle_mobile") or L("subtitle_pc") end)
     if langBtnRef then pcall(function() langBtnRef.Text = L("btn_lang_toggle") end) end
     if autoSaveLblRef then pcall(function() autoSaveLblRef.Text = L("stat_auto_save") end) end
 end
 
--- ============================================================
--- 30. POPULATE UI TABS
--- ============================================================
+-- POPULATE TABS
 AddHdr("Combat", "🎯", "hdr_aiming")
 MkToggleBind("Combat", "🎯", "lbl_auto_aim", "Aim", "desc_auto_aim")
 MkToggleBind("Combat", "🔇", "lbl_silent_aim", "SilentAim", "desc_silent_aim")
@@ -3251,6 +2477,9 @@ MkToggle("Combat", "🧲", "lbl_shadow_lock", "ShadowLock", "desc_shadow_lock")
 AddHdr("Combat", "💥", "hdr_hitbox_esp")
 MkToggle("Combat", "📦", "lbl_hitbox", "Hitbox", "desc_hitbox")
 MkToggle("Combat", "👁", "lbl_esp", "ESP", "desc_esp")
+MkSlider("Combat", "📡", "sl_esp_dist", 50, 3000, Config.ESPMaxDist, "ESPMaxDist", function(v)
+    Config.ESPMaxDist = v
+end)
 
 AddHdr("Move", "✈️", "hdr_flight")
 MkToggleBind("Move", "✈️", "lbl_fly", "Fly", "desc_fly")
@@ -3283,24 +2512,19 @@ do
     infoLbl.BackgroundTransparency = 1; infoLbl.TextColor3 = Color3.fromRGB(100, 230, 140)
     infoLbl.Font = Enum.Font.GothamBold; infoLbl.TextSize = IsMob and 10 or 9
     infoLbl.TextXAlignment = Enum.TextXAlignment.Left; infoLbl.TextWrapped = true
-    infoLbl.Text = ""
-    safeInfoLblRef = infoLbl
+    infoLbl.Text = ""; safeInfoLblRef = infoLbl
 
     task.spawn(function()
         while task.wait(0.8) do
             pcall(function()
                 local cap = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
-                local setSpd = Config.WalkSpeed
-                local active = State.SafeSpeedMode
+                local setSpd = Config.WalkSpeed; local active = State.SafeSpeedMode
                 local eff = active and math.min(setSpd, cap) or setSpd
                 local warn = (setSpd > cap and active) and " ⚠️" or ""
-                infoLbl.Text = string.format(
-                    L("stat_safe_info"),
-                    math.floor(gameBaseSpeed), Config.SafeSpeedMult, cap, warn, setSpd, eff
-                )
+                infoLbl.Text = string.format(L("stat_safe_info"),
+                    math.floor(gameBaseSpeed), Config.SafeSpeedMult, cap, warn, setSpd, eff)
                 infoLbl.TextColor3 = (setSpd > cap and active)
-                    and Color3.fromRGB(255, 180, 50)
-                    or Color3.fromRGB(100, 230, 140)
+                    and Color3.fromRGB(255, 180, 50) or Color3.fromRGB(100, 230, 140)
             end)
         end
     end)
@@ -3309,17 +2533,33 @@ end
 AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
-MkToggle("Misc", "☀️", "lbl_fullbright", "FullBright", "desc_fullbright")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
+AddHdr("Misc", "💡", "hdr_effects")
+MkToggle("Misc", "💡", "lbl_fullbright", "FullBright", "desc_fullbright")
 AddHdr("Misc", "🛡", "hdr_protection")
-MkToggle("Misc", "🔓", "lbl_fps_unlocker", "FPSUnlocker", "desc_fps_unlocker")
 MkToggle("Misc", "💤", "lbl_anti_afk", "AntiAFK", "desc_anti_afk")
-MkToggle("Misc", "📊", "lbl_fps_display", "FPSDisplay", "desc_fps_display")
 AddHdr("Misc", "🌐", "hdr_server_hop")
 MkButton("Misc", "🔄", "btn_rejoin", Color3.fromRGB(22, 28, 38), RejoinSameServer)
 MkButton("Misc", "🎲", "btn_random", Color3.fromRGB(22, 28, 38), JoinRandomServer)
 MkButton("Misc", "👥", "btn_biggest", Color3.fromRGB(22, 28, 38), JoinBiggestServer)
 MkButton("Misc", "🕵️", "btn_smallest", Color3.fromRGB(22, 28, 38), JoinSmallestServer)
+
+-- Кнопка закрити меню прямо у Config вкладці
+do
+    local pg = TabPages["Config"]
+    local closeRow = Instance.new("TextButton", pg)
+    closeRow.Size = UDim2.new(0.95, 0, 0, BH)
+    closeRow.BackgroundColor3 = Color3.fromRGB(35, 14, 14)
+    closeRow.BorderSizePixel = 0; closeRow.AutoButtonColor = false
+    closeRow.Text = "✕  Close Menu  (or press M)"
+    closeRow.TextColor3 = Color3.fromRGB(220, 80, 80)
+    closeRow.Font = Enum.Font.GothamBold
+    closeRow.TextSize = IsMob and 12 or 10
+    Instance.new("UICorner", closeRow).CornerRadius = UDim.new(0, 8)
+    local cs = Instance.new("UIStroke", closeRow)
+    cs.Color = Color3.fromRGB(180, 50, 50); cs.Transparency = 0.4
+    closeRow.MouseButton1Click:Connect(CloseMenu)
+end
 
 AddHdr("Config", "🌐", "hdr_language")
 do
@@ -3358,9 +2598,7 @@ do
         Instance.new("UIStroke", b).Color = col
         b.MouseButton1Click:Connect(function()
             TweenService:Create(b, TweenInfo.new(0.07), {BackgroundColor3 = Color3.fromRGB(60, 60, 80)}):Play()
-            task.delay(0.15, function()
-                TweenService:Create(b, TweenInfo.new(0.1), {BackgroundColor3 = col}):Play()
-            end)
+            task.delay(0.15, function() TweenService:Create(b, TweenInfo.new(0.1), {BackgroundColor3 = col}):Play() end)
             if onClick then pcall(onClick) end
         end)
         table.insert(LocalizableElements, {type = "button", obj = b, langKey = lblKey})
@@ -3401,9 +2639,7 @@ do
 end
 
 AddHdr("Config", "🚀", "hdr_speed_vals")
-MkSlider("Config", "✈️", "sl_fly_speed", 0, 300, Config.FlySpeed, "FlySpeed", function(v)
-    Config.FlySpeed = v
-end)
+MkSlider("Config", "✈️", "sl_fly_speed", 0, 300, Config.FlySpeed, "FlySpeed", function(v) Config.FlySpeed = v end)
 MkSlider("Config", "👟", "sl_walk_speed", 16, 200, Config.WalkSpeed, "WalkSpeed", function(v)
     Config.WalkSpeed = v
     local h = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
@@ -3415,32 +2651,13 @@ MkSlider("Config", "⬆️", "sl_jump_power", 50, 500, Config.JumpPower, "JumpPo
     Config.JumpPower = v
     local h = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
     if State.HighJump and h then
-        pcall(function()
-            h.UseJumpPower = true; h.JumpPower = v; h.JumpHeight = v * 0.35
-        end)
+        pcall(function() h.UseJumpPower = true; h.JumpPower = v; h.JumpHeight = v * 0.35 end)
     end
 end)
-MkSlider("Config", "🐇", "sl_bhop_power", 20, 150, Config.BhopPower, "BhopPower", function(v)
-    Config.BhopPower = v
-end)
+MkSlider("Config", "🐇", "sl_bhop_power", 20, 150, Config.BhopPower, "BhopPower", function(v) Config.BhopPower = v end)
 
 AddHdr("Config", "📦", "hdr_hitbox_cfg")
-MkSlider("Config", "📦", "sl_hitbox_size", 2, 15, Config.HitboxSize, "HitboxSize", function(v)
-    Config.HitboxSize = v
-end)
-
-AddHdr("Config", "👁", "hdr_hitbox_esp")
-MkSlider("Config", "👁", "sl_esp_dist", 50, 2000, Config.ESPDistance, "ESPDistance", function(v)
-    Config.ESPDistance = v
-    -- apply instantly to all active ESP entries
-    for _, ca in pairs(ESPCache) do
-        pcall(function()
-            if ca.bb and ca.bb.Parent then
-                ca.bb.MaxDistance = v
-            end
-        end)
-    end
-end)
+MkSlider("Config", "📦", "sl_hitbox_size", 2, 15, Config.HitboxSize, "HitboxSize", function(v) Config.HitboxSize = v end)
 
 AddHdr("Config", "🎯", "hdr_aim_settings")
 MkSlider("Config", "⭕", "sl_aim_fov", 50, 500, Config.AimFOV, "AimFOV", function(v)
@@ -3449,8 +2666,8 @@ end)
 MkSlider("Config", "🎚", "sl_aim_smooth", 5, 100, math.floor(Config.AimSmooth * 100), "AimSmooth_slider", function(v)
     Config.AimSmooth = v / 100
 end)
-MkSlider("Config", "🔮", "sl_aim_pred", 0, 30, 10, "AimPredMult", function(v)
-    Config.AimPredMult = v
+MkSlider("Config", "🔮", "sl_aim_predict", 1, 30, math.floor(Config.AimPredictMult * 10), "AimPredictMult_slider", function(v)
+    Config.AimPredictMult = v / 10
 end)
 
 AddHdr("Config", "🌊", "hdr_anti_void")
@@ -3463,13 +2680,10 @@ MkToggle("Config", "🎲", "lbl_speed_jitter", "SpeedAntiBan", "desc_speed_jitte
 MkToggle("Config", "📦", "lbl_hitbox_rand", "HitboxRandomize", "desc_hitbox_rand")
 MkToggle("Config", "🎯", "lbl_aim_anti", "AimAntiDetect", "desc_aim_anti")
 
--- ============================================================
--- 31. INPUT HANDLING
--- ============================================================
+-- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
     if waitingBind then
         if inp.UserInputType == Enum.UserInputType.Keyboard then
-            -- PC: assign the pressed key as bind
             local key = inp.KeyCode; local nm = waitingBind
             Binds[nm] = key
             local d = AllRows[nm]
@@ -3479,32 +2693,14 @@ UIS.InputBegan:Connect(function(inp, gpe)
             end
             Notify("BIND", nm .. " → " .. tostring(key):gsub("Enum.KeyCode.", ""), 2)
             waitingBind = nil
-        elseif inp.UserInputType == Enum.UserInputType.MouseButton1
-            or inp.UserInputType == Enum.UserInputType.Touch then
-            -- Mobile/mouse: cancel bind waiting so buttons don't freeze
-            local nm = waitingBind
-            local d = AllRows[nm]
-            if d and d.bindBtn then
-                d.bindBtn.Text = tostring(Binds[nm] or ""):gsub("Enum.KeyCode.", "")
-                d.bindBtn.TextColor3 = P.dim
-            end
-            Notify("BIND", "Cancelled", 1)
-            waitingBind = nil
         end
         return
     end
-
     if gpe then return end
-
     for act, key in pairs(Binds) do
         if inp.KeyCode == key then
             if act == "ToggleMenu" then
-                if Main.Visible then
-                    CloseMenu()
-                else
-                    OpenMenu()
-                    exS.Visible = true
-                end
+                if Main.Visible then CloseMenu() else OpenMenu() end
             else
                 Toggle(act)
                 if act == "Fly" then UpdFly() end
@@ -3522,34 +2718,16 @@ UIS.InputChanged:Connect(function(inp, gpe)
     end
 end)
 
--- ============================================================
--- 32. JUMP REQUESTS
--- ============================================================
 UIS.JumpRequest:Connect(function()
     local C = LP.Character
     local H = C and C:FindFirstChildOfClass("Humanoid")
     local R = C and C:FindFirstChild("HumanoidRootPart")
     if not H or not R or H.Health <= 0 or State.Fly or State.Freecam then return end
-
-    if State.FakeLag then
-        local cr = LP.Character
-        if cr then
-            for _, v in pairs(cr:GetDescendants()) do
-                if v:IsA("BasePart") then pcall(function() v.Anchored = false end) end
-            end
-        end
-    end
-
+    if State.FakeLag then pcall(function() R.Anchored = false end) end
     if State.HighJump then
-        pcall(function()
-            H.UseJumpPower = true
-            H.JumpPower = Config.JumpPower
-            H.JumpHeight = Config.JumpPower * 0.35
-        end)
+        pcall(function() H.UseJumpPower = true; H.JumpPower = Config.JumpPower; H.JumpHeight = Config.JumpPower * 0.35 end)
     end
-
     if not State.InfiniteJump then return end
-
     pcall(function()
         H:ChangeState(Enum.HumanoidStateType.Jumping)
         local pw = State.HighJump and Config.JumpPower or 50
@@ -3559,14 +2737,12 @@ UIS.JumpRequest:Connect(function()
     end)
 end)
 
--- ============================================================
--- 33. ANIMATION LOOP
--- ============================================================
+-- ANIMATION LOOP
 task.spawn(function()
     local t = 0
     while true do
         task.wait(0.033)
-        t = t + (0.02)
+        t += 0.02
         local pulse = (math.sin(t * 2) + 1) / 2
         local aR = math.floor(0 + pulse * 15)
         local aG = math.floor(180 + pulse * 30)
@@ -3578,10 +2754,7 @@ task.spawn(function()
             tAcc.BackgroundColor3 = acol; tIco.TextColor3 = acol
             exStroke.Color = acol
             mainS.Color = Color3.fromRGB(
-                math.floor(38 + pulse * 20),
-                math.floor(38 + pulse * 20),
-                math.floor(48 + pulse * 20)
-            )
+                math.floor(38 + pulse * 20), math.floor(38 + pulse * 20), math.floor(48 + pulse * 20))
             for nm, d in pairs(AllRows) do
                 if State[nm] and d.accent then d.accent.BackgroundColor3 = acol end
             end
@@ -3592,38 +2765,29 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
--- 34. RENDER STEPPED
--- ============================================================
-local FrameLog  = {}
-local lastPing  = 0
-local pingTk    = 0
+-- RENDER STEPPED
+local FrameLog   = {}
+local lastPing   = 0
+local pingTk     = 0
 
 RunService.RenderStepped:Connect(function(dt)
     local now = tick()
 
+    -- FPS/Ping
     table.insert(FrameLog, now)
     while FrameLog[1] and FrameLog[1] < now - 1 do table.remove(FrameLog, 1) end
     local fps = #FrameLog
-
-    if now - pingTk > 2 then
-        pingTk = now
-        pcall(function() lastPing = LP:GetNetworkPing() end)
-    end
+    if now - pingTk > 2 then pingTk = now; pcall(function() lastPing = LP:GetNetworkPing() end) end
     local pm = math.floor(lastPing * 1000)
-
-    local fc = fps >= 55 and Color3.fromRGB(130, 255, 170)
-        or fps >= 30 and Color3.fromRGB(255, 220, 80)
-        or Color3.fromRGB(255, 90, 90)
-    local pc = pm <= 80 and Color3.fromRGB(130, 255, 170)
-        or pm <= 150 and Color3.fromRGB(255, 220, 80)
-        or Color3.fromRGB(255, 90, 90)
-    fpsL.Text = "FPS: " .. fps .. " | " .. pm .. "ms"; fpsL.TextColor3 = fc
+    local fc = fps >= 55 and Color3.fromRGB(130, 255, 170) or fps >= 30 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
+    local pc = pm <= 80 and Color3.fromRGB(130, 255, 170) or pm <= 150 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
+    fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
     pngL.Text = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
-    if exS.Visible then
-        eF.Text = tostring(fps); eF.TextColor3 = fc
-        eP.Text = pm .. " ms"; eP.TextColor3 = pc
-    end
+    eF.Text = tostring(fps); eF.TextColor3 = fc
+    eP.Text = pm .. " ms"; eP.TextColor3 = pc
+
+    -- ESP update (throttled, not every frame)
+    UpdateESP()
 
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3670,10 +2834,10 @@ RunService.RenderStepped:Connect(function(dt)
             local mx, mz = GetDir()
             local dir = Camera.CFrame.LookVector * -mz + Camera.CFrame.RightVector * mx
             if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then
-                dir = dir + (Camera.CFrame.UpVector)
+                dir += Camera.CFrame.UpVector
             end
             if UIS:IsKeyDown(Enum.KeyCode.Q) or UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then
-                dir = dir - (Camera.CFrame.UpVector)
+                dir -= Camera.CFrame.UpVector
             end
             if dir.Magnitude > 1 then dir = dir.Unit end
             Camera.CFrame = CFrame.new(Camera.CFrame.Position + dir * (Config.FlySpeed / 25) * dt * 60)
@@ -3690,17 +2854,16 @@ RunService.RenderStepped:Connect(function(dt)
                 local predTime = math.clamp(lastPing, 0.01, 0.25)
                 local vel = part.AssemblyLinearVelocity
                 local dist = (Camera.CFrame.Position - part.Position).Magnitude
-                local predMul = math.clamp(dist / 100, 0.3, 1.5) * ((Config.AimPredMult or 10) / 10)
+                local predMul = math.clamp(dist / 100, 0.3, 1.5) * Config.AimPredictMult
                 local predictedPos = part.Position + vel * predTime * predMul
                 if vel.Y < -5 then
-                    predictedPos = predictedPos + (Vector3.new(0, -4.9 * predTime * predTime, 0))
+                    predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0)
                 end
                 local smooth = Config.AimSmooth
                 local sd = ScreenDist(part)
-                if sd < 30 then smooth = smooth * 0.3
-                elseif sd < 80 then smooth = smooth * 0.6 end
+                if sd < 30 then smooth = smooth * 0.3 elseif sd < 80 then smooth = smooth * 0.6 end
                 if Config.AimAntiDetect then
-                    predictedPos = predictedPos + Vector3.new(
+                    predictedPos += Vector3.new(
                         (math.random() - 0.5) * 0.12,
                         (math.random() - 0.5) * 0.08,
                         (math.random() - 0.5) * 0.12
@@ -3742,18 +2905,13 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
--- ============================================================
-end -- do GUI
-
--- 35. HEARTBEAT
--- ============================================================
+-- HEARTBEAT
 RunService.Heartbeat:Connect(function(dt)
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
     local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
     if not HRP or not Hum or Hum.Health <= 0 then return end
 
-    -- SHADOW LOCK
     if State.ShadowLock then
         if not IsAlive(LockedTarget) then LockedTarget = GetClosestEnemy() end
         if LockedTarget then
@@ -3762,15 +2920,13 @@ RunService.Heartbeat:Connect(function(dt)
                 pcall(function()
                     local pr = tR.AssemblyLinearVelocity * math.clamp(lastPing, 0, 0.2)
                     HRP.CFrame = HRP.CFrame:Lerp(
-                        CFrame.new(tR.Position + pr) * tR.CFrame.Rotation * CFrame.new(0, 0, 3), 0.4
-                    )
+                        CFrame.new(tR.Position + pr) * tR.CFrame.Rotation * CFrame.new(0, 0, 3), 0.4)
                     HRP.AssemblyLinearVelocity = tR.AssemblyLinearVelocity
                 end)
             end
         end
     end
 
-    -- SPEED
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
@@ -3786,9 +2942,7 @@ RunService.Heartbeat:Connect(function(dt)
                         local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
                         local want = md * targetSpd * math.max(brake, 0.15)
                         HRP.AssemblyLinearVelocity = Vector3.new(
-                            vel.X + (want.X - vel.X) * 0.30, vel.Y,
-                            vel.Z + (want.Z - vel.Z) * 0.30
-                        )
+                            vel.X + (want.X - vel.X) * 0.30, vel.Y, vel.Z + (want.Z - vel.Z) * 0.30)
                     else
                         if flatVel.Magnitude < targetSpd * 0.9 then
                             local want = md * targetSpd
@@ -3805,20 +2959,15 @@ RunService.Heartbeat:Connect(function(dt)
         end)
     end
 
-    -- HIGH JUMP
     if State.HighJump and not State.Fly then
         pcall(function()
-            Hum.UseJumpPower = true
-            Hum.JumpPower = Config.JumpPower
-            Hum.JumpHeight = Config.JumpPower * 0.35
+            Hum.UseJumpPower = true; Hum.JumpPower = Config.JumpPower; Hum.JumpHeight = Config.JumpPower * 0.35
         end)
     end
 
-    -- BHOP
     if State.Bhop and not State.Fly and not State.Freecam then
         pcall(function()
-            if Hum.MoveDirection.Magnitude > 0.1
-                and (UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp) then
+            if Hum.MoveDirection.Magnitude > 0.1 and (UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp) then
                 local now2 = tick()
                 if Hum.FloorMaterial ~= Enum.Material.Air and now2 - lastBhop > 0.06 then
                     Hum:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -3827,74 +2976,56 @@ RunService.Heartbeat:Connect(function(dt)
                     HRP.AssemblyLinearVelocity = Vector3.new(
                         v.X + md.X * (4 + math.random() * 3),
                         Config.BhopPower + math.random(-6, 6),
-                        v.Z + md.Z * (4 + math.random() * 3)
-                    )
+                        v.Z + md.Z * (4 + math.random() * 3))
                     lastBhop = now2
                 end
             end
         end)
     end
 
-    -- NO FALL DAMAGE
     if State.NoFallDamage then
         pcall(function()
             local state = Hum:GetState()
-            if state == Enum.HumanoidStateType.Freefall
-                and HRP.AssemblyLinearVelocity.Y < -28 then
+            if state == Enum.HumanoidStateType.Freefall and HRP.AssemblyLinearVelocity.Y < -28 then
                 Hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
                 HRP.AssemblyLinearVelocity = Vector3.new(
-                    HRP.AssemblyLinearVelocity.X, -4, HRP.AssemblyLinearVelocity.Z
-                )
+                    HRP.AssemblyLinearVelocity.X, -4, HRP.AssemblyLinearVelocity.Z)
             end
         end)
     end
 end)
 
 -- ============================================================
--- 36. STEPPED — NOCLIP (MULTI-METHOD BYPASS)
+-- STEPPED — NOCLIP UNIVERSAL
+-- Оновлюємо кожен крок: ставимо CanCollide=false на всі нові BasePart
+-- Обхід застрягань через рейкаст
 -- ============================================================
---[[
-  Three-layer bypass to handle all places:
-  Layer 1 (best): CollisionGroup method — character assigned to a group
-                  that doesn't collide with Default. Works on most places.
-  Layer 2 (fallback): Direct CanCollide = false on every BasePart every frame.
-                      Works when collision groups aren't available.
-  Layer 3 (anti-stuck): If character stops moving but inputs are pressed,
-                        raycast forward and nudge CFrame through the wall.
-]]
-
 RunService.Stepped:Connect(function()
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
     local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
 
     if State.Noclip and Char and HRP and Hum then
+        -- Застосовуємо нокліп до КОЖНОЇ BasePart кожен крок
+        -- Це обходить ігри які постійно скидають CanCollide
         for _, v in pairs(Char:GetDescendants()) do
             if v:IsA("BasePart") then
                 pcall(function()
-                    -- Layer 1: collision group (random name, unblockable by name filter)
-                    if ncGroupReady then
-                        v.CollisionGroup = SafeGroup
-                    end
-                    -- Layer 2: direct CanCollide override (belt-and-suspenders)
                     if ncOrigCanCollide[v] == nil then
                         ncOrigCanCollide[v] = v.CanCollide
                     end
+                    if _ncGroupWorks then v.CollisionGroup = SafeGroup end
                     v.CanCollide = false
                 end)
             end
         end
 
-        -- Layer 3: anti-stuck nudge
+        -- Анти-застрягання
         local moving = Hum.MoveDirection.Magnitude > 0.05
             or HRP.AssemblyLinearVelocity.Magnitude > 5
         local delta = (HRP.Position - lastNcPos).Magnitude
 
-        if moving and delta < 0.06 then
-            ncStuck = ncStuck + (1)
-        else
-            ncStuck = 0
-        end
+        if moving and delta < 0.06 then ncStuck += 1 else ncStuck = 0 end
 
         if ncStuck >= 3 then
             local md = Hum.MoveDirection.Magnitude > 0.05
@@ -3905,26 +3036,24 @@ RunService.Stepped:Connect(function()
                 return Workspace:Raycast(HRP.Position, md * 8, ncRay)
             end)
             if ok and r then
-                HRP.CFrame = HRP.CFrame + (md * (r.Distance + 2.5))
+                HRP.CFrame += md * (r.Distance + 2.5)
             else
-                HRP.CFrame = HRP.CFrame + (md * 0.6 + Vector3.new(0, 0.15, 0))
+                HRP.CFrame += md * 0.6 + Vector3.new(0, 0.15, 0)
             end
             if ncStuck >= 6 then
                 HRP.AssemblyLinearVelocity = Vector3.new(
-                    md.X * 18, HRP.AssemblyLinearVelocity.Y + 3, md.Z * 18
-                )
+                    md.X * 18, HRP.AssemblyLinearVelocity.Y + 3, md.Z * 18)
                 ncStuck = 0
             end
         end
         lastNcPos = HRP.Position
+
     elseif Char and HRP then
         lastNcPos = HRP.Position; ncStuck = 0
     end
 end)
 
--- ============================================================
--- 37. INITIAL CONFIG LOAD
--- ============================================================
+-- INITIAL CONFIG LOAD
 task.spawn(function()
     task.wait(0.6)
     if not HasFileSystem() then return end
@@ -3932,40 +3061,15 @@ task.spawn(function()
     if not ok or not raw or raw == "" then return end
     local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
     if not ok2 or not data then return end
-    ApplyLoadedConfig(data)
-    task.wait(0.1)
-    UpdateAllSliders()
+    ApplyLoadedConfig(data); task.wait(0.1); UpdateAllSliders()
     for nm in pairs(AllRows) do pcall(UpdVis, nm) end
     for nm, d in pairs(AllRows) do
         if d.bindBtn and Binds[nm] then
             d.bindBtn.Text = tostring(Binds[nm]):gsub("Enum%.KeyCode%.", "")
         end
     end
-    UpdateFOVCircle()
-    RefreshLanguage()
-    -- Restore mobile HUD button positions if available
-    if IsTab then
-        local vp = Camera.ViewportSize
-        for id, entry in pairs(MobHUDBtns) do
-            local saved = Config.MobHUDPositions and Config.MobHUDPositions[id]
-            if saved and saved[1] and saved[2] then
-                local nx = math.clamp(saved[1], 0, vp.X - HUD_SZ)
-                local ny = math.clamp(saved[2], 0, vp.Y - HUD_SZ)
-                entry.btn.Position = UDim2.new(0, nx, 0, ny)
-            end
-        end
-    end
-    -- Sync FPS widget visibility with loaded state
-    exS.Visible = (State.FPSDisplay ~= false)
+    UpdateFOVCircle(); RefreshLanguage()
     Notify("OMNI", L("ntf_loaded"), 3)
 end)
 
--- ============================================================
--- 38. STARTUP
--- ============================================================
 Notify("OMNI V305", L("ntf_startup"), 5)
--- Sync FPS widget visibility with saved state
-task.spawn(function()
-    task.wait(0.8)
-    if exS then exS.Visible = (State.FPSDisplay ~= false) end
-end)
