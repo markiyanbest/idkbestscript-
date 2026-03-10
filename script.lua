@@ -398,7 +398,32 @@ end
 local _speedNoiseT = 0
 local _flyNoiseT   = 100
 
-local gameBaseSpeed = 16
+local gameBaseSpeed  = 16
+local gameBaseJump   = 50
+local _baseDetected  = false
+
+-- ================================================================
+-- BASE DETECTOR — читаємо ДО наших змін, зберігаємо як еталон
+-- ================================================================
+local function _DetectBase(hum)
+    if not hum or not hum.Parent then return end
+    task.spawn(function()
+        task.wait(0.8 + math.random() * 0.4)
+        pcall(function()
+            if hum and hum.Parent then
+                if not State.Speed then
+                    local ws = hum.WalkSpeed
+                    if ws >= 4 and ws <= 120 then gameBaseSpeed = ws end
+                end
+                if not State.HighJump then
+                    local jp = hum.JumpPower
+                    if jp >= 10 and jp <= 300 then gameBaseJump = jp end
+                end
+                _baseDetected = true
+            end
+        end)
+    end)
+end
 
 task.spawn(function()
     if not game:IsLoaded() then game.Loaded:Wait() end
@@ -406,36 +431,28 @@ task.spawn(function()
     pcall(function()
         local C = LP.Character or LP.CharacterAdded:Wait()
         local H = C:WaitForChild("Humanoid", 5)
-        if H then
-            local samples = {}
-            for i = 1, 5 do
-                task.wait(0.3)
-                if H and H.Parent and not State.Speed then
-                    table.insert(samples, H.WalkSpeed)
-                end
-            end
-            if #samples > 0 then
-                local maxSpd = 0
-                for _, v in pairs(samples) do if v > maxSpd then maxSpd = v end end
-                if maxSpd >= 4 and maxSpd <= 100 then gameBaseSpeed = maxSpd end
-            end
-        end
+        _DetectBase(H)
     end)
 end)
 
-local function GetSafeSpeed()
+-- ================================================================
+-- GetTargetSpeed — тільки для velocity-маніпуляцій, не для WalkSpeed
+-- ================================================================
+local function GetTargetSpeed()
     local base = Config.WalkSpeed
     if State.SafeSpeedMode then
         local cap = gameBaseSpeed * Config.SafeSpeedMult
         base = math.min(base, cap)
     end
     if not Config.SpeedAntiBan then return base end
-    _speedNoiseT = _speedNoiseT + 0.008
+    _speedNoiseT = _speedNoiseT + 0.006
     local n   = PseudoNoise(_speedNoiseT)
     local jit = Config.SpeedJitter
-    if math.random(1, 220) == 1 then return math.max(base * 0.82, 14) end
-    return math.clamp(base + n * jit, base * 0.9, base * 1.12)
+    if math.random(1, 280) == 1 then return math.max(base * 0.78, gameBaseSpeed) end
+    return math.clamp(base + n * jit, base * 0.88, base * 1.10)
 end
+
+local function GetSafeSpeed() return GetTargetSpeed() end
 
 local function IsAlive(c)
     if not c or not c.Parent then return false end
@@ -578,11 +595,35 @@ local function GetBestAimTarget()
 end
 
 -- ============================================================
--- ESP SYSTEM
+-- ============================================================
+-- ESP SYSTEM — підтримка будь-якого MaxHealth (100 / 1000 / inf)
+-- BillboardGui авто-масштабується під довжину тексту
 -- ============================================================
 local ESPCache = {}
 local ESP_UPDATE_INTERVAL = 0.1
 local _espLastUpdate = 0
+
+-- Форматує HP у компактний рядок залежно від величини
+-- 75        → "75"
+-- 1500      → "1500"
+-- 1500000   → "1.5M"
+-- math.huge → "∞"
+local function _fmtHP(v)
+    if v == math.huge or v ~= v then return "∞" end  -- inf або NaN
+    v = math.floor(v)
+    if v >= 1000000 then return string.format("%.1fM", v / 1000000)
+    elseif v >= 10000 then return string.format("%.1fk", v / 1000)
+    else return tostring(v) end
+end
+
+-- Обчислює ratio безпечно для будь-якого MaxHealth
+local function _safeRatio(hp, mxh)
+    if mxh == math.huge or mxh ~= mxh or mxh <= 0 then
+        -- MaxHealth = нескінченність або невалідне: показуємо повне здоров'я
+        return 1
+    end
+    return math.clamp(hp / mxh, 0, 1)
+end
 
 local function ClearESP()
     for _, d in pairs(ESPCache) do
@@ -596,12 +637,15 @@ local function UpdateESP()
     if now - _espLastUpdate < ESP_UPDATE_INTERVAL then return end
     _espLastUpdate = now
     if not State.ESP then return end
+
     local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+
     for _, p in pairs(Players:GetPlayers()) do
         if p == LP then continue end
         local char = p.Character
         local head = char and FindHead(char)
         local hum  = char and char:FindFirstChildOfClass("Humanoid")
+
         if not char or not head or not hum or hum.Health <= 0 then
             if ESPCache[p] then
                 pcall(function()
@@ -611,52 +655,119 @@ local function UpdateESP()
             end
             continue
         end
+
         local ca = ESPCache[p]
         if not ca or not ca.bb or not ca.bb.Parent then
             if ca then pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end) end
+
+            -- BillboardGui — ширша (160px) щоб вміщати великі числа HP
             local bb = Instance.new("BillboardGui")
-            bb.Name = "OmniESP"; bb.Size = UDim2.new(0, 120, 0, 44)
-            bb.StudsOffset = Vector3.new(0, 2.8, 0); bb.AlwaysOnTop = true
-            bb.MaxDistance = Config.ESPMaxDist; bb.LightInfluence = 0
-            bb.ResetOnSpawn = false; bb.Parent = head
+            bb.Name = "OmniESP"
+            bb.Size = UDim2.new(0, 160, 0, 48)
+            bb.StudsOffset = Vector3.new(0, 2.8, 0)
+            bb.AlwaysOnTop = true
+            bb.MaxDistance = Config.ESPMaxDist
+            bb.LightInfluence = 0
+            bb.ResetOnSpawn = false
+            bb.Parent = head
+
+            -- Нік гравця
             local nameLbl = Instance.new("TextLabel", bb)
-            nameLbl.Name = "NameLbl"; nameLbl.Size = UDim2.new(1, 0, 0, 18)
-            nameLbl.Position = UDim2.new(0, 0, 0, 0); nameLbl.BackgroundTransparency = 1
-            nameLbl.Text = p.Name; nameLbl.Font = Enum.Font.GothamBold; nameLbl.TextSize = 13
-            nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255); nameLbl.TextStrokeTransparency = 0.3
-            nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); nameLbl.TextScaled = false
+            nameLbl.Name = "NameLbl"
+            nameLbl.Size = UDim2.new(1, 0, 0, 18)
+            nameLbl.Position = UDim2.new(0, 0, 0, 0)
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Text = p.Name
+            nameLbl.Font = Enum.Font.GothamBold
+            nameLbl.TextSize = 13
+            nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nameLbl.TextStrokeTransparency = 0.3
+            nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            nameLbl.TextScaled = false
+            nameLbl.TextXAlignment = Enum.TextXAlignment.Center
+
+            -- HP + дистанція (авторозмір тексту щоб не обрізало)
             local infoLbl = Instance.new("TextLabel", bb)
-            infoLbl.Name = "InfoLbl"; infoLbl.Size = UDim2.new(1, 0, 0, 14)
-            infoLbl.Position = UDim2.new(0, 0, 0, 20); infoLbl.BackgroundTransparency = 1
-            infoLbl.Text = "HP: ? | ?m"; infoLbl.Font = Enum.Font.Gotham; infoLbl.TextSize = 11
-            infoLbl.TextColor3 = Color3.fromRGB(130, 255, 170); infoLbl.TextStrokeTransparency = 0.3
-            infoLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); infoLbl.TextScaled = false
+            infoLbl.Name = "InfoLbl"
+            infoLbl.Size = UDim2.new(1, 0, 0, 16)
+            infoLbl.Position = UDim2.new(0, 0, 0, 20)
+            infoLbl.BackgroundTransparency = 1
+            infoLbl.Text = "HP: ? | ?m"
+            infoLbl.Font = Enum.Font.Gotham
+            infoLbl.TextSize = 11
+            infoLbl.TextColor3 = Color3.fromRGB(130, 255, 170)
+            infoLbl.TextStrokeTransparency = 0.3
+            infoLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            infoLbl.TextScaled = false
+            infoLbl.TextXAlignment = Enum.TextXAlignment.Center
+            -- AutoSize щоб широкий текст не обрізався
+            infoLbl.AutomaticSize = Enum.AutomaticSize.X
+
+            -- HP бар
             local barBg = Instance.new("Frame", bb)
-            barBg.Name = "BarBg"; barBg.Size = UDim2.new(1, 0, 0, 3)
-            barBg.Position = UDim2.new(0, 0, 0, 36); barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            barBg.BorderSizePixel = 0; Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+            barBg.Name = "BarBg"
+            barBg.Size = UDim2.new(1, 0, 0, 3)
+            barBg.Position = UDim2.new(0, 0, 0, 40)
+            barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            barBg.BorderSizePixel = 0
+            Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+
             local barFill = Instance.new("Frame", barBg)
-            barFill.Name = "BarFill"; barFill.Size = UDim2.new(1, 0, 1, 0)
-            barFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100); barFill.BorderSizePixel = 0
+            barFill.Name = "BarFill"
+            barFill.Size = UDim2.new(1, 0, 1, 0)
+            barFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100)
+            barFill.BorderSizePixel = 0
             Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
+
             ESPCache[p] = { bb = bb, nameLbl = nameLbl, infoLbl = infoLbl, barFill = barFill }
             ca = ESPCache[p]
         end
+
+        -- Оновлюємо MaxDistance динамічно
         ca.bb.MaxDistance = Config.ESPMaxDist
-        local hp  = math.max(0, math.floor(hum.Health))
-        local mxh = math.max(1, math.floor(hum.MaxHealth))
-        local ds  = myHRP and math.floor((myHRP.Position - head.Position).Magnitude) or 0
-        local ratio = hp / mxh
+
+        -- ── ОБЧИСЛЕННЯ HP ─────────────────────────────────────────
+        local rawHP  = hum.Health
+        local rawMax = hum.MaxHealth
+        -- math.huge = нескінченне здоров'я (деякі ігри так роблять)
+        local isInfHP = (rawMax == math.huge or rawMax ~= rawMax)
+
+        local hp    = math.max(0, math.floor(rawHP))
+        local mxh   = isInfHP and math.huge or math.max(1, math.floor(rawMax))
+        local ratio = _safeRatio(hp, mxh)
+        local ds    = myHRP and math.floor((myHRP.Position - head.Position).Magnitude) or 0
+
+        -- ── Колір ніку (за дистанцією) ────────────────────────────
         local nameColor
-        if ds <= 30 then nameColor = Color3.fromRGB(255, 100, 100)
+        if ds <= 30 then     nameColor = Color3.fromRGB(255, 100, 100)
         elseif ds <= 80 then nameColor = Color3.fromRGB(255, 220, 50)
-        else nameColor = Color3.fromRGB(255, 255, 255) end
-        ca.nameLbl.TextColor3 = nameColor; ca.nameLbl.Text = p.Name
-        local hpColor = ratio >= 0.6 and Color3.fromRGB(80, 255, 120)
-            or ratio >= 0.3 and Color3.fromRGB(255, 220, 40) or Color3.fromRGB(255, 60, 60)
+        else                 nameColor = Color3.fromRGB(255, 255, 255) end
+        ca.nameLbl.TextColor3 = nameColor
+        ca.nameLbl.Text = p.Name
+
+        -- ── Колір HP (за відсотком) ────────────────────────────────
+        local hpColor
+        if isInfHP then
+            hpColor = Color3.fromRGB(80, 180, 255)  -- синій = нескінченне HP
+        elseif ratio >= 0.6 then
+            hpColor = Color3.fromRGB(80, 255, 120)   -- зелений
+        elseif ratio >= 0.3 then
+            hpColor = Color3.fromRGB(255, 220, 40)   -- жовтий
+        else
+            hpColor = Color3.fromRGB(255, 60, 60)    -- червоний
+        end
         ca.infoLbl.TextColor3 = hpColor
-        ca.infoLbl.Text = "HP: " .. hp .. "/" .. mxh .. " | " .. ds .. "m"
-        ca.barFill.Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0)
+
+        -- ── Текст HP: завжди показує реальне значення ─────────────
+        -- Для нескінченного HP показує фактичне число без дробу max
+        if isInfHP then
+            ca.infoLbl.Text = "HP: " .. _fmtHP(rawHP) .. " | " .. ds .. "m"
+        else
+            ca.infoLbl.Text = "HP: " .. _fmtHP(rawHP) .. "/" .. _fmtHP(rawMax) .. " | " .. ds .. "m"
+        end
+
+        -- ── HP бар ────────────────────────────────────────────────
+        ca.barFill.Size = UDim2.new(ratio, 0, 1, 0)
         ca.barFill.BackgroundColor3 = hpColor
     end
 end
@@ -1041,7 +1152,7 @@ local function Toggle(nm)
                 end
             end)
         elseif nm == "HighJump" and H then
-            pcall(function() H.UseJumpPower = true; H.JumpPower = 50; H.JumpHeight = 7.2 end)
+            pcall(function() H.UseJumpPower = true; H.JumpPower = gameBaseJump; H.JumpHeight = 7.2 end)
         elseif nm == "Noclip" or nm == "ShadowLock" then
             ForceRestore()
         elseif nm == "ESP" then
@@ -1076,8 +1187,9 @@ local function Toggle(nm)
             pcall(function() H.WalkSpeed = GetSafeSpeed() end)
         elseif nm == "HighJump" and H then
             pcall(function()
-                H.UseJumpPower = true; H.JumpPower = Config.JumpPower
-                H.JumpHeight = Config.JumpPower * 0.35
+                -- НЕ виставляємо Config.JumpPower одразу — чекаємо стрибка
+                H.UseJumpPower = true
+                H.JumpPower = gameBaseJump  -- базове значення, буст в StateChanged
             end)
         elseif nm == "Spin" and R then
             local att = R:FindFirstChild("OmniSpinAtt")
@@ -1105,31 +1217,82 @@ local function Toggle(nm)
                     local rp = cr and cr:FindFirstChild("HumanoidRootPart")
                     local hm = cr and cr:FindFirstChildOfClass("Humanoid")
 
-                    -- Лагає завжди під час руху, навіть у повітрі/стрибку
-                    if rp and hm and hm.MoveDirection.Magnitude > 0
-                        and not State.Fly and not State.Freecam then
-                        -- Зберігаємо вектор швидкості — після фризу персонаж
-                        -- продовжить рух по тій самій траєкторії (не падатиме каменем)
+                    if not rp or not hm or State.Fly or State.Freecam then
+                        if rp then pcall(function() rp.Anchored = false end) end
+                        task.wait(0.1)
+                        continue
+                    end
+
+                    -- Визначаємо режим
+                    local humState  = hm:GetState()
+                    local vel       = rp.AssemblyLinearVelocity
+                    local flatSpeed = Vector2.new(vel.X, vel.Z).Magnitude
+
+                    -- Рагдол: PlatformStand або стан Ragdoll/GettingUp/FallingDown
+                    local isRagdoll = hm.PlatformStand
+                        or humState == Enum.HumanoidStateType.Ragdoll
+                        or humState == Enum.HumanoidStateType.GettingUp
+                        or humState == Enum.HumanoidStateType.FallingDown
+
+                    -- Нокбек: гравця відкинули — висока горизонтальна швидкість
+                    -- без власного руху WASD і він у повітрі
+                    local isKnockback = flatSpeed > 22
+                        and hm.MoveDirection.Magnitude < 0.1
+                        and hm.FloorMaterial == Enum.Material.Air
+
+                    -- Звичайний рух гравця (WASD / стрибок)
+                    local isMoving = hm.MoveDirection.Magnitude > 0
+
+                    if isRagdoll or isKnockback then
+                        -- РАГДОЛ / НОКБЕК:
+                        -- заморожуємо і гасимо частину швидкості при розморозці
+                        -- → гравець менше улітає (імітація lag desync)
                         local savedVel = rp.AssemblyLinearVelocity
 
                         pcall(function() rp.Anchored = true end)
 
-                        -- Час "зависання" (імітація втрати пакетів: 40-120 мс)
+                        -- Фриз трохи довший ніж звичайний лаг
+                        task.wait(math.random(50, 130) / 1000)
+
+                        pcall(function()
+                            rp.Anchored = false
+                            -- Гасимо горизонталь на 45-65% (залишаємо 35-55%)
+                            -- Сервер "не встиг передати" весь імпульс нокбеку
+                            local dampX = math.random(35, 55) / 100
+                            local dampZ = math.random(35, 55) / 100
+                            -- Вертикаль гасимо менше — гравітація сама зробить своє
+                            local dampY = math.random(70, 90) / 100
+                            rp.AssemblyLinearVelocity = Vector3.new(
+                                savedVel.X * dampX,
+                                savedVel.Y * dampY,
+                                savedVel.Z * dampZ
+                            )
+                        end)
+
+                        -- Коротка пауза і знову — поки рагдол триває
+                        task.wait(math.random(60, 150) / 1000)
+
+                    elseif isMoving then
+                        -- ЗВИЧАЙНИЙ РУХ: лаг зі збереженням інерції
+                        local savedVel = rp.AssemblyLinearVelocity
+
+                        pcall(function() rp.Anchored = true end)
+
                         task.wait(math.random(40, 120) / 1000)
 
                         pcall(function()
                             rp.Anchored = false
-                            -- Відновлюємо інерцію одразу після розморозки
                             rp.AssemblyLinearVelocity = savedVel
                         end)
 
-                        -- Інтервал нормальної роботи між лагами (100-250 мс)
                         task.wait(math.random(100, 250) / 1000)
                     else
-                        if rp then pcall(function() rp.Anchored = false end) end
+                        -- Стоїмо — знімаємо заморозку і чекаємо
+                        pcall(function() rp.Anchored = false end)
                         task.wait(0.1)
                     end
                 end
+
                 local cr = LP.Character
                 local rp = cr and cr:FindFirstChild("HumanoidRootPart")
                 if rp then pcall(function() rp.Anchored = false end) end
@@ -2638,9 +2801,17 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
+    -- ════════════════════════════════════════════════════════════
+    -- FLY — STEALTH VERSION
+    -- • НЕ використовує PlatformStand (сервер бачить одразу)
+    -- • НЕ змінює WalkSpeed / JumpPower
+    -- • LinearVelocity constraint (якщо доступний) як пріоритет
+    -- • Fallback: AssemblyLinearVelocity + компенсація гравітації
+    -- • HumanoidState залишається "Running" — виглядає нормально
+    -- ════════════════════════════════════════════════════════════
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
-            Hum.PlatformStand = false
+            -- Ніколи не торкаємось PlatformStand
             local mx, mz = GetDir()
             local camCF = Camera.CFrame
             local dir = camCF.LookVector * -mz + camCF.RightVector * mx
@@ -2652,22 +2823,71 @@ RunService.RenderStepped:Connect(function(dt)
             if HRP.Position.Y > Config.FlyHeightMax then
                 dir = Vector3.new(dir.X, math.min(dir.Y, -0.1), dir.Z)
             end
+
+            local spd = Config.FlySpeed
+            local target_vel
+
             if Config.FlyAntiBan then
-                _flyNoiseT = _flyNoiseT + 0.005
-                local nx = PseudoNoise(_flyNoiseT) * 0.12
-                local ny = PseudoNoise(_flyNoiseT + 100) * 0.06
-                local nz = PseudoNoise(_flyNoiseT + 200) * 0.12
-                local target_vel = dir * Config.FlySpeed + Vector3.new(nx, ny, nz)
-                local cur_vel = HRP.AssemblyLinearVelocity
-                local lerp_vel = cur_vel:Lerp(target_vel, math.clamp(dt * 18, 0, 1))
-                HRP.AssemblyLinearVelocity = lerp_vel
-                HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0,
-                    math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
+                _flyNoiseT = _flyNoiseT + 0.004
+                local nx = PseudoNoise(_flyNoiseT)        * 0.10
+                local ny = PseudoNoise(_flyNoiseT + 100)  * 0.05
+                local nz = PseudoNoise(_flyNoiseT + 200)  * 0.10
+                target_vel = dir * spd + Vector3.new(nx, ny, nz)
             else
-                HRP.AssemblyLinearVelocity = dir * Config.FlySpeed
+                target_vel = dir * spd
             end
-            if not State.Spin then HRP.AssemblyAngularVelocity = Vector3.zero end
+
+            -- Спроба 1: LinearVelocity (новий API, важко детектувати)
+            local lv = HRP:FindFirstChild("OmniLV")
+            if not lv or not lv:IsA("LinearVelocity") then
+                pcall(function()
+                    if lv then lv:Destroy() end
+                    local att = HRP:FindFirstChild("OmniLVAtt") or Instance.new("Attachment", HRP)
+                    att.Name = "OmniLVAtt"
+                    lv = Instance.new("LinearVelocity", HRP)
+                    lv.Name = "OmniLV"
+                    lv.Attachment0 = att
+                    lv.MaxForce = math.huge
+                    lv.RelativeTo = Enum.ActuatorRelativeTo.World
+                    lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Vector
+                end)
+            end
+
+            if lv and lv:IsA("LinearVelocity") and lv.Parent then
+                -- Плавний lerp щоб уникнути різких стрибків швидкості
+                local cur = lv.VectorVelocity or Vector3.zero
+                lv.VectorVelocity = cur:Lerp(target_vel, math.clamp(dt * 20, 0, 1))
+                -- Обертаємо тільки якщо рухаємось горизонтально
+                if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
+                    HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0,
+                        math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
+                end
+            else
+                -- Fallback: пряма маніпуляція швидкістю
+                local cur_vel = HRP.AssemblyLinearVelocity
+                local lerped = cur_vel:Lerp(target_vel, math.clamp(dt * 18, 0, 1))
+                HRP.AssemblyLinearVelocity = lerped
+                if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
+                    HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0,
+                        math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
+                end
+            end
+
+            -- Не чіпаємо AngularVelocity якщо Spin активний
+            if not State.Spin then
+                pcall(function() HRP.AssemblyAngularVelocity = Vector3.zero end)
+            end
         end)
+    else
+        -- Вимкнули Fly — прибираємо LinearVelocity constraint
+        if HRP then
+            pcall(function()
+                local lv = HRP:FindFirstChild("OmniLV")
+                if lv then lv:Destroy() end
+                local att = HRP:FindFirstChild("OmniLVAtt")
+                if att then att:Destroy() end
+            end)
+        end
     end
 
     if State.Freecam then
@@ -2759,38 +2979,67 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
+    -- ════════════════════════════════════════════════════════════
+    -- SPEED — STEALTH VERSION
+    -- • WalkSpeed НІКОЛИ не змінюється (скидаємо до базового якщо змінився)
+    -- • Рух через AssemblyLinearVelocity з плавним lerp
+    -- • AC бачить нормальний WalkSpeed, але персонаж рухається швидше
+    -- ════════════════════════════════════════════════════════════
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
-            local targetSpd = GetSafeSpeed(); Hum.WalkSpeed = targetSpd
-            if Hum.MoveDirection.Magnitude > 0.1 then
-                local md = Hum.MoveDirection.Unit; local vel = HRP.AssemblyLinearVelocity
+            -- Якщо гра змінила WalkSpeed — мовчки скидаємо до базового
+            -- (деякі AC виставляють його назад і чекають підтвердження)
+            if Hum.WalkSpeed ~= gameBaseSpeed then
+                Hum.WalkSpeed = gameBaseSpeed
+            end
+
+            local md = Hum.MoveDirection
+            if md.Magnitude > 0.1 then
+                local vel     = HRP.AssemblyLinearVelocity
                 local flatVel = Vector3.new(vel.X, 0, vel.Z)
+                local want    = md.Unit * GetTargetSpeed()
+
+                -- Плавне прискорення (lerp) — без стрибків швидкості
+                local lerpF = math.clamp(dt * 13, 0, 1)
+
                 if State.SafeSpeedMode then
-                    local cycle = tick() % 0.60; local onTime = 0.60 * 0.82
+                    -- SafeSpeed: пульсуючий режим (82% часу повна швидкість, 18% гальмо)
+                    local cycle  = tick() % 0.55
+                    local onTime = 0.55 * 0.82
                     if cycle > onTime then
-                        local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
-                        local want = md * targetSpd * math.max(brake, 0.15)
-                        HRP.AssemblyLinearVelocity = Vector3.new(
-                            vel.X + (want.X - vel.X) * 0.30, vel.Y, vel.Z + (want.Z - vel.Z) * 0.30)
-                    else
-                        if flatVel.Magnitude < targetSpd * 0.9 then
-                            local want = md * targetSpd
-                            HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
-                        end
+                        local brake = 1 - ((cycle - onTime) / (0.55 - onTime))
+                        want = want * math.max(brake, 0.12)
+                        lerpF = lerpF * 0.5
                     end
-                else
-                    if flatVel.Magnitude < targetSpd * 0.9 then
-                        local want = md * targetSpd
-                        HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
-                    end
+                end
+
+                local newFlat = flatVel:Lerp(want, lerpF)
+                HRP.AssemblyLinearVelocity = Vector3.new(newFlat.X, vel.Y, newFlat.Z)
+            end
+        end)
+    elseif not State.Speed and not State.Fly then
+        -- Відновлюємо WalkSpeed якщо Speed вимкнений і він чомусь збився
+        pcall(function()
+            if _baseDetected and Hum and Hum.Parent then
+                if Hum.WalkSpeed ~= gameBaseSpeed and Hum.WalkSpeed < gameBaseSpeed * 0.5 then
+                    Hum.WalkSpeed = gameBaseSpeed
                 end
             end
         end)
     end
 
+    -- ════════════════════════════════════════════════════════════
+    -- HIGH JUMP — STEALTH VERSION
+    -- • JumpPower / JumpHeight НІКОЛИ не змінюються постійно
+    -- • Буст застосовується ТІЛЬКИ в момент стрибка через StateChanged
+    -- • Heartbeat тільки відновлює базові значення якщо гра їх збила
+    -- ════════════════════════════════════════════════════════════
     if State.HighJump and not State.Fly then
         pcall(function()
-            Hum.UseJumpPower = true; Hum.JumpPower = Config.JumpPower; Hum.JumpHeight = Config.JumpPower * 0.35
+            -- Якщо гра скинула значення — тихо відновлюємо базові
+            -- (НЕ виставляємо Config.JumpPower кожен кадр!)
+            if Hum.UseJumpPower ~= true then Hum.UseJumpPower = true end
+            if Hum.JumpPower ~= gameBaseJump then Hum.JumpPower = gameBaseJump end
         end)
     end
 
