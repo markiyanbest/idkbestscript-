@@ -1170,16 +1170,17 @@ local function Toggle(nm)
             end
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
-            -- Повне очищення при вимкненні:
-            -- знімаємо anchor і скидаємо горизонтальну швидкість,
-            -- щоб не "їхати" зі швидкістю яку гра вже не дає
             if R then
                 pcall(function()
                     R.Anchored = false
-                    -- Зберігаємо тільки вертикальну (гравітація / стрибок)
                     local v = R.AssemblyLinearVelocity
                     R.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
                 end)
+            end
+            -- Відновлюємо WalkSpeed до оригінального значення плейсу
+            -- (якщо Speed не увімкнений — тоді Speed сам відповідає за свою швидкість)
+            if H and not State.Speed then
+                pcall(function() H.WalkSpeed = gameBaseSpeed end)
             end
         elseif nm == "InfiniteJump" and H then
             pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
