@@ -1170,7 +1170,17 @@ local function Toggle(nm)
             end
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
-            if R then pcall(function() R.Anchored = false end) end
+            -- Повне очищення при вимкненні:
+            -- знімаємо anchor і скидаємо горизонтальну швидкість,
+            -- щоб не "їхати" зі швидкістю яку гра вже не дає
+            if R then
+                pcall(function()
+                    R.Anchored = false
+                    -- Зберігаємо тільки вертикальну (гравітація / стрибок)
+                    local v = R.AssemblyLinearVelocity
+                    R.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
+                end)
+            end
         elseif nm == "InfiniteJump" and H then
             pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
         elseif nm == "Aim" then
@@ -1274,7 +1284,9 @@ local function Toggle(nm)
 
                     elseif isMoving then
                         -- ЗВИЧАЙНИЙ РУХ: лаг зі збереженням інерції
-                        local savedVel = rp.AssemblyLinearVelocity
+                        -- Запам'ятовуємо поточний WalkSpeed ДО фризу
+                        local savedVel   = rp.AssemblyLinearVelocity
+                        local savedWS    = hm.WalkSpeed  -- базова швидкість в момент заморозки
 
                         pcall(function() rp.Anchored = true end)
 
@@ -1282,7 +1294,18 @@ local function Toggle(nm)
 
                         pcall(function()
                             rp.Anchored = false
-                            rp.AssemblyLinearVelocity = savedVel
+                            -- Перевіряємо чи WalkSpeed змінився під час фризу
+                            -- (портал, лобі→гра, зона з іншою швидкістю тощо)
+                            local curWS = hm.WalkSpeed
+                            if math.abs(curWS - savedWS) > 2 then
+                                -- Швидкість змінилась — НЕ відновлюємо старий вектор,
+                                -- даємо грі самій розрахувати нову швидкість
+                                -- Вертикаль зберігаємо (стрибок/гравітація)
+                                rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0)
+                            else
+                                -- Швидкість та сама — відновлюємо повністю (нормальна інерція)
+                                rp.AssemblyLinearVelocity = savedVel
+                            end
                         end)
 
                         task.wait(math.random(100, 250) / 1000)
@@ -1295,7 +1318,13 @@ local function Toggle(nm)
 
                 local cr = LP.Character
                 local rp = cr and cr:FindFirstChild("HumanoidRootPart")
-                if rp then pcall(function() rp.Anchored = false end) end
+                if rp then
+                    pcall(function()
+                        rp.Anchored = false
+                        local v = rp.AssemblyLinearVelocity
+                        rp.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
+                    end)
+                end
             end)
 
         elseif nm == "Noclip" then
