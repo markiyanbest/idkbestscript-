@@ -835,63 +835,134 @@ end)
 
 local savedShd, savedQ = true, Enum.QualityLevel.Automatic
 
--- Potato: поступове застосування щоб не залагати при вмиканні
-local _potatoToken = 0
+-- ================================================================
+-- FPS BOOST — ПОСТУПОВЕ ВМИКАННЯ/ВИМИКАННЯ
+-- Зберігає оригінальні значення і відновлює їх точно
+-- Обробка по 40 об'єктів за кадр — без фризів
+-- Стадії вмикання: спочатку ефекти/частинки, потім тіні на деталях
+-- ================================================================
+local _potatoToken  = 0
+local _potatoOrig   = {}   -- { [instance] = { castShadow, reflectance, enabled } }
+local POTATO_CHUNK  = 40   -- об'єктів за один task.wait()
 
-local function DoPotato()
-    pcall(function()
-        savedShd = Lighting.GlobalShadows
-        savedQ = settings().Rendering.QualityLevel
-        Lighting.GlobalShadows = false
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    end)
-    _potatoToken += 1
-    local myToken = _potatoToken
-    task.spawn(function()
-        local all = Workspace:GetDescendants()
-        local CHUNK = 60  -- обробляємо по 60 об'єктів за раз
-        for i = 1, #all, CHUNK do
-            if _potatoToken ~= myToken then return end  -- скасовано
-            for j = i, math.min(i + CHUNK - 1, #all) do
-                local v = all[j]
-                pcall(function()
-                    if v:IsA("BasePart") then
-                        v.CastShadow = false; v.Reflectance = 0
-                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-                        v.Enabled = false
-                    elseif v:IsA("SpecialMesh") or v:IsA("SurfaceAppearance") then
-                        -- нічого, залишаємо
-                    end
-                end)
+local function _chunkedApply(token, list, fn)
+    -- Обробляє list по POTATO_CHUNK за раз, перевіряє токен між чанками
+    return task.spawn(function()
+        for i = 1, #list, POTATO_CHUNK do
+            if _potatoToken ~= token then return end
+            for j = i, math.min(i + POTATO_CHUNK - 1, #list) do
+                pcall(fn, list[j])
             end
-            task.wait()  -- даємо один кадр подихати між chunk-ами
+            task.wait()
         end
     end)
 end
 
+local function DoPotato()
+    _potatoToken += 1
+    local tok = _potatoToken
+    _potatoOrig = {}   -- скидаємо старі збережені значення
+
+    -- Стадія 1 (миттєво): якість рендеру і туман
+    pcall(function()
+        savedShd = Lighting.GlobalShadows
+        savedQ   = settings().Rendering.QualityLevel
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 500
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    end)
+
+    local all = Workspace:GetDescendants()
+
+    -- Стадія 2: вимикаємо particles/trails/beams/sounds першими (найбільший вплив)
+    local effects, parts = {}, {}
+    for _, v in ipairs(all) do
+        if v:IsA("ParticleEmitter") or v:IsA("Trail")
+            or v:IsA("Beam") or v:IsA("BillboardGui")
+            or v:IsA("SurfaceGui") or v:IsA("PointLight")
+            or v:IsA("SpotLight") or v:IsA("SelectionBox") then
+            table.insert(effects, v)
+        elseif v:IsA("BasePart") then
+            table.insert(parts, v)
+        end
+    end
+
+    _chunkedApply(tok, effects, function(v)
+        -- Зберігаємо оригінал
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+            _potatoOrig[v] = { enabled = v.Enabled }
+            v.Enabled = false
+        elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
+            _potatoOrig[v] = { enabled = v.Enabled }
+            v.Enabled = false
+        elseif v:IsA("PointLight") or v:IsA("SpotLight") then
+            _potatoOrig[v] = { enabled = v.Enabled }
+            v.Enabled = false
+        elseif v:IsA("SelectionBox") then
+            _potatoOrig[v] = { visible = v.LineThickness }
+            v.LineThickness = 0
+        end
+    end)
+
+    -- Стадія 3: прибираємо тіні і reflectance з деталей (після effects)
+    task.spawn(function()
+        task.wait(0.3)  -- чекаємо поки effects закінчать
+        _chunkedApply(tok, parts, function(v)
+            _potatoOrig[v] = {
+                castShadow  = v.CastShadow,
+                reflectance = v.Reflectance,
+            }
+            v.CastShadow  = false
+            v.Reflectance = 0
+        end)
+    end)
+end
+
 local function UndoPotato()
-    _potatoToken += 1  -- скасовує DoPotato якщо ще йде
+    _potatoToken += 1
+    local tok = _potatoToken
+
+    -- Стадія 1 (миттєво): відновлюємо якість рендеру
     pcall(function()
         Lighting.GlobalShadows = savedShd
+        Lighting.FogEnd = 100000
         settings().Rendering.QualityLevel = savedQ
     end)
-    local myToken = _potatoToken
-    task.spawn(function()
-        local all = Workspace:GetDescendants()
-        local CHUNK = 60
-        for i = 1, #all, CHUNK do
-            if _potatoToken ~= myToken then return end
-            for j = i, math.min(i + CHUNK - 1, #all) do
-                local v = all[j]
-                pcall(function()
-                    if v:IsA("BasePart") then v.CastShadow = true
-                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-                        v.Enabled = true
-                    end
-                end)
-            end
-            task.wait()
+
+    -- Збираємо збережені об'єкти в список для chunk-обробки
+    local saved = {}
+    for inst, orig in pairs(_potatoOrig) do
+        table.insert(saved, { inst = inst, orig = orig })
+    end
+    _potatoOrig = {}
+
+    -- Стадія 2: спочатку відновлюємо деталі (тіні), потім ефекти
+    local parts, effects = {}, {}
+    for _, e in ipairs(saved) do
+        if e.inst:IsA("BasePart") then
+            table.insert(parts, e)
+        else
+            table.insert(effects, e)
         end
+    end
+
+    _chunkedApply(tok, parts, function(e)
+        local v, o = e.inst, e.orig
+        if v and v.Parent then
+            if o.castShadow  ~= nil then v.CastShadow  = o.castShadow  end
+            if o.reflectance ~= nil then v.Reflectance = o.reflectance end
+        end
+    end)
+
+    task.spawn(function()
+        task.wait(0.3)
+        _chunkedApply(tok, effects, function(e)
+            local v, o = e.inst, e.orig
+            if v and v.Parent then
+                if o.enabled  ~= nil then v.Enabled       = o.enabled  end
+                if o.visible  ~= nil then v.LineThickness = o.visible  end
+            end
+        end)
     end)
 end
 
