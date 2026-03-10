@@ -188,7 +188,6 @@ pcall(function()
     end
 end)
 
--- Noclip: унікальна група колізій щоб персонаж не чіплявся ні за що
 local SafeGroup = "OmniNC_" .. math.random(1000, 9999)
 pcall(function()
     if PhysicsService.RegisterCollisionGroup then
@@ -198,7 +197,6 @@ pcall(function()
     end
     pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
     pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
-    -- Намагаємось також відключити зіткнення з усіма іншими групами що є в грі
     pcall(function()
         for _, groupName in ipairs(PhysicsService:GetRegisteredCollisionGroups()) do
             local name = groupName.name or groupName
@@ -263,8 +261,8 @@ local Config = {
     SafeSpeedMode     = false,
     SafeSpeedMult     = 1.8,
     AntiVoidHeight    = -180,
-    ESPMaxDist        = 1000,   -- радіус ESP (studs)
-    AimPredictMult    = 1.0,    -- множник предікту авто-аіму
+    ESPMaxDist        = 1000,
+    AimPredictMult    = 1.0,
     FullBright        = false,
 }
 
@@ -580,12 +578,10 @@ local function GetBestAimTarget()
 end
 
 -- ============================================================
--- ESP SYSTEM — ЧИСТИЙ ТЕКСТ, БЕЗ КВАДРАТІВ, БЕЗ HIGHLIGHT
--- Показує ВСІХ гравців (не тільки видимих)
--- Оновлення через RunService а не через task.wait щоб не лагало
+-- ESP SYSTEM
 -- ============================================================
 local ESPCache = {}
-local ESP_UPDATE_INTERVAL = 0.1  -- оновлення кожні 0.1 сек, не кожен кадр
+local ESP_UPDATE_INTERVAL = 0.1
 local _espLastUpdate = 0
 
 local function ClearESP()
@@ -599,165 +595,83 @@ local function UpdateESP()
     local now = tick()
     if now - _espLastUpdate < ESP_UPDATE_INTERVAL then return end
     _espLastUpdate = now
-
     if not State.ESP then return end
-
     local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-
     for _, p in pairs(Players:GetPlayers()) do
         if p == LP then continue end
-
         local char = p.Character
         local head = char and FindHead(char)
         local hum  = char and char:FindFirstChildOfClass("Humanoid")
-
-        -- Якщо гравець мертвий або немає персонажа — прибираємо ESP
         if not char or not head or not hum or hum.Health <= 0 then
             if ESPCache[p] then
                 pcall(function()
-                    if ESPCache[p].bb and ESPCache[p].bb.Parent then
-                        ESPCache[p].bb:Destroy()
-                    end
+                    if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end
                 end)
                 ESPCache[p] = nil
             end
             continue
         end
-
-        -- Створюємо BillboardGui якщо ще немає або знищено
         local ca = ESPCache[p]
         if not ca or not ca.bb or not ca.bb.Parent then
-            -- Чистимо старе
-            if ca then
-                pcall(function()
-                    if ca.bb and ca.bb.Parent then ca.bb:Destroy() end
-                end)
-            end
-
-            -- BillboardGui прямо на голову
+            if ca then pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end) end
             local bb = Instance.new("BillboardGui")
-            bb.Name = "OmniESP"
-            bb.Size = UDim2.new(0, 120, 0, 44)
-            bb.StudsOffset = Vector3.new(0, 2.8, 0)
-            bb.AlwaysOnTop = true
-            bb.MaxDistance = Config.ESPMaxDist
-            bb.LightInfluence = 0
-            bb.ResetOnSpawn = false
-            bb.Parent = head
-
-            -- Нік
+            bb.Name = "OmniESP"; bb.Size = UDim2.new(0, 120, 0, 44)
+            bb.StudsOffset = Vector3.new(0, 2.8, 0); bb.AlwaysOnTop = true
+            bb.MaxDistance = Config.ESPMaxDist; bb.LightInfluence = 0
+            bb.ResetOnSpawn = false; bb.Parent = head
             local nameLbl = Instance.new("TextLabel", bb)
-            nameLbl.Name = "NameLbl"
-            nameLbl.Size = UDim2.new(1, 0, 0, 18)
-            nameLbl.Position = UDim2.new(0, 0, 0, 0)
-            nameLbl.BackgroundTransparency = 1
-            nameLbl.Text = p.Name
-            nameLbl.Font = Enum.Font.GothamBold
-            nameLbl.TextSize = 13
-            nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-            nameLbl.TextStrokeTransparency = 0.3
-            nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            nameLbl.TextScaled = false
-
-            -- HP + дистанція
+            nameLbl.Name = "NameLbl"; nameLbl.Size = UDim2.new(1, 0, 0, 18)
+            nameLbl.Position = UDim2.new(0, 0, 0, 0); nameLbl.BackgroundTransparency = 1
+            nameLbl.Text = p.Name; nameLbl.Font = Enum.Font.GothamBold; nameLbl.TextSize = 13
+            nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255); nameLbl.TextStrokeTransparency = 0.3
+            nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); nameLbl.TextScaled = false
             local infoLbl = Instance.new("TextLabel", bb)
-            infoLbl.Name = "InfoLbl"
-            infoLbl.Size = UDim2.new(1, 0, 0, 14)
-            infoLbl.Position = UDim2.new(0, 0, 0, 20)
-            infoLbl.BackgroundTransparency = 1
-            infoLbl.Text = "HP: ? | ?m"
-            infoLbl.Font = Enum.Font.Gotham
-            infoLbl.TextSize = 11
-            infoLbl.TextColor3 = Color3.fromRGB(130, 255, 170)
-            infoLbl.TextStrokeTransparency = 0.3
-            infoLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            infoLbl.TextScaled = false
-
-            -- HP бар (тонка лінія під текстом)
+            infoLbl.Name = "InfoLbl"; infoLbl.Size = UDim2.new(1, 0, 0, 14)
+            infoLbl.Position = UDim2.new(0, 0, 0, 20); infoLbl.BackgroundTransparency = 1
+            infoLbl.Text = "HP: ? | ?m"; infoLbl.Font = Enum.Font.Gotham; infoLbl.TextSize = 11
+            infoLbl.TextColor3 = Color3.fromRGB(130, 255, 170); infoLbl.TextStrokeTransparency = 0.3
+            infoLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); infoLbl.TextScaled = false
             local barBg = Instance.new("Frame", bb)
-            barBg.Name = "BarBg"
-            barBg.Size = UDim2.new(1, 0, 0, 3)
-            barBg.Position = UDim2.new(0, 0, 0, 36)
-            barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            barBg.BorderSizePixel = 0
-            Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
-
+            barBg.Name = "BarBg"; barBg.Size = UDim2.new(1, 0, 0, 3)
+            barBg.Position = UDim2.new(0, 0, 0, 36); barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            barBg.BorderSizePixel = 0; Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
             local barFill = Instance.new("Frame", barBg)
-            barFill.Name = "BarFill"
-            barFill.Size = UDim2.new(1, 0, 1, 0)
-            barFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100)
-            barFill.BorderSizePixel = 0
+            barFill.Name = "BarFill"; barFill.Size = UDim2.new(1, 0, 1, 0)
+            barFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100); barFill.BorderSizePixel = 0
             Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
-
-            ESPCache[p] = {
-                bb      = bb,
-                nameLbl = nameLbl,
-                infoLbl = infoLbl,
-                barFill = barFill,
-            }
+            ESPCache[p] = { bb = bb, nameLbl = nameLbl, infoLbl = infoLbl, barFill = barFill }
             ca = ESPCache[p]
         end
-
-        -- Оновлюємо дальність зі слайдера (динамічно)
         ca.bb.MaxDistance = Config.ESPMaxDist
-
-        -- Оновлення даних (HP може бути будь-яким: 100, 500, 1000...)
         local hp  = math.max(0, math.floor(hum.Health))
         local mxh = math.max(1, math.floor(hum.MaxHealth))
         local ds  = myHRP and math.floor((myHRP.Position - head.Position).Magnitude) or 0
-        -- ratio відносно maxHP — правильно показує навіть якщо HP > 100
         local ratio = hp / mxh
-
-        -- Колір ніку залежно від дистанції
         local nameColor
-        if ds <= 30 then
-            nameColor = Color3.fromRGB(255, 100, 100) -- близько — червоний
-        elseif ds <= 80 then
-            nameColor = Color3.fromRGB(255, 220, 50)  -- середньо — жовтий
-        else
-            nameColor = Color3.fromRGB(255, 255, 255) -- далеко — білий
-        end
-        ca.nameLbl.TextColor3 = nameColor
-        ca.nameLbl.Text = p.Name
-
-        -- HP колір (на основі ratio — 50/500 = червоний, 400/500 = зелений)
-        local hpColor = ratio >= 0.6
-            and Color3.fromRGB(80, 255, 120)
-            or ratio >= 0.3
-                and Color3.fromRGB(255, 220, 40)
-                or Color3.fromRGB(255, 60, 60)
-
+        if ds <= 30 then nameColor = Color3.fromRGB(255, 100, 100)
+        elseif ds <= 80 then nameColor = Color3.fromRGB(255, 220, 50)
+        else nameColor = Color3.fromRGB(255, 255, 255) end
+        ca.nameLbl.TextColor3 = nameColor; ca.nameLbl.Text = p.Name
+        local hpColor = ratio >= 0.6 and Color3.fromRGB(80, 255, 120)
+            or ratio >= 0.3 and Color3.fromRGB(255, 220, 40) or Color3.fromRGB(255, 60, 60)
         ca.infoLbl.TextColor3 = hpColor
-        -- Показуємо точне значення HP навіть якщо > 100
         ca.infoLbl.Text = "HP: " .. hp .. "/" .. mxh .. " | " .. ds .. "m"
-
-        -- HP бар
         ca.barFill.Size = UDim2.new(math.clamp(ratio, 0, 1), 0, 1, 0)
         ca.barFill.BackgroundColor3 = hpColor
     end
 end
 
--- Чистимо ESP коли гравець виходить
 Players.PlayerRemoving:Connect(function(p)
     if ESPCache[p] then
-        pcall(function()
-            if ESPCache[p].bb and ESPCache[p].bb.Parent then
-                ESPCache[p].bb:Destroy()
-            end
-        end)
+        pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end)
         ESPCache[p] = nil
     end
 end)
 
--- ESP: очищаємо кеш при рееспауні щоб BillboardGui підхопився на нову голову
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
         if ESPCache[p] then
-            pcall(function()
-                if ESPCache[p].bb and ESPCache[p].bb.Parent then
-                    ESPCache[p].bb:Destroy()
-                end
-            end)
+            pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end)
             ESPCache[p] = nil
         end
     end)
@@ -766,11 +680,7 @@ for _, p in pairs(Players:GetPlayers()) do
     if p ~= LP then
         p.CharacterAdded:Connect(function()
             if ESPCache[p] then
-                pcall(function()
-                    if ESPCache[p].bb and ESPCache[p].bb.Parent then
-                        ESPCache[p].bb:Destroy()
-                    end
-                end)
+                pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end)
                 ESPCache[p] = nil
             end
         end)
@@ -785,25 +695,19 @@ local hbParts = {}
 local function ApplyHB(part)
     if not part or not part:IsA("BasePart") then return end
     if not hbParts[part] then
-        hbParts[part] = {
-            S = part.Size, T = part.Transparency,
-            C = part.CanCollide, M = part.Massless,
-        }
+        hbParts[part] = { S = part.Size, T = part.Transparency, C = part.CanCollide, M = part.Massless }
     end
     local s = Config.HitboxSize
     if Config.HitboxRandomize then s = s + (math.random() * 0.4 - 0.2) end
-    part.Size = Vector3.new(s, s, s)
-    part.Transparency = 0.7
-    part.CanCollide = false
-    part.Massless = true
+    part.Size = Vector3.new(s, s, s); part.Transparency = 0.7
+    part.CanCollide = false; part.Massless = true
 end
 
 local function RestoreHB()
     for p, o in pairs(hbParts) do
         pcall(function()
             if p and p.Parent then
-                p.Size = o.S; p.Transparency = o.T
-                p.CanCollide = o.C; p.Massless = o.M
+                p.Size = o.S; p.Transparency = o.T; p.CanCollide = o.C; p.Massless = o.M
             end
         end)
     end
@@ -819,8 +723,7 @@ task.spawn(function()
             for _, v in pairs(p.Character:GetDescendants()) do
                 if v:IsA("BasePart")
                     and not (v.Parent and (v.Parent:IsA("Accessory") or v.Parent:IsA("Hat")))
-                    and v.Size.Magnitude > 0.3
-                    and v.Size.X < s - 0.2 then
+                    and v.Size.Magnitude > 0.3 and v.Size.X < s - 0.2 then
                     pcall(ApplyHB, v)
                 end
             end
@@ -836,23 +739,17 @@ end)
 local savedShd, savedQ = true, Enum.QualityLevel.Automatic
 
 -- ================================================================
--- FPS BOOST — ПОСТУПОВЕ ВМИКАННЯ/ВИМИКАННЯ
--- Зберігає оригінальні значення і відновлює їх точно
--- Обробка по 40 об'єктів за кадр — без фризів
--- Стадії вмикання: спочатку ефекти/частинки, потім тіні на деталях
+-- FPS BOOST (POTATO MODE)
 -- ================================================================
 local _potatoToken  = 0
-local _potatoOrig   = {}   -- { [instance] = { castShadow, reflectance, enabled } }
-local POTATO_CHUNK  = 40   -- об'єктів за один task.wait()
+local _potatoOrig   = {}
+local POTATO_CHUNK  = 40
 
 local function _chunkedApply(token, list, fn)
-    -- Обробляє list по POTATO_CHUNK за раз, перевіряє токен між чанками
     return task.spawn(function()
         for i = 1, #list, POTATO_CHUNK do
             if _potatoToken ~= token then return end
-            for j = i, math.min(i + POTATO_CHUNK - 1, #list) do
-                pcall(fn, list[j])
-            end
+            for j = i, math.min(i + POTATO_CHUNK - 1, #list) do pcall(fn, list[j]) end
             task.wait()
         end
     end)
@@ -861,59 +758,35 @@ end
 local function DoPotato()
     _potatoToken += 1
     local tok = _potatoToken
-    _potatoOrig = {}   -- скидаємо старі збережені значення
-
-    -- Стадія 1 (миттєво): якість рендеру і туман
+    _potatoOrig = {}
     pcall(function()
-        savedShd = Lighting.GlobalShadows
-        savedQ   = settings().Rendering.QualityLevel
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 500
+        savedShd = Lighting.GlobalShadows; savedQ = settings().Rendering.QualityLevel
+        Lighting.GlobalShadows = false; Lighting.FogEnd = 500
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
     end)
-
     local all = Workspace:GetDescendants()
-
-    -- Стадія 2: вимикаємо particles/trails/beams/sounds першими (найбільший вплив)
     local effects, parts = {}, {}
     for _, v in ipairs(all) do
-        if v:IsA("ParticleEmitter") or v:IsA("Trail")
-            or v:IsA("Beam") or v:IsA("BillboardGui")
-            or v:IsA("SurfaceGui") or v:IsA("PointLight")
-            or v:IsA("SpotLight") or v:IsA("SelectionBox") then
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam")
+            or v:IsA("BillboardGui") or v:IsA("SurfaceGui")
+            or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SelectionBox") then
             table.insert(effects, v)
-        elseif v:IsA("BasePart") then
-            table.insert(parts, v)
-        end
+        elseif v:IsA("BasePart") then table.insert(parts, v) end
     end
-
     _chunkedApply(tok, effects, function(v)
-        -- Зберігаємо оригінал
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-            _potatoOrig[v] = { enabled = v.Enabled }
-            v.Enabled = false
-        elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
-            _potatoOrig[v] = { enabled = v.Enabled }
-            v.Enabled = false
-        elseif v:IsA("PointLight") or v:IsA("SpotLight") then
-            _potatoOrig[v] = { enabled = v.Enabled }
-            v.Enabled = false
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam")
+            or v:IsA("BillboardGui") or v:IsA("SurfaceGui")
+            or v:IsA("PointLight") or v:IsA("SpotLight") then
+            _potatoOrig[v] = { enabled = v.Enabled }; v.Enabled = false
         elseif v:IsA("SelectionBox") then
-            _potatoOrig[v] = { visible = v.LineThickness }
-            v.LineThickness = 0
+            _potatoOrig[v] = { visible = v.LineThickness }; v.LineThickness = 0
         end
     end)
-
-    -- Стадія 3: прибираємо тіні і reflectance з деталей (після effects)
     task.spawn(function()
-        task.wait(0.3)  -- чекаємо поки effects закінчать
+        task.wait(0.3)
         _chunkedApply(tok, parts, function(v)
-            _potatoOrig[v] = {
-                castShadow  = v.CastShadow,
-                reflectance = v.Reflectance,
-            }
-            v.CastShadow  = false
-            v.Reflectance = 0
+            _potatoOrig[v] = { castShadow = v.CastShadow, reflectance = v.Reflectance }
+            v.CastShadow = false; v.Reflectance = 0
         end)
     end)
 end
@@ -921,31 +794,17 @@ end
 local function UndoPotato()
     _potatoToken += 1
     local tok = _potatoToken
-
-    -- Стадія 1 (миттєво): відновлюємо якість рендеру
     pcall(function()
-        Lighting.GlobalShadows = savedShd
-        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = savedShd; Lighting.FogEnd = 100000
         settings().Rendering.QualityLevel = savedQ
     end)
-
-    -- Збираємо збережені об'єкти в список для chunk-обробки
     local saved = {}
-    for inst, orig in pairs(_potatoOrig) do
-        table.insert(saved, { inst = inst, orig = orig })
-    end
+    for inst, orig in pairs(_potatoOrig) do table.insert(saved, { inst = inst, orig = orig }) end
     _potatoOrig = {}
-
-    -- Стадія 2: спочатку відновлюємо деталі (тіні), потім ефекти
     local parts, effects = {}, {}
     for _, e in ipairs(saved) do
-        if e.inst:IsA("BasePart") then
-            table.insert(parts, e)
-        else
-            table.insert(effects, e)
-        end
+        if e.inst:IsA("BasePart") then table.insert(parts, e) else table.insert(effects, e) end
     end
-
     _chunkedApply(tok, parts, function(e)
         local v, o = e.inst, e.orig
         if v and v.Parent then
@@ -953,25 +812,20 @@ local function UndoPotato()
             if o.reflectance ~= nil then v.Reflectance = o.reflectance end
         end
     end)
-
     task.spawn(function()
         task.wait(0.3)
         _chunkedApply(tok, effects, function(e)
             local v, o = e.inst, e.orig
             if v and v.Parent then
-                if o.enabled  ~= nil then v.Enabled       = o.enabled  end
-                if o.visible  ~= nil then v.LineThickness = o.visible  end
+                if o.enabled ~= nil then v.Enabled       = o.enabled  end
+                if o.visible ~= nil then v.LineThickness = o.visible  end
             end
         end)
     end)
 end
 
 -- ============================================================
--- NOCLIP — ПОВНІСТЮ ПЕРЕПИСАНИЙ
--- Метод 1: CollisionGroup (основний)
--- Метод 2: CanCollide = false на кожному кроці (fallback)
--- Метод 3: Обхід застрягань через рейкаст
--- Оновлюємо групу колізій для НОВИХ частин що з'являються (деякі ігри спавнять нові BasePart)
+-- NOCLIP — UNIVERSAL
 -- ============================================================
 local ncOrigCanCollide = {}
 local ncStuck = 0
@@ -979,16 +833,13 @@ local lastNcPos = Vector3.zero
 local ncRay = RaycastParams.new()
 ncRay.FilterType = Enum.RaycastFilterType.Exclude
 
--- Перевіряємо чи підтримується CollisionGroup
 local _ncGroupWorks = false
 task.spawn(function()
     task.wait(1)
     pcall(function()
         local testPart = Instance.new("Part")
-        testPart.CollisionGroup = SafeGroup
-        testPart.Parent = Workspace
-        _ncGroupWorks = (testPart.CollisionGroup == SafeGroup)
-        testPart:Destroy()
+        testPart.CollisionGroup = SafeGroup; testPart.Parent = Workspace
+        _ncGroupWorks = (testPart.CollisionGroup == SafeGroup); testPart:Destroy()
     end)
 end)
 
@@ -997,20 +848,12 @@ local function NoclipApply(char)
     for _, v in pairs(char:GetDescendants()) do
         if v:IsA("BasePart") then
             pcall(function()
-                -- Зберігаємо оригінал
-                if ncOrigCanCollide[v] == nil then
-                    ncOrigCanCollide[v] = v.CanCollide
-                end
-                -- Метод 1: CollisionGroup
-                if _ncGroupWorks then
-                    v.CollisionGroup = SafeGroup
-                end
-                -- Метод 2: CanCollide = false (завжди, як backup)
+                if ncOrigCanCollide[v] == nil then ncOrigCanCollide[v] = v.CanCollide end
+                if _ncGroupWorks then v.CollisionGroup = SafeGroup end
                 v.CanCollide = false
             end)
         end
     end
-    -- Також ставимо на HumanoidRootPart явно
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp then
         pcall(function()
@@ -1025,62 +868,43 @@ local function ForceRestore()
     if not C then return end
     local H = C:FindFirstChildOfClass("Humanoid")
     local R = C:FindFirstChild("HumanoidRootPart")
-
     if H then
         pcall(function()
             H.PlatformStand = false
             if not State.Speed then H.WalkSpeed = gameBaseSpeed end
-            if not State.HighJump then
-                H.UseJumpPower = true; H.JumpPower = 50
-            end
+            if not State.HighJump then H.UseJumpPower = true; H.JumpPower = 50 end
         end)
     end
-
     if R then
         pcall(function() R.Anchored = false end)
-        for _, v in pairs(R:GetChildren()) do
-            if v:IsA("BodyMover") then SafeDel(v) end
-        end
+        for _, v in pairs(R:GetChildren()) do if v:IsA("BodyMover") then SafeDel(v) end end
     end
-
-    -- Відновлюємо колізії
     for v, orig in pairs(ncOrigCanCollide) do
         pcall(function()
-            if v and v.Parent then
-                v.CollisionGroup = "Default"
-                v.CanCollide = orig
-            end
+            if v and v.Parent then v.CollisionGroup = "Default"; v.CanCollide = orig end
         end)
     end
     ncOrigCanCollide = {}
-
     if R then
         task.spawn(function()
             task.wait(0.05)
             pcall(function()
                 if R and R.Parent then
                     local vel = R.AssemblyLinearVelocity
-                    -- Скидаємо горизонтальну швидкість яку нокліп міг накопичити
                     local hSpd = Vector2.new(vel.X, vel.Z).Magnitude
                     if hSpd > 30 then
-                        -- Різо гасимо щоб не летіти після вимкнення
-                        R.AssemblyLinearVelocity = Vector3.new(
-                            vel.X * 0.05, vel.Y, vel.Z * 0.05
-                        )
+                        R.AssemblyLinearVelocity = Vector3.new(vel.X * 0.05, vel.Y, vel.Z * 0.05)
                     end
                     if math.abs(vel.Y) < 1 then
                         R.CFrame = R.CFrame + Vector3.new(0, 2.5, 0)
                         R.AssemblyLinearVelocity = Vector3.new(
-                            R.AssemblyLinearVelocity.X, -1, R.AssemblyLinearVelocity.Z
-                        )
+                            R.AssemblyLinearVelocity.X, -1, R.AssemblyLinearVelocity.Z)
                     end
                 end
             end)
         end)
     end
-
-    ncStuck = 0
-    lastNcPos = Vector3.zero
+    ncStuck = 0; lastNcPos = Vector3.zero
 end
 
 local _fakeLagToken = 0
@@ -1116,20 +940,16 @@ local function UpdVis(nm)
 end
 
 local function RestoreMouse()
-    -- Повний скид mouse lock / shift-lock щоб не залипала
     task.spawn(function()
         task.wait(0.05)
         pcall(function()
-            -- Скидаємо shift-lock якщо є
             local ok, pm = pcall(function()
                 return require(LP.PlayerScripts:WaitForChild("PlayerModule", 3))
             end)
             if ok and pm then
                 pcall(function()
                     local controls = pm:GetControls()
-                    if controls and controls.updateMouseBehavior then
-                        controls:updateMouseBehavior()
-                    end
+                    if controls and controls.updateMouseBehavior then controls:updateMouseBehavior() end
                 end)
                 pcall(function()
                     local camera = pm:GetCameras()
@@ -1140,26 +960,15 @@ local function RestoreMouse()
             end
         end)
         task.wait(0.05)
-        pcall(function()
-            -- Явно відпускаємо мишку
-            UIS.MouseBehavior    = Enum.MouseBehavior.Default
-            UIS.MouseIconEnabled = true
-        end)
+        pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default; UIS.MouseIconEnabled = true end)
         task.wait(0.05)
         pcall(function()
-            local C = LP.Character
-            local H = C and C:FindFirstChildOfClass("Humanoid")
+            local C = LP.Character; local H = C and C:FindFirstChildOfClass("Humanoid")
             Camera.CameraType = Enum.CameraType.Custom
-            if H then
-                Camera.CameraSubject = H
-            end
+            if H then Camera.CameraSubject = H end
         end)
-        -- Повторюємо через 0.3 сек на випадок якщо Roblox перехопив
         task.wait(0.3)
-        pcall(function()
-            UIS.MouseBehavior    = Enum.MouseBehavior.Default
-            UIS.MouseIconEnabled = true
-        end)
+        pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default; UIS.MouseIconEnabled = true end)
     end)
 end
 
@@ -1190,14 +999,11 @@ local function Toggle(nm)
         return
     end
     if nm == "FullBright" then
-        Config.FullBright = not Config.FullBright
-        State.FullBright = Config.FullBright
+        Config.FullBright = not Config.FullBright; State.FullBright = Config.FullBright
         UpdVis(nm)
         if Config.FullBright then
             pcall(function()
-                Lighting.Brightness = 2
-                Lighting.ClockTime = 14
-                Lighting.FogEnd = 100000
+                Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000
                 Lighting.GlobalShadows = false
                 Lighting.Ambient = Color3.fromRGB(178, 178, 178)
                 Lighting.OutdoorAmbient = Color3.fromRGB(178, 178, 178)
@@ -1205,9 +1011,7 @@ local function Toggle(nm)
             Notify("FullBright", "ON ✓", 1)
         else
             pcall(function()
-                Lighting.Brightness = 1
-                Lighting.ClockTime = 14
-                Lighting.FogEnd = 100000
+                Lighting.Brightness = 1; Lighting.ClockTime = 14; Lighting.FogEnd = 100000
                 Lighting.GlobalShadows = true
                 Lighting.Ambient = Color3.fromRGB(70, 70, 70)
                 Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
@@ -1272,8 +1076,7 @@ local function Toggle(nm)
             pcall(function() H.WalkSpeed = GetSafeSpeed() end)
         elseif nm == "HighJump" and H then
             pcall(function()
-                H.UseJumpPower = true
-                H.JumpPower = Config.JumpPower
+                H.UseJumpPower = true; H.JumpPower = Config.JumpPower
                 H.JumpHeight = Config.JumpPower * 0.35
             end)
         elseif nm == "Spin" and R then
@@ -1283,11 +1086,16 @@ local function Toggle(nm)
             av.Name = "OmniSpin"; av.Attachment0 = att
             av.MaxTorque = math.huge; av.AngularVelocity = Vector3.new(0, 22, 0)
         elseif nm == "Freecam" then
-            Camera.CameraSubject = nil
-            Camera.CameraType = Enum.CameraType.Scriptable
-            local x, y = Camera.CFrame:ToEulerAnglesYXZ()
-            FC_P = x; FC_Y = y
+            Camera.CameraSubject = nil; Camera.CameraType = Enum.CameraType.Scriptable
+            local x, y = Camera.CFrame:ToEulerAnglesYXZ(); FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
+
+        -- ══════════════════════════════════════════════════════════
+        -- FAKE LAG — ВИПРАВЛЕНА ВЕРСІЯ
+        -- Лагає під час будь-якого руху (включно з повітрям/стрибком)
+        -- Зберігає та відновлює вектор швидкості після фризу,
+        -- щоб персонаж не "падав каменем" а продовжував траєкторію
+        -- ══════════════════════════════════════════════════════════
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
             local myToken = _fakeLagToken
@@ -1296,21 +1104,27 @@ local function Toggle(nm)
                     local cr = LP.Character
                     local rp = cr and cr:FindFirstChild("HumanoidRootPart")
                     local hm = cr and cr:FindFirstChildOfClass("Humanoid")
-                    local inAir = false
-                    if hm then
-                        local st = hm:GetState()
-                        inAir = (hm.FloorMaterial == Enum.Material.Air)
-                            or st == Enum.HumanoidStateType.Jumping
-                            or st == Enum.HumanoidStateType.Freefall
-                    end
-                    local isJumping = UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp
+
+                    -- Лагає завжди під час руху, навіть у повітрі/стрибку
                     if rp and hm and hm.MoveDirection.Magnitude > 0
-                        and not inAir and not isJumping
                         and not State.Fly and not State.Freecam then
+                        -- Зберігаємо вектор швидкості — після фризу персонаж
+                        -- продовжить рух по тій самій траєкторії (не падатиме каменем)
+                        local savedVel = rp.AssemblyLinearVelocity
+
                         pcall(function() rp.Anchored = true end)
-                        task.wait(math.random(35, 80) / 1000)
-                        pcall(function() rp.Anchored = false end)
-                        task.wait(math.random(90, 200) / 1000)
+
+                        -- Час "зависання" (імітація втрати пакетів: 40-120 мс)
+                        task.wait(math.random(40, 120) / 1000)
+
+                        pcall(function()
+                            rp.Anchored = false
+                            -- Відновлюємо інерцію одразу після розморозки
+                            rp.AssemblyLinearVelocity = savedVel
+                        end)
+
+                        -- Інтервал нормальної роботи між лагами (100-250 мс)
+                        task.wait(math.random(100, 250) / 1000)
                     else
                         if rp then pcall(function() rp.Anchored = false end) end
                         task.wait(0.1)
@@ -1320,8 +1134,8 @@ local function Toggle(nm)
                 local rp = cr and cr:FindFirstChild("HumanoidRootPart")
                 if rp then pcall(function() rp.Anchored = false end) end
             end)
+
         elseif nm == "Noclip" then
-            -- Ініціалізація noclip
             ncStuck = 0; lastNcPos = Vector3.zero; ncOrigCanCollide = {}
             if C then NoclipApply(C) end
         elseif nm == "Aim" then
@@ -1339,11 +1153,8 @@ local _hjFired = false
 local function SetupHJDetector()
     if _hjConn then _hjConn:Disconnect(); _hjConn = nil end
     _hjFired = false
-    local C = LP.Character
-    if not C then return end
-    local H = C:FindFirstChildOfClass("Humanoid")
-    if not H then return end
-
+    local C = LP.Character; if not C then return end
+    local H = C:FindFirstChildOfClass("Humanoid"); if not H then return end
     _hjConn = H.StateChanged:Connect(function(_, newState)
         if newState == Enum.HumanoidStateType.Landed
             or newState == Enum.HumanoidStateType.Running
@@ -1357,9 +1168,7 @@ local function SetupHJDetector()
         local R2 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
         if R2 then
             local v = R2.AssemblyLinearVelocity
-            if v.Y >= 0 then
-                R2.AssemblyLinearVelocity = Vector3.new(v.X, Config.JumpPower, v.Z)
-            end
+            if v.Y >= 0 then R2.AssemblyLinearVelocity = Vector3.new(v.X, Config.JumpPower, v.Z) end
         end
         task.delay(0.03, function()
             if not State.HighJump then return end
@@ -1379,23 +1188,19 @@ task.spawn(SetupHJDetector)
 local _afkFlip = false
 local function DoAntiAFK()
     pcall(function()
-        VirtualUser:CaptureController()
-        _afkFlip = not _afkFlip
+        VirtualUser:CaptureController(); _afkFlip = not _afkFlip
         VirtualUser:MoveMouse(_afkFlip and Vector2.new(1, 0) or Vector2.new(-1, 0))
     end)
 end
 LP.Idled:Connect(function() if State.AntiAFK then DoAntiAFK() end end)
 task.spawn(function()
-    while task.wait(48 + math.random() * 14) do
-        if State.AntiAFK then DoAntiAFK() end
-    end
+    while task.wait(48 + math.random() * 14) do if State.AntiAFK then DoAntiAFK() end end
 end)
 
 local _lastSafePos = nil
 task.spawn(function()
     while task.wait(0.5) do
-        local C = LP.Character
-        local R = C and C:FindFirstChild("HumanoidRootPart")
+        local C = LP.Character; local R = C and C:FindFirstChild("HumanoidRootPart")
         local H = C and C:FindFirstChildOfClass("Humanoid")
         if R and H and H.Health > 0 then
             if H.FloorMaterial ~= Enum.Material.Air then _lastSafePos = R.CFrame end
@@ -1417,16 +1222,13 @@ LP.CharacterAdded:Connect(function(char)
     MobUp = false; MobDn = false; ncStuck = 0
     aimTarget = nil; aimLocked = false; aimLostFrames = 0
     ncOrigCanCollide = {}; _lastSafePos = nil
-
     for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag"}) do
         if State[n] then State[n] = false; UpdVis(n) end
     end
     _fakeLagToken += 1
-
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum then
-        Camera.CameraType = Enum.CameraType.Custom
-        Camera.CameraSubject = hum
+        Camera.CameraType = Enum.CameraType.Custom; Camera.CameraSubject = hum
         task.spawn(function()
             task.wait(1.2)
             pcall(function()
@@ -1440,8 +1242,7 @@ LP.CharacterAdded:Connect(function(char)
         if State.Speed then pcall(function() hum.WalkSpeed = GetSafeSpeed() end) end
         if State.HighJump then
             pcall(function()
-                hum.UseJumpPower = true
-                hum.JumpPower = Config.JumpPower
+                hum.UseJumpPower = true; hum.JumpPower = Config.JumpPower
                 hum.JumpHeight = Config.JumpPower * 0.35
             end)
         end
@@ -1455,10 +1256,8 @@ local function SetupSilentAimHook()
     if silentAimHooked then return end
     if not ENV.hasGetRawMeta or not ENV.hasGetNameCall then return end
     local ok = pcall(function()
-        local mt = getrawmetatable(game)
-        if not mt then return end
-        local oldNC = mt.__namecall
-        if not oldNC then return end
+        local mt = getrawmetatable(game); if not mt then return end
+        local oldNC = mt.__namecall; if not oldNC then return end
         if setreadonly then setreadonly(mt, false) end
         local newNC
         if newcclosure then
@@ -1466,46 +1265,32 @@ local function SetupSilentAimHook()
                 local method = getnamecallmethod()
                 if not State.SilentAim then return oldNC(self, ...) end
                 if method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
+                    local target = GetBestAimTarget(); local part = target and FindAimPart(target)
                     if part then
-                        local args = {...}
-                        local origin = args[1]
+                        local args = {...}; local origin = args[1]
                         if typeof(origin) == "Vector3" then
                             local vel = part.AssemblyLinearVelocity
                             local predPos = part.Position + vel * 0.05
                             local dir = (predPos - origin)
                             if Config.AimAntiDetect then
                                 dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
+                                    (math.random()-0.5)*0.15, (math.random()-0.5)*0.10, (math.random()-0.5)*0.15)
                             end
-                            args[2] = dir.Unit * dir.Magnitude
-                            return oldNC(self, unpack(args))
+                            args[2] = dir.Unit * dir.Magnitude; return oldNC(self, unpack(args))
                         end
                     end
                 end
-                if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
-                    and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
+                if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then
+                    local target = GetBestAimTarget(); local part = target and FindAimPart(target)
                     if part then
-                        local args = {...}
-                        local ray = args[1]
+                        local args = {...}; local ray = args[1]
                         if typeof(ray) == "Ray" then
-                            local origin = ray.Origin
-                            local dir = (part.Position - origin)
+                            local origin = ray.Origin; local dir = (part.Position - origin)
                             if Config.AimAntiDetect then
                                 dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
+                                    (math.random()-0.5)*0.15, (math.random()-0.5)*0.10, (math.random()-0.5)*0.15)
                             end
-                            args[1] = Ray.new(origin, dir.Unit * 5000)
-                            return oldNC(self, unpack(args))
+                            args[1] = Ray.new(origin, dir.Unit * 5000); return oldNC(self, unpack(args))
                         end
                     end
                 end
@@ -1515,15 +1300,12 @@ local function SetupSilentAimHook()
             newNC = function(self, ...)
                 local method = getnamecallmethod()
                 if State.SilentAim and method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
+                    local target = GetBestAimTarget(); local part = target and FindAimPart(target)
                     if part then
-                        local args = {...}
-                        local origin = args[1]
+                        local args = {...}; local origin = args[1]
                         if typeof(origin) == "Vector3" then
                             local dir = (part.Position - origin)
-                            args[2] = dir.Unit * dir.Magnitude
-                            return oldNC(self, unpack(args))
+                            args[2] = dir.Unit * dir.Magnitude; return oldNC(self, unpack(args))
                         end
                     end
                 end
@@ -1541,13 +1323,9 @@ task.spawn(function() task.wait(2); SetupSilentAimHook() end)
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
-    ok, result = pcall(function()
-        if syn then return syn.request({Url = url, Method = "GET"}).Body end
-    end)
+    ok, result = pcall(function() if syn then return syn.request({Url=url,Method="GET"}).Body end end)
     if ok and result then return result end
-    ok, result = pcall(function()
-        if request then return request({Url = url, Method = "GET"}).Body end
-    end)
+    ok, result = pcall(function() if request then return request({Url=url,Method="GET"}).Body end end)
     if ok and result then return result end
     return nil
 end
@@ -1555,8 +1333,7 @@ end
 local function GetServerList()
     local url = "https://games.roblox.com/v1/games/" .. game.PlaceId
         .. "/servers/Public?sortOrder=Asc&excludeFullGames=false&limit=100"
-    local data = GetHTTP(url)
-    if not data then return nil end
+    local data = GetHTTP(url); if not data then return nil end
     local ok, parsed = pcall(function() return HttpService:JSONDecode(data) end)
     if not ok or not parsed or not parsed.data then return nil end
     return parsed.data
@@ -1565,9 +1342,7 @@ end
 local serverActionCooldown = false
 local function ServerCooldown()
     if serverActionCooldown then Notify("Server Hop", L("ntf_wait"), 2); return true end
-    serverActionCooldown = true
-    task.delay(3, function() serverActionCooldown = false end)
-    return false
+    serverActionCooldown = true; task.delay(3, function() serverActionCooldown = false end); return false
 end
 
 local function RejoinSameServer()
@@ -1586,15 +1361,11 @@ local function JoinRandomServer()
         if servers and #servers > 0 then
             local filtered = {}
             for _, s in pairs(servers) do
-                if s.id ~= game.JobId and s.playing and s.playing > 0 then
-                    table.insert(filtered, s)
-                end
+                if s.id ~= game.JobId and s.playing and s.playing > 0 then table.insert(filtered, s) end
             end
             if #filtered > 0 then
                 local chosen = filtered[math.random(1, #filtered)]
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP)
-                end)
+                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP) end)
                 return
             end
         end
@@ -1615,8 +1386,7 @@ local function JoinBiggestServer()
                 end
             end
             if best then
-                Notify("Server Hop", "👥 " .. bestCount .. L("ntf_players"), 2)
-                task.wait(1)
+                Notify("Server Hop", "👥 " .. bestCount .. L("ntf_players"), 2); task.wait(1)
                 pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
                 return
             end
@@ -1638,8 +1408,7 @@ local function JoinSmallestServer()
                 end
             end
             if best then
-                Notify("Server Hop", "🕵️ " .. bestCount .. L("ntf_players"), 2)
-                task.wait(1)
+                Notify("Server Hop", "🕵️ " .. bestCount .. L("ntf_players"), 2); task.wait(1)
                 pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
                 return
             end
@@ -1684,19 +1453,16 @@ local fovStroke = Instance.new("UIStroke", fovCircle)
 fovStroke.Color = Color3.fromRGB(0, 200, 100); fovStroke.Thickness = 1.5; fovStroke.Transparency = 0.3
 
 local tgtInfo = Instance.new("TextLabel", Scr)
-tgtInfo.Size = UDim2.new(0, 200, 0, 22)
-tgtInfo.Position = UDim2.new(0.5, -100, 0.5, -Config.AimFOV - 32)
-tgtInfo.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
-tgtInfo.BackgroundTransparency = 0.2; tgtInfo.BorderSizePixel = 0
-tgtInfo.TextColor3 = P.grn; tgtInfo.Font = Enum.Font.GothamBold
+tgtInfo.Size = UDim2.new(0, 200, 0, 22); tgtInfo.Position = UDim2.new(0.5, -100, 0.5, -Config.AimFOV - 32)
+tgtInfo.BackgroundColor3 = Color3.fromRGB(10, 10, 16); tgtInfo.BackgroundTransparency = 0.2
+tgtInfo.BorderSizePixel = 0; tgtInfo.TextColor3 = P.grn; tgtInfo.Font = Enum.Font.GothamBold
 tgtInfo.TextSize = 11; tgtInfo.Text = ""; tgtInfo.Visible = false; tgtInfo.ZIndex = 12
 Instance.new("UICorner", tgtInfo).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", tgtInfo).Color = P.brd
 
 local function UpdateFOVCircle()
     local r = Config.AimFOV
-    fovCircle.Size = UDim2.new(0, r * 2, 0, r * 2)
-    fovCircle.Position = UDim2.new(0.5, -r, 0.5, -r)
+    fovCircle.Size = UDim2.new(0, r * 2, 0, r * 2); fovCircle.Position = UDim2.new(0.5, -r, 0.5, -r)
     tgtInfo.Position = UDim2.new(0.5, -100, 0.5, -r - 32)
 end
 
@@ -1713,8 +1479,7 @@ local mainS = Instance.new("UIStroke", Main)
 mainS.Color = P.brd; mainS.Thickness = 1.5
 
 local TB = Instance.new("Frame", Main)
-TB.Size = UDim2.new(1, 0, 0, 42)
-TB.BackgroundColor3 = P.dark; TB.BorderSizePixel = 0
+TB.Size = UDim2.new(1, 0, 0, 42); TB.BackgroundColor3 = P.dark; TB.BorderSizePixel = 0
 Instance.new("UICorner", TB).CornerRadius = UDim.new(0, 14)
 local tbF = Instance.new("Frame", TB)
 tbF.Size = UDim2.new(1, 0, 0, 14); tbF.Position = UDim2.new(0, 0, 1, -14)
@@ -1768,17 +1533,13 @@ local function OpenMenu()
     local vp = Camera.ViewportSize
     local cx = math.clamp(Main.AbsolutePosition.X, 0, vp.X - MW)
     local cy = math.clamp(Main.AbsolutePosition.Y, 0, vp.Y - MH)
-    -- Якщо меню ще не відкривалось — центруємо
     if not Main.Visible and (Main.AbsoluteSize.Y < 10) then
-        cx = (vp.X - MW) / 2
-        cy = (vp.Y - MH) / 2
+        cx = (vp.X - MW) / 2; cy = (vp.Y - MH) / 2
     end
-    Main.Size = UDim2.new(0, MW, 0, 0)
-    Main.Position = UDim2.new(0, cx, 0, cy + MH / 2)
+    Main.Size = UDim2.new(0, MW, 0, 0); Main.Position = UDim2.new(0, cx, 0, cy + MH / 2)
     Main.Visible = true
     TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, MW, 0, MH),
-        Position = UDim2.new(0, cx, 0, cy),
+        Size = UDim2.new(0, MW, 0, MH), Position = UDim2.new(0, cx, 0, cy),
     }):Play()
 end
 clsB.MouseButton1Click:Connect(CloseMenu)
@@ -1837,8 +1598,7 @@ local cY = tabY + 34
 local cH = MH - cY - 4
 for _, n in ipairs(tNames) do
     local s = Instance.new("ScrollingFrame", Main)
-    s.Name = n; s.Size = UDim2.new(1, -6, 0, cH)
-    s.Position = UDim2.new(0, 3, 0, cY)
+    s.Name = n; s.Size = UDim2.new(1, -6, 0, cH); s.Position = UDim2.new(0, 3, 0, cY)
     s.BackgroundTransparency = 1; s.ScrollBarThickness = IsMob and 4 or 3
     s.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
     s.BorderSizePixel = 0; s.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -1861,13 +1621,10 @@ do
     TB.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
-            dr = true
-            ds = Vector2.new(inp.Position.X, inp.Position.Y)
+            dr = true; ds = Vector2.new(inp.Position.X, inp.Position.Y)
             dp = Vector2.new(Main.AbsolutePosition.X, Main.AbsolutePosition.Y)
         end
     end)
-    -- ВАЖЛИВО: UIS.InputChanged а не TB.InputChanged
-    -- щоб drag працював навіть коли курсор вийшов за межі тайтлбару
     UIS.InputChanged:Connect(function(inp)
         if not dr then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
@@ -1887,8 +1644,8 @@ end
 
 local exS = Instance.new("Frame", Scr)
 exS.Size = UDim2.new(0, 130, 0, 58); exS.Position = UDim2.new(1, -142, 0, 10)
-exS.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
-exS.BackgroundTransparency = 0; exS.BorderSizePixel = 0; exS.ZIndex = 20
+exS.BackgroundColor3 = Color3.fromRGB(10, 10, 16); exS.BackgroundTransparency = 0
+exS.BorderSizePixel = 0; exS.ZIndex = 20
 Instance.new("UICorner", exS).CornerRadius = UDim.new(0, 10)
 local exGrad = Instance.new("UIGradient", exS)
 exGrad.Color = ColorSequence.new({
@@ -1931,12 +1688,10 @@ do
     exS.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
-            exDr = true
-            exDs = Vector2.new(inp.Position.X, inp.Position.Y)
+            exDr = true; exDs = Vector2.new(inp.Position.X, inp.Position.Y)
             exAbsStart = Vector2.new(exS.AbsolutePosition.X, exS.AbsolutePosition.Y)
         end
     end)
-    -- UIS.InputChanged — глобально, не зупиняється коли виходиш за межі панелі
     UIS.InputChanged:Connect(function(inp)
         if not exDr or not exAbsStart then return end
         if inp.UserInputType == Enum.UserInputType.MouseMovement
@@ -1950,9 +1705,7 @@ do
     end)
     UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
-            or inp.UserInputType == Enum.UserInputType.Touch then
-            exDr = false; exAbsStart = nil
-        end
+            or inp.UserInputType == Enum.UserInputType.Touch then exDr = false; exAbsStart = nil end
     end)
 end
 
@@ -1962,8 +1715,7 @@ mB.BackgroundColor3 = P.bg; mB.Text = "M"; mB.TextColor3 = P.acc
 mB.Font = Enum.Font.GothamBlack; mB.TextSize = IsMob and 22 or 18
 mB.ZIndex = 100; mB.AutoButtonColor = false
 Instance.new("UICorner", mB).CornerRadius = UDim.new(0, 12)
-local mSt = Instance.new("UIStroke", mB)
-mSt.Thickness = 2; mSt.Color = P.acc
+local mSt = Instance.new("UIStroke", mB); mSt.Thickness = 2; mSt.Color = P.acc
 
 local mCnt = Instance.new("TextLabel", mB)
 mCnt.Size = UDim2.new(1, 0, 0, 12); mCnt.Position = UDim2.new(0, 0, 1, -13)
@@ -2010,7 +1762,113 @@ do
     end)
 end
 
--- Реєструємо mB для мобільного редактора
+-- ================================================================
+-- MOBILE BUTTON EDITOR
+-- ================================================================
+local MOB_LAYOUT_FILE = "OmniV305_MobLayout.json"
+local MobEditorActive  = false
+local MobEditorOverlays = {}
+local MobMovableBtns   = {}
+local MobSavedPositions = {}
+
+local function SaveMobLayout()
+    if not HasFileSystem() then return end
+    local data = {}
+    for _, entry in pairs(MobMovableBtns) do
+        local btn = entry.btn
+        if btn and btn.Parent then
+            data[entry.name] = {
+                xs = btn.Position.X.Scale, xo = btn.Position.X.Offset,
+                ys = btn.Position.Y.Scale, yo = btn.Position.Y.Offset,
+            }
+        end
+    end
+    pcall(function() writefile(MOB_LAYOUT_FILE, HttpService:JSONEncode(data)) end)
+end
+
+local function LoadMobLayout()
+    if not HasFileSystem() then return end
+    local ok, raw = pcall(readfile, MOB_LAYOUT_FILE)
+    if not ok or not raw or raw == "" then return end
+    local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
+    if not ok2 or not data then return end
+    MobSavedPositions = data
+    for _, entry in pairs(MobMovableBtns) do
+        local pos = data[entry.name]
+        if pos and entry.btn and entry.btn.Parent then
+            pcall(function() entry.btn.Position = UDim2.new(pos.xs, pos.xo, pos.ys, pos.yo) end)
+        end
+    end
+end
+
+local function MakeDraggableMob(entry)
+    local btn = entry.btn
+    if not btn or not btn.Parent then return end
+    local dr, ds, absStart = false, nil, nil
+    local ov = Instance.new("Frame", btn)
+    ov.Name = "EditorOverlay"; ov.Size = UDim2.new(1, 6, 1, 6); ov.Position = UDim2.new(0, -3, 0, -3)
+    ov.BackgroundTransparency = 1; ov.BorderSizePixel = 0; ov.ZIndex = btn.ZIndex + 10
+    local ovStroke = Instance.new("UIStroke", ov)
+    ovStroke.Color = Color3.fromRGB(0, 200, 100); ovStroke.Thickness = 2.5
+    Instance.new("UICorner", ov).CornerRadius = UDim.new(0, 12)
+    local ovLbl = Instance.new("TextLabel", ov)
+    ovLbl.Size = UDim2.new(1, 0, 0, 14); ovLbl.Position = UDim2.new(0, 0, 0, -16)
+    ovLbl.BackgroundTransparency = 1; ovLbl.Text = entry.name
+    ovLbl.TextColor3 = Color3.fromRGB(0, 255, 130); ovLbl.Font = Enum.Font.GothamBold
+    ovLbl.TextSize = 11; ovLbl.ZIndex = ov.ZIndex + 1
+    local conn1 = btn.InputBegan:Connect(function(inp)
+        if not MobEditorActive then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dr = true; ds = inp.Position
+            absStart = Vector2.new(btn.AbsolutePosition.X, btn.AbsolutePosition.Y)
+        end
+    end)
+    local conn2 = btn.InputChanged:Connect(function(inp)
+        if not dr or not MobEditorActive or not absStart then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local d = inp.Position - ds
+            local vp = Camera.ViewportSize; local bsz = btn.AbsoluteSize
+            local newX = math.clamp(absStart.X + d.X, 0, vp.X - bsz.X)
+            local newY = math.clamp(absStart.Y + d.Y, 0, vp.Y - bsz.Y)
+            btn.Position = UDim2.new(0, newX, 0, newY)
+        end
+    end)
+    local conn3 = btn.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dr = false; absStart = nil
+        end
+    end)
+    table.insert(MobEditorOverlays, { ov = ov, conn1 = conn1, conn2 = conn2, conn3 = conn3 })
+end
+
+local function EnterMobEditor()
+    MobEditorActive = true
+    for _, d in pairs(MobEditorOverlays) do
+        pcall(function() d.ov:Destroy() end)
+        pcall(function() d.conn1:Disconnect() end)
+        pcall(function() d.conn2:Disconnect() end)
+        pcall(function() d.conn3:Disconnect() end)
+    end
+    MobEditorOverlays = {}
+    for _, entry in pairs(MobMovableBtns) do MakeDraggableMob(entry) end
+    Notify("Editor", "📐 Drag buttons · tap 📐 to save", 3)
+end
+
+local function ExitMobEditor()
+    MobEditorActive = false
+    for _, d in pairs(MobEditorOverlays) do
+        pcall(function() d.ov:Destroy() end)
+        pcall(function() d.conn1:Disconnect() end)
+        pcall(function() d.conn2:Disconnect() end)
+        pcall(function() d.conn3:Disconnect() end)
+    end
+    MobEditorOverlays = {}
+    SaveMobLayout(); Notify("Editor", "✅ Layout saved!", 2)
+end
+
 if IsTab then table.insert(MobMovableBtns, {btn = mB, name = "MenuBtn"}) end
 
 local flyH = Instance.new("Frame", Scr)
@@ -2033,15 +1891,13 @@ local function MkFlyB(t, x, cb)
     b.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.Touch
             or i.UserInputType == Enum.UserInputType.MouseButton1 then
-            cb(true)
-            TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.tabA}):Play()
+            cb(true); TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.tabA}):Play()
         end
     end)
     b.InputEnded:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.Touch
             or i.UserInputType == Enum.UserInputType.MouseButton1 then
-            cb(false)
-            TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
+            cb(false); TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
         end
     end)
     b.InputChanged:Connect(function(i)
@@ -2049,8 +1905,7 @@ local function MkFlyB(t, x, cb)
             local abs = b.AbsolutePosition; local sz = b.AbsoluteSize
             if i.Position.X < abs.X or i.Position.X > abs.X + sz.X
                 or i.Position.Y < abs.Y or i.Position.Y > abs.Y + sz.Y then
-                cb(false)
-                TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
+                cb(false); TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
             end
         end
     end)
@@ -2058,152 +1913,10 @@ end
 MkFlyB("▲", 4, function(v) MobUp = v end)
 MkFlyB("▼", 72, function(v) MobDn = v end)
 
--- Реєструємо flyH для редактора
 if IsTab then table.insert(MobMovableBtns, {btn = flyH, name = "FlyBtns"}) end
--- Завантажуємо збережений layout
-task.spawn(function()
-    task.wait(0.5)
-    LoadMobLayout()
-end)
+task.spawn(function() task.wait(0.5); LoadMobLayout() end)
 
 function UpdFly() flyH.Visible = State.Fly and IsTab end
-
--- ================================================================
--- MOBILE BUTTON EDITOR — з збереженням позицій у файл
--- Кожна кнопка має ім'я (MobBtnNames), позиції зберігаються в JSON
--- ================================================================
-local MOB_LAYOUT_FILE = "OmniV305_MobLayout.json"
-local MobEditorActive  = false
-local MobEditorOverlays = {}
--- { index = { btn=..., name=... } } — індексований список
-local MobMovableBtns   = {}  -- { {btn=Frame, name="mB"}, ... }
--- Поточні збережені позиції { name = {xs,xo,ys,yo} }
-local MobSavedPositions = {}
-
-local function SaveMobLayout()
-    if not HasFileSystem() then return end
-    local data = {}
-    for _, entry in pairs(MobMovableBtns) do
-        local btn = entry.btn
-        if btn and btn.Parent then
-            data[entry.name] = {
-                xs = btn.Position.X.Scale,
-                xo = btn.Position.X.Offset,
-                ys = btn.Position.Y.Scale,
-                yo = btn.Position.Y.Offset,
-            }
-        end
-    end
-    pcall(function()
-        writefile(MOB_LAYOUT_FILE, HttpService:JSONEncode(data))
-    end)
-end
-
-local function LoadMobLayout()
-    if not HasFileSystem() then return end
-    local ok, raw = pcall(readfile, MOB_LAYOUT_FILE)
-    if not ok or not raw or raw == "" then return end
-    local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
-    if not ok2 or not data then return end
-    MobSavedPositions = data
-    -- Відразу застосовуємо до існуючих кнопок
-    for _, entry in pairs(MobMovableBtns) do
-        local pos = data[entry.name]
-        if pos and entry.btn and entry.btn.Parent then
-            pcall(function()
-                entry.btn.Position = UDim2.new(pos.xs, pos.xo, pos.ys, pos.yo)
-            end)
-        end
-    end
-end
-
-local function MakeDraggableMob(entry)
-    local btn = entry.btn
-    if not btn or not btn.Parent then return end
-
-    local dr, ds, absStart = false, nil, nil
-
-    local ov = Instance.new("Frame", btn)
-    ov.Name = "EditorOverlay"
-    ov.Size = UDim2.new(1, 6, 1, 6)
-    ov.Position = UDim2.new(0, -3, 0, -3)
-    ov.BackgroundTransparency = 1; ov.BorderSizePixel = 0
-    ov.ZIndex = btn.ZIndex + 10
-    local ovStroke = Instance.new("UIStroke", ov)
-    ovStroke.Color = Color3.fromRGB(0, 200, 100); ovStroke.Thickness = 2.5
-    Instance.new("UICorner", ov).CornerRadius = UDim.new(0, 12)
-    -- Підпис
-    local ovLbl = Instance.new("TextLabel", ov)
-    ovLbl.Size = UDim2.new(1, 0, 0, 14)
-    ovLbl.Position = UDim2.new(0, 0, 0, -16)
-    ovLbl.BackgroundTransparency = 1
-    ovLbl.Text = entry.name
-    ovLbl.TextColor3 = Color3.fromRGB(0, 255, 130)
-    ovLbl.Font = Enum.Font.GothamBold; ovLbl.TextSize = 11
-    ovLbl.ZIndex = ov.ZIndex + 1
-
-    local conn1 = btn.InputBegan:Connect(function(inp)
-        if not MobEditorActive then return end
-        if inp.UserInputType == Enum.UserInputType.Touch
-            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            dr = true
-            ds = inp.Position
-            -- Використовуємо AbsolutePosition щоб уникнути стрибків при Scale≠0
-            absStart = Vector2.new(btn.AbsolutePosition.X, btn.AbsolutePosition.Y)
-        end
-    end)
-    local conn2 = btn.InputChanged:Connect(function(inp)
-        if not dr or not MobEditorActive or not absStart then return end
-        if inp.UserInputType == Enum.UserInputType.Touch
-            or inp.UserInputType == Enum.UserInputType.MouseMovement then
-            local d = inp.Position - ds
-            local vp = Camera.ViewportSize
-            local bsz = btn.AbsoluteSize
-            local newX = math.clamp(absStart.X + d.X, 0, vp.X - bsz.X)
-            local newY = math.clamp(absStart.Y + d.Y, 0, vp.Y - bsz.Y)
-            -- Зберігаємо як Scale=0, щоб позиція не прив'язувалась до краю
-            btn.Position = UDim2.new(0, newX, 0, newY)
-        end
-    end)
-    local conn3 = btn.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.Touch
-            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            dr = false; absStart = nil
-        end
-    end)
-
-    table.insert(MobEditorOverlays, {
-        ov = ov, conn1 = conn1, conn2 = conn2, conn3 = conn3
-    })
-end
-
-local function EnterMobEditor()
-    MobEditorActive = true
-    for _, d in pairs(MobEditorOverlays) do
-        pcall(function() d.ov:Destroy() end)
-        pcall(function() d.conn1:Disconnect() end)
-        pcall(function() d.conn2:Disconnect() end)
-        pcall(function() d.conn3:Disconnect() end)
-    end
-    MobEditorOverlays = {}
-    for _, entry in pairs(MobMovableBtns) do
-        MakeDraggableMob(entry)
-    end
-    Notify("Editor", "📐 Drag buttons · tap 📐 to save", 3)
-end
-
-local function ExitMobEditor()
-    MobEditorActive = false
-    for _, d in pairs(MobEditorOverlays) do
-        pcall(function() d.ov:Destroy() end)
-        pcall(function() d.conn1:Disconnect() end)
-        pcall(function() d.conn2:Disconnect() end)
-        pcall(function() d.conn3:Disconnect() end)
-    end
-    MobEditorOverlays = {}
-    SaveMobLayout()
-    Notify("Editor", "✅ Layout saved!", 2)
-end
 
 local mobEditorBtn = nil
 if IsTab then
@@ -2211,15 +1924,12 @@ if IsTab then
     mobEditorBtn.Size = UDim2.new(0, MBS, 0, MBS)
     mobEditorBtn.Position = UDim2.new(0, 10, 0.5, MBS + 10 - MBS / 2)
     mobEditorBtn.BackgroundColor3 = Color3.fromRGB(18, 28, 40)
-    mobEditorBtn.Text = "📐"
-    mobEditorBtn.TextColor3 = Color3.fromRGB(0, 180, 100)
-    mobEditorBtn.Font = Enum.Font.GothamBlack
-    mobEditorBtn.TextSize = IsMob and 20 or 16
+    mobEditorBtn.Text = "📐"; mobEditorBtn.TextColor3 = Color3.fromRGB(0, 180, 100)
+    mobEditorBtn.Font = Enum.Font.GothamBlack; mobEditorBtn.TextSize = IsMob and 20 or 16
     mobEditorBtn.ZIndex = 100; mobEditorBtn.AutoButtonColor = false
     Instance.new("UICorner", mobEditorBtn).CornerRadius = UDim.new(0, 12)
     local edStroke = Instance.new("UIStroke", mobEditorBtn)
     edStroke.Thickness = 2; edStroke.Color = Color3.fromRGB(0, 180, 100)
-
     mobEditorBtn.MouseButton1Click:Connect(function()
         if MobEditorActive then
             ExitMobEditor()
@@ -2263,8 +1973,7 @@ descPopup.BackgroundColor3 = Color3.fromRGB(16, 16, 28)
 descPopup.BorderSizePixel = 0; descPopup.Visible = false; descPopup.ZIndex = 200
 descPopup.ClipsDescendants = true
 Instance.new("UICorner", descPopup).CornerRadius = UDim.new(0, 12)
-local descStroke = Instance.new("UIStroke", descPopup)
-descStroke.Color = P.acc; descStroke.Thickness = 2
+local descStroke = Instance.new("UIStroke", descPopup); descStroke.Color = P.acc; descStroke.Thickness = 2
 
 local descTitle = Instance.new("TextLabel", descPopup)
 descTitle.Size = UDim2.new(1, -10, 0, 24); descTitle.Position = UDim2.new(0, 5, 0, 8)
@@ -2364,8 +2073,7 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
 
     local swDot = Instance.new("Frame", swBG)
     local dotS = IsMob and 16 or 12
-    swDot.Size = UDim2.new(0, dotS, 0, dotS)
-    swDot.Position = UDim2.new(0, 3, 0.5, -dotS / 2)
+    swDot.Size = UDim2.new(0, dotS, 0, dotS); swDot.Position = UDim2.new(0, 3, 0.5, -dotS / 2)
     swDot.BackgroundColor3 = P.wht; swDot.BorderSizePixel = 0
     Instance.new("UICorner", swDot).CornerRadius = UDim.new(1, 0)
 
@@ -2402,13 +2110,10 @@ end
 local function MkButton(tab, icon, lblKey, color, onClick)
     local pg = TabPages[tab]; if not pg then return end
     local row = Instance.new("TextButton", pg)
-    row.Size = UDim2.new(0.95, 0, 0, BH)
-    row.BackgroundColor3 = color or P.srvBtn
-    row.BorderSizePixel = 0; row.AutoButtonColor = false; row.Text = ""
-    row.ClipsDescendants = true
+    row.Size = UDim2.new(0.95, 0, 0, BH); row.BackgroundColor3 = color or P.srvBtn
+    row.BorderSizePixel = 0; row.AutoButtonColor = false; row.Text = ""; row.ClipsDescendants = true
     Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
-    local stroke = Instance.new("UIStroke", row)
-    stroke.Color = color or P.acc; stroke.Transparency = 0.5
+    local stroke = Instance.new("UIStroke", row); stroke.Color = color or P.acc; stroke.Transparency = 0.5
 
     local ic = Instance.new("TextLabel", row)
     ic.Size = UDim2.new(0, 26, 1, 0); ic.Position = UDim2.new(0, 8, 0, 0)
@@ -2418,8 +2123,7 @@ local function MkButton(tab, icon, lblKey, color, onClick)
     local lbl = Instance.new("TextLabel", row)
     lbl.Size = UDim2.new(1, -40, 1, 0); lbl.Position = UDim2.new(0, 38, 0, 0)
     lbl.BackgroundTransparency = 1; lbl.Text = L(lblKey); lbl.TextColor3 = P.txt
-    lbl.Font = Enum.Font.GothamBold; lbl.TextSize = FS
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Font = Enum.Font.GothamBold; lbl.TextSize = FS; lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local arr = Instance.new("TextLabel", row)
     arr.Size = UDim2.new(0, 20, 1, 0); arr.Position = UDim2.new(1, -24, 0, 0)
@@ -2489,8 +2193,7 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
         local abs = trk.AbsolutePosition; local sz = trk.AbsoluteSize
         local t = math.clamp((inp.Position.X - abs.X) / sz.X, 0, 1)
         local cur = math.floor(minV + t * (maxV - minV))
-        SetValue(cur)
-        if onChange then pcall(onChange, cur) end
+        SetValue(cur); if onChange then pcall(onChange, cur) end
     end
 
     trk.InputBegan:Connect(function(inp)
@@ -2584,7 +2287,6 @@ do
     infoLbl.Font = Enum.Font.GothamBold; infoLbl.TextSize = IsMob and 10 or 9
     infoLbl.TextXAlignment = Enum.TextXAlignment.Left; infoLbl.TextWrapped = true
     infoLbl.Text = ""; safeInfoLblRef = infoLbl
-
     task.spawn(function()
         while task.wait(0.8) do
             pcall(function()
@@ -2615,20 +2317,15 @@ MkButton("Misc", "🎲", "btn_random", Color3.fromRGB(22, 28, 38), JoinRandomSer
 MkButton("Misc", "👥", "btn_biggest", Color3.fromRGB(22, 28, 38), JoinBiggestServer)
 MkButton("Misc", "🕵️", "btn_smallest", Color3.fromRGB(22, 28, 38), JoinSmallestServer)
 
--- Кнопка закрити меню прямо у Config вкладці
 do
     local pg = TabPages["Config"]
     local closeRow = Instance.new("TextButton", pg)
-    closeRow.Size = UDim2.new(0.95, 0, 0, BH)
-    closeRow.BackgroundColor3 = Color3.fromRGB(35, 14, 14)
+    closeRow.Size = UDim2.new(0.95, 0, 0, BH); closeRow.BackgroundColor3 = Color3.fromRGB(35, 14, 14)
     closeRow.BorderSizePixel = 0; closeRow.AutoButtonColor = false
-    closeRow.Text = "✕  Close Menu  (or press M)"
-    closeRow.TextColor3 = Color3.fromRGB(220, 80, 80)
-    closeRow.Font = Enum.Font.GothamBold
-    closeRow.TextSize = IsMob and 12 or 10
+    closeRow.Text = "✕  Close Menu  (or press M)"; closeRow.TextColor3 = Color3.fromRGB(220, 80, 80)
+    closeRow.Font = Enum.Font.GothamBold; closeRow.TextSize = IsMob and 12 or 10
     Instance.new("UICorner", closeRow).CornerRadius = UDim.new(0, 8)
-    local cs = Instance.new("UIStroke", closeRow)
-    cs.Color = Color3.fromRGB(180, 50, 50); cs.Transparency = 0.4
+    local cs = Instance.new("UIStroke", closeRow); cs.Color = Color3.fromRGB(180, 50, 50); cs.Transparency = 0.4
     closeRow.MouseButton1Click:Connect(CloseMenu)
 end
 
@@ -2636,14 +2333,12 @@ AddHdr("Config", "🌐", "hdr_language")
 do
     local pg = TabPages["Config"]
     local langRow = Instance.new("TextButton", pg)
-    langRow.Size = UDim2.new(0.95, 0, 0, BH)
-    langRow.BackgroundColor3 = Color3.fromRGB(20, 30, 45)
+    langRow.Size = UDim2.new(0.95, 0, 0, BH); langRow.BackgroundColor3 = Color3.fromRGB(20, 30, 45)
     langRow.BorderSizePixel = 0; langRow.AutoButtonColor = false
     langRow.Text = L("btn_lang_toggle"); langRow.TextColor3 = P.acc
     langRow.Font = Enum.Font.GothamBold; langRow.TextSize = IsMob and 12 or 10
     Instance.new("UICorner", langRow).CornerRadius = UDim.new(0, 8)
-    Instance.new("UIStroke", langRow).Color = P.acc
-    langBtnRef = langRow
+    Instance.new("UIStroke", langRow).Color = P.acc; langBtnRef = langRow
     langRow.MouseButton1Click:Connect(function()
         CurrentLang = (CurrentLang == "EN") and "UA" or "EN"
         RefreshLanguage()
@@ -2656,8 +2351,7 @@ AddHdr("Config", "💾", "hdr_save_config")
 do
     local pg = TabPages["Config"]
     local btnRow = Instance.new("Frame", pg)
-    btnRow.Size = UDim2.new(0.95, 0, 0, BH)
-    btnRow.BackgroundTransparency = 1; btnRow.BorderSizePixel = 0
+    btnRow.Size = UDim2.new(0.95, 0, 0, BH); btnRow.BackgroundTransparency = 1; btnRow.BorderSizePixel = 0
 
     local function MkCfgBtn(lblKey, col, xPos, xSize, onClick)
         local b = Instance.new("TextButton", btnRow)
@@ -2701,12 +2395,10 @@ do
     end)
 
     local autoLbl = Instance.new("TextLabel", pg)
-    autoLbl.Size = UDim2.new(0.95, 0, 0, IsMob and 18 or 14)
-    autoLbl.BackgroundTransparency = 1; autoLbl.TextColor3 = P.dim
-    autoLbl.Font = Enum.Font.Gotham; autoLbl.TextSize = IsMob and 10 or 9
-    autoLbl.Text = L("stat_auto_save")
-    autoLbl.TextXAlignment = Enum.TextXAlignment.Center; autoLbl.TextWrapped = true
-    autoSaveLblRef = autoLbl
+    autoLbl.Size = UDim2.new(0.95, 0, 0, IsMob and 18 or 14); autoLbl.BackgroundTransparency = 1
+    autoLbl.TextColor3 = P.dim; autoLbl.Font = Enum.Font.Gotham; autoLbl.TextSize = IsMob and 10 or 9
+    autoLbl.Text = L("stat_auto_save"); autoLbl.TextXAlignment = Enum.TextXAlignment.Center
+    autoLbl.TextWrapped = true; autoSaveLblRef = autoLbl
 end
 
 AddHdr("Config", "🚀", "hdr_speed_vals")
@@ -2790,8 +2482,7 @@ UIS.InputChanged:Connect(function(inp, gpe)
 end)
 
 UIS.JumpRequest:Connect(function()
-    local C = LP.Character
-    local H = C and C:FindFirstChildOfClass("Humanoid")
+    local C = LP.Character; local H = C and C:FindFirstChildOfClass("Humanoid")
     local R = C and C:FindFirstChild("HumanoidRootPart")
     if not H or not R or H.Health <= 0 or State.Fly or State.Freecam then return end
     if State.FakeLag then pcall(function() R.Anchored = false end) end
@@ -2812,18 +2503,15 @@ end)
 task.spawn(function()
     local t = 0
     while true do
-        task.wait(0.033)
-        t += 0.02
+        task.wait(0.033); t += 0.02
         local pulse = (math.sin(t * 2) + 1) / 2
         local aR = math.floor(0 + pulse * 15)
         local aG = math.floor(180 + pulse * 30)
         local aB = math.floor(95 + pulse * 20)
         local acol = Color3.fromRGB(aR, aG, aB)
         pcall(function()
-            mSt.Color = acol; mB.TextColor3 = acol
-            tGrad.Rotation = (t * 15) % 360
-            tAcc.BackgroundColor3 = acol; tIco.TextColor3 = acol
-            exStroke.Color = acol
+            mSt.Color = acol; mB.TextColor3 = acol; tGrad.Rotation = (t * 15) % 360
+            tAcc.BackgroundColor3 = acol; tIco.TextColor3 = acol; exStroke.Color = acol
             mainS.Color = Color3.fromRGB(
                 math.floor(38 + pulse * 20), math.floor(38 + pulse * 20), math.floor(48 + pulse * 20))
             for nm, d in pairs(AllRows) do
@@ -2843,8 +2531,6 @@ local pingTk     = 0
 
 RunService.RenderStepped:Connect(function(dt)
     local now = tick()
-
-    -- FPS/Ping
     table.insert(FrameLog, now)
     while FrameLog[1] and FrameLog[1] < now - 1 do table.remove(FrameLog, 1) end
     local fps = #FrameLog
@@ -2854,10 +2540,8 @@ RunService.RenderStepped:Connect(function(dt)
     local pc = pm <= 80 and Color3.fromRGB(130, 255, 170) or pm <= 150 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
     fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
     pngL.Text = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
-    eF.Text = tostring(fps); eF.TextColor3 = fc
-    eP.Text = pm .. " ms"; eP.TextColor3 = pc
+    eF.Text = tostring(fps); eF.TextColor3 = fc; eP.Text = pm .. " ms"; eP.TextColor3 = pc
 
-    -- ESP update (throttled, not every frame)
     UpdateESP()
 
     local Char = LP.Character
@@ -2866,7 +2550,6 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    -- FLY
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -2899,7 +2582,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- FREECAM
     if State.Freecam then
         pcall(function()
             local mx, mz = GetDir()
@@ -2916,29 +2598,22 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- AUTO AIM
     if State.Aim and not State.Freecam and Char and HRP then
         pcall(function()
-            local target = GetBestAimTarget()
-            local part = target and FindAimPart(target)
+            local target = GetBestAimTarget(); local part = target and FindAimPart(target)
             if part then
                 local predTime = math.clamp(lastPing, 0.01, 0.25)
                 local vel = part.AssemblyLinearVelocity
                 local dist = (Camera.CFrame.Position - part.Position).Magnitude
                 local predMul = math.clamp(dist / 100, 0.3, 1.5) * Config.AimPredictMult
                 local predictedPos = part.Position + vel * predTime * predMul
-                if vel.Y < -5 then
-                    predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0)
-                end
+                if vel.Y < -5 then predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0) end
                 local smooth = Config.AimSmooth
                 local sd = ScreenDist(part)
                 if sd < 30 then smooth = smooth * 0.3 elseif sd < 80 then smooth = smooth * 0.6 end
                 if Config.AimAntiDetect then
                     predictedPos += Vector3.new(
-                        (math.random() - 0.5) * 0.12,
-                        (math.random() - 0.5) * 0.08,
-                        (math.random() - 0.5) * 0.12
-                    )
+                        (math.random()-0.5)*0.12, (math.random()-0.5)*0.08, (math.random()-0.5)*0.12)
                 end
                 local targetCF = CFrame.new(Camera.CFrame.Position, predictedPos)
                 Camera.CFrame = Camera.CFrame:Lerp(targetCF, smooth)
@@ -2955,11 +2630,9 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- SILENT AIM INDICATOR
     if State.SilentAim and not State.Aim and not State.Freecam then
         pcall(function()
-            local tgt = GetBestAimTarget()
-            local part = tgt and FindAimPart(tgt)
+            local tgt = GetBestAimTarget(); local part = tgt and FindAimPart(tgt)
             if part then
                 local plr = Players:GetPlayerFromCharacter(tgt)
                 local dist = math.floor((Camera.CFrame.Position - part.Position).Magnitude)
@@ -3000,15 +2673,12 @@ RunService.Heartbeat:Connect(function(dt)
 
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
-            local targetSpd = GetSafeSpeed()
-            Hum.WalkSpeed = targetSpd
+            local targetSpd = GetSafeSpeed(); Hum.WalkSpeed = targetSpd
             if Hum.MoveDirection.Magnitude > 0.1 then
-                local md = Hum.MoveDirection.Unit
-                local vel = HRP.AssemblyLinearVelocity
+                local md = Hum.MoveDirection.Unit; local vel = HRP.AssemblyLinearVelocity
                 local flatVel = Vector3.new(vel.X, 0, vel.Z)
                 if State.SafeSpeedMode then
-                    local cycle = tick() % 0.60
-                    local onTime = 0.60 * 0.82
+                    local cycle = tick() % 0.60; local onTime = 0.60 * 0.82
                     if cycle > onTime then
                         local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
                         local want = md * targetSpd * math.max(brake, 0.15)
@@ -3042,8 +2712,7 @@ RunService.Heartbeat:Connect(function(dt)
                 local now2 = tick()
                 if Hum.FloorMaterial ~= Enum.Material.Air and now2 - lastBhop > 0.06 then
                     Hum:ChangeState(Enum.HumanoidStateType.Jumping)
-                    local v = HRP.AssemblyLinearVelocity
-                    local md = Hum.MoveDirection.Unit
+                    local v = HRP.AssemblyLinearVelocity; local md = Hum.MoveDirection.Unit
                     HRP.AssemblyLinearVelocity = Vector3.new(
                         v.X + md.X * (4 + math.random() * 3),
                         Config.BhopPower + math.random(-6, 6),
@@ -3066,51 +2735,32 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
--- ============================================================
 -- STEPPED — NOCLIP UNIVERSAL
--- Оновлюємо кожен крок: ставимо CanCollide=false на всі нові BasePart
--- Обхід застрягань через рейкаст
--- ============================================================
 RunService.Stepped:Connect(function()
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
     local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
 
     if State.Noclip and Char and HRP and Hum then
-        -- Застосовуємо нокліп до КОЖНОЇ BasePart кожен крок
-        -- Це обходить ігри які постійно скидають CanCollide
         for _, v in pairs(Char:GetDescendants()) do
             if v:IsA("BasePart") then
                 pcall(function()
-                    if ncOrigCanCollide[v] == nil then
-                        ncOrigCanCollide[v] = v.CanCollide
-                    end
+                    if ncOrigCanCollide[v] == nil then ncOrigCanCollide[v] = v.CanCollide end
                     if _ncGroupWorks then v.CollisionGroup = SafeGroup end
                     v.CanCollide = false
                 end)
             end
         end
-
-        -- Анти-застрягання
-        local moving = Hum.MoveDirection.Magnitude > 0.05
-            or HRP.AssemblyLinearVelocity.Magnitude > 5
+        local moving = Hum.MoveDirection.Magnitude > 0.05 or HRP.AssemblyLinearVelocity.Magnitude > 5
         local delta = (HRP.Position - lastNcPos).Magnitude
-
         if moving and delta < 0.06 then ncStuck += 1 else ncStuck = 0 end
-
         if ncStuck >= 3 then
             local md = Hum.MoveDirection.Magnitude > 0.05
-                and Hum.MoveDirection.Unit
-                or HRP.CFrame.LookVector
+                and Hum.MoveDirection.Unit or HRP.CFrame.LookVector
             ncRay.FilterDescendantsInstances = {Char}
-            local ok, r = pcall(function()
-                return Workspace:Raycast(HRP.Position, md * 8, ncRay)
-            end)
-            if ok and r then
-                HRP.CFrame += md * (r.Distance + 2.5)
-            else
-                HRP.CFrame += md * 0.6 + Vector3.new(0, 0.15, 0)
-            end
+            local ok, r = pcall(function() return Workspace:Raycast(HRP.Position, md * 8, ncRay) end)
+            if ok and r then HRP.CFrame += md * (r.Distance + 2.5)
+            else HRP.CFrame += md * 0.6 + Vector3.new(0, 0.15, 0) end
             if ncStuck >= 6 then
                 HRP.AssemblyLinearVelocity = Vector3.new(
                     md.X * 18, HRP.AssemblyLinearVelocity.Y + 3, md.Z * 18)
@@ -3118,7 +2768,6 @@ RunService.Stepped:Connect(function()
             end
         end
         lastNcPos = HRP.Position
-
     elseif Char and HRP then
         lastNcPos = HRP.Position; ncStuck = 0
     end
