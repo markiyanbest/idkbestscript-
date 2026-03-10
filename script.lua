@@ -1813,58 +1813,62 @@ tabFr.Size = UDim2.new(1, -12, 0, 30); tabFr.Position = UDim2.new(0, 6, 0, tabY)
 tabFr.BackgroundColor3 = P.dark; tabFr.BorderSizePixel = 0
 Instance.new("UICorner", tabFr).CornerRadius = UDim.new(0, 6)
 
-local tNames = {"Combat", "Move", "Misc", "Config"}
-local tIcons = {"⚔", "🏃", "🔧", "⚙"}
-local tLangKeys = {"tab_combat", "tab_move", "tab_misc", "tab_config"}
-local tW = 1 / #tNames
+-- do..end: звільняє 7 регістрів (tNames/tIcons/tLangKeys/tW/SwitchTab/cY/cH)
+-- ці змінні потрібні лише під час побудови вкладок
+do
+    local tNames    = {"Combat", "Move", "Misc", "Config"}
+    local tIcons    = {"⚔", "🏃", "🔧", "⚙"}
+    local tLangKeys = {"tab_combat", "tab_move", "tab_misc", "tab_config"}
+    local tW        = 1 / #tNames
 
-local function SwitchTab(name)
-    CurTab = name
-    for n, pg in pairs(TabPages) do pg.Visible = (n == name) end
-    for n, bt in pairs(TabBtns) do
-        local a = (n == name)
-        TweenService:Create(bt, TweenInfo.new(0.12), {
-            BackgroundColor3 = a and P.tabA or Color3.fromRGB(0, 0, 0),
-            BackgroundTransparency = a and 0 or 1,
-        }):Play()
-        bt.TextColor3 = a and P.acc or P.dim
+    local function SwitchTab(name)
+        CurTab = name
+        for n, pg in pairs(TabPages) do pg.Visible = (n == name) end
+        for n, bt in pairs(TabBtns) do
+            local a = (n == name)
+            TweenService:Create(bt, TweenInfo.new(0.12), {
+                BackgroundColor3 = a and P.tabA or Color3.fromRGB(0, 0, 0),
+                BackgroundTransparency = a and 0 or 1,
+            }):Play()
+            bt.TextColor3 = a and P.acc or P.dim
+        end
     end
-end
 
-for i, n in ipairs(tNames) do
-    local b = Instance.new("TextButton", tabFr)
-    b.Size = UDim2.new(tW, -2, 1, -4); b.Position = UDim2.new((i - 1) * tW, 1, 0, 2)
-    b.BackgroundColor3 = P.tabA; b.BackgroundTransparency = i == 1 and 0 or 1
-    b.Text = tIcons[i] .. " " .. L(tLangKeys[i])
-    b.TextColor3 = i == 1 and P.acc or P.dim
-    b.Font = Enum.Font.GothamBold; b.TextSize = IsMob and 11 or 9
-    b.BorderSizePixel = 0; b.AutoButtonColor = false
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
-    b.MouseButton1Click:Connect(function() SwitchTab(n) end)
-    TabBtns[n] = b
-    table.insert(LocalizableElements, {type = "tab", obj = b, icon = tIcons[i], langKey = tLangKeys[i]})
-end
+    for i, n in ipairs(tNames) do
+        local b = Instance.new("TextButton", tabFr)
+        b.Size = UDim2.new(tW, -2, 1, -4); b.Position = UDim2.new((i - 1) * tW, 1, 0, 2)
+        b.BackgroundColor3 = P.tabA; b.BackgroundTransparency = i == 1 and 0 or 1
+        b.Text = tIcons[i] .. " " .. L(tLangKeys[i])
+        b.TextColor3 = i == 1 and P.acc or P.dim
+        b.Font = Enum.Font.GothamBold; b.TextSize = IsMob and 11 or 9
+        b.BorderSizePixel = 0; b.AutoButtonColor = false
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
+        b.MouseButton1Click:Connect(function() SwitchTab(n) end)
+        TabBtns[n] = b
+        table.insert(LocalizableElements, {type = "tab", obj = b, icon = tIcons[i], langKey = tLangKeys[i]})
+    end
 
-local cY = tabY + 34
-local cH = MH - cY - 4
-for _, n in ipairs(tNames) do
-    local s = Instance.new("ScrollingFrame", Main)
-    s.Name = n; s.Size = UDim2.new(1, -6, 0, cH); s.Position = UDim2.new(0, 3, 0, cY)
-    s.BackgroundTransparency = 1; s.ScrollBarThickness = IsMob and 4 or 3
-    s.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
-    s.BorderSizePixel = 0; s.CanvasSize = UDim2.new(0, 0, 0, 0)
-    s.ScrollingDirection = Enum.ScrollingDirection.Y
-    s.Visible = (n == "Combat"); s.ScrollingEnabled = true
-    s.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
-    local ly = Instance.new("UIListLayout", s)
-    ly.Padding = UDim.new(0, IsMob and 4 or 3)
-    ly.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    local pd = Instance.new("UIPadding", s)
-    pd.PaddingTop = UDim.new(0, 4); pd.PaddingBottom = UDim.new(0, IsMob and 16 or 8)
-    ly:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        s.CanvasSize = UDim2.new(0, 0, 0, ly.AbsoluteContentSize.Y + 20)
-    end)
-    TabPages[n] = s
+    local cY = tabY + 34
+    local cH = MH - cY - 4
+    for _, n in ipairs(tNames) do
+        local s = Instance.new("ScrollingFrame", Main)
+        s.Name = n; s.Size = UDim2.new(1, -6, 0, cH); s.Position = UDim2.new(0, 3, 0, cY)
+        s.BackgroundTransparency = 1; s.ScrollBarThickness = IsMob and 4 or 3
+        s.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+        s.BorderSizePixel = 0; s.CanvasSize = UDim2.new(0, 0, 0, 0)
+        s.ScrollingDirection = Enum.ScrollingDirection.Y
+        s.Visible = (n == "Combat"); s.ScrollingEnabled = true
+        s.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
+        local ly = Instance.new("UIListLayout", s)
+        ly.Padding = UDim.new(0, IsMob and 4 or 3)
+        ly.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        local pd = Instance.new("UIPadding", s)
+        pd.PaddingTop = UDim.new(0, 4); pd.PaddingBottom = UDim.new(0, IsMob and 16 or 8)
+        ly:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            s.CanvasSize = UDim2.new(0, 0, 0, ly.AbsoluteContentSize.Y + 20)
+        end)
+        TabPages[n] = s
+    end
 end
 
 do
@@ -2217,51 +2221,54 @@ fcZ.InputEnded:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.Touch then fcL = nil end
 end)
 
-local descPopup = Instance.new("Frame", Scr)
-descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
-descPopup.Position = UDim2.new(0.5, -(MW - 30) / 2, 0.5, -50)
-descPopup.BackgroundColor3 = Color3.fromRGB(16, 16, 28)
-descPopup.BorderSizePixel = 0; descPopup.Visible = false; descPopup.ZIndex = 200
-descPopup.ClipsDescendants = true
-Instance.new("UICorner", descPopup).CornerRadius = UDim.new(0, 12)
-local descStroke = Instance.new("UIStroke", descPopup); descStroke.Color = P.acc; descStroke.Thickness = 2
+local ShowDesc, HideDesc  -- оголошуємо наперед, щоб залишитись в глобальній scope
+do  -- descPopup internals: звільняє 5 depth-0 регістрів
+    local descPopup = Instance.new("Frame", Scr)
+    descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
+    descPopup.Position = UDim2.new(0.5, -(MW - 30) / 2, 0.5, -50)
+    descPopup.BackgroundColor3 = Color3.fromRGB(16, 16, 28)
+    descPopup.BorderSizePixel = 0; descPopup.Visible = false; descPopup.ZIndex = 200
+    descPopup.ClipsDescendants = true
+    Instance.new("UICorner", descPopup).CornerRadius = UDim.new(0, 12)
+    local descStroke = Instance.new("UIStroke", descPopup); descStroke.Color = P.acc; descStroke.Thickness = 2
 
-local descTitle = Instance.new("TextLabel", descPopup)
-descTitle.Size = UDim2.new(1, -10, 0, 24); descTitle.Position = UDim2.new(0, 5, 0, 8)
-descTitle.BackgroundTransparency = 1; descTitle.TextColor3 = P.acc
-descTitle.Font = Enum.Font.GothamBlack; descTitle.TextSize = 13
-descTitle.TextXAlignment = Enum.TextXAlignment.Left; descTitle.ZIndex = 201
+    local descTitle = Instance.new("TextLabel", descPopup)
+    descTitle.Size = UDim2.new(1, -10, 0, 24); descTitle.Position = UDim2.new(0, 5, 0, 8)
+    descTitle.BackgroundTransparency = 1; descTitle.TextColor3 = P.acc
+    descTitle.Font = Enum.Font.GothamBlack; descTitle.TextSize = 13
+    descTitle.TextXAlignment = Enum.TextXAlignment.Left; descTitle.ZIndex = 201
 
-local descBody = Instance.new("TextLabel", descPopup)
-descBody.Size = UDim2.new(1, -14, 0, 60); descBody.Position = UDim2.new(0, 7, 0, 34)
-descBody.BackgroundTransparency = 1; descBody.TextColor3 = P.txt
-descBody.Font = Enum.Font.Gotham; descBody.TextSize = IsMob and 11 or 10
-descBody.TextWrapped = true; descBody.TextXAlignment = Enum.TextXAlignment.Left
-descBody.TextYAlignment = Enum.TextYAlignment.Top; descBody.ZIndex = 201
+    local descBody = Instance.new("TextLabel", descPopup)
+    descBody.Size = UDim2.new(1, -14, 0, 60); descBody.Position = UDim2.new(0, 7, 0, 34)
+    descBody.BackgroundTransparency = 1; descBody.TextColor3 = P.txt
+    descBody.Font = Enum.Font.Gotham; descBody.TextSize = IsMob and 11 or 10
+    descBody.TextWrapped = true; descBody.TextXAlignment = Enum.TextXAlignment.Left
+    descBody.TextYAlignment = Enum.TextYAlignment.Top; descBody.ZIndex = 201
 
-local descClose = Instance.new("TextButton", descPopup)
-descClose.Size = UDim2.new(0, 24, 0, 24); descClose.Position = UDim2.new(1, -30, 0, 6)
-descClose.BackgroundColor3 = Color3.fromRGB(50, 50, 65); descClose.Text = "✕"
-descClose.TextColor3 = P.txt; descClose.Font = Enum.Font.GothamBold; descClose.TextSize = 11
-descClose.BorderSizePixel = 0; descClose.ZIndex = 202; descClose.AutoButtonColor = false
-Instance.new("UICorner", descClose).CornerRadius = UDim.new(1, 0)
+    local descClose = Instance.new("TextButton", descPopup)
+    descClose.Size = UDim2.new(0, 24, 0, 24); descClose.Position = UDim2.new(1, -30, 0, 6)
+    descClose.BackgroundColor3 = Color3.fromRGB(50, 50, 65); descClose.Text = "✕"
+    descClose.TextColor3 = P.txt; descClose.Font = Enum.Font.GothamBold; descClose.TextSize = 11
+    descClose.BorderSizePixel = 0; descClose.ZIndex = 202; descClose.AutoButtonColor = false
+    Instance.new("UICorner", descClose).CornerRadius = UDim.new(1, 0)
 
-local function ShowDesc(title, descKey)
-    descTitle.Text = title; descBody.Text = L(descKey)
-    local textH = math.max(60, math.min(descBody.TextBounds.Y + 10, 160))
-    local totalH = textH + 48
-    descPopup.Size = UDim2.new(0, MW - 30, 0, 0); descPopup.Visible = true
-    TweenService:Create(descPopup, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-        Size = UDim2.new(0, MW - 30, 0, totalH)
-    }):Play()
-    descBody.Size = UDim2.new(1, -14, 0, textH)
+    ShowDesc = function(title, descKey)
+        descTitle.Text = title; descBody.Text = L(descKey)
+        local textH = math.max(60, math.min(descBody.TextBounds.Y + 10, 160))
+        local totalH = textH + 48
+        descPopup.Size = UDim2.new(0, MW - 30, 0, 0); descPopup.Visible = true
+        TweenService:Create(descPopup, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
+            Size = UDim2.new(0, MW - 30, 0, totalH)
+        }):Play()
+        descBody.Size = UDim2.new(1, -14, 0, textH)
+    end
+
+    HideDesc = function()
+        TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
+        task.delay(0.12, function() descPopup.Visible = false end)
+    end
+    descClose.MouseButton1Click:Connect(HideDesc)
 end
-
-local function HideDesc()
-    TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
-    task.delay(0.12, function() descPopup.Visible = false end)
-end
-descClose.MouseButton1Click:Connect(HideDesc)
 
 local waitingBind = nil
 
