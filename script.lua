@@ -88,6 +88,7 @@ local Strings = {
         btn_mob_editor = "📐 Edit Button Layout",
         hdr_quick_btns = "⚡ QUICK BUTTONS",
         lbl_fakelaginput = "FakeLag Bind (PC)",
+        sl_fakelag_str = "FakeLag Strength",
     },
     UA = {
         title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
@@ -157,6 +158,7 @@ local Strings = {
         btn_mob_editor = "📐 Редактор кнопок",
         hdr_quick_btns = "⚡ ШВИДКІ КНОПКИ",
         lbl_fakelaginput = "Бінд FakeLag (ПК)",
+        sl_fakelag_str = "Сила FakeLag",
     },
 }
 
@@ -266,6 +268,7 @@ local Config = {
     ESPMaxDist        = 1000,
     AimPredictMult    = 1.0,
     FullBright        = false,
+    FakeLagStrength   = 5,  -- 1=мінімум, 10=максимум
 }
 
 local Binds = {
@@ -372,6 +375,7 @@ local function ResetConfig()
     Config.SpeedJitter = 1.5; Config.FlyHeightMax = 1800
     Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8; Config.AntiVoidHeight = -180
     Config.ESPMaxDist = 1000; Config.AimPredictMult = 1.0; Config.FullBright = false
+    Config.FakeLagStrength = 5
     Binds.Fly = Enum.KeyCode.F; Binds.Aim = Enum.KeyCode.G
     Binds.Noclip = Enum.KeyCode.V; Binds.SilentAim = Enum.KeyCode.B; Binds.ToggleMenu = Enum.KeyCode.M
     State.SpeedAntiBan = true; State.HitboxRandomize = true
@@ -1274,22 +1278,44 @@ local function Toggle(nm)
                     local rp = cr and cr:FindFirstChild("HumanoidRootPart")
                     local hm = cr and cr:FindFirstChildOfClass("Humanoid")
                     if rp and hm and not State.Fly and not State.Freecam then
+                        local hmState = hm:GetState()
+                        local isRagdoll = hm.PlatformStand or hm.Health <= 0
+                            or hmState == Enum.HumanoidStateType.Ragdoll
+                            or hmState == Enum.HumanoidStateType.FallingDown
+                            or hmState == Enum.HumanoidStateType.GettingUp
+                            or hmState == Enum.HumanoidStateType.Dead
                         local savedVel = rp.AssemblyLinearVelocity
                         pcall(function() rp.Anchored = true end)
-                        task.wait(math.random(40, 120) / 1000)
+                        local s = math.clamp(Config.FakeLagStrength, 1, 10)
+                        local anchorMs = math.random(s * 10, s * 20)
+                        task.wait(anchorMs / 1000)
                         pcall(function()
                             rp.Anchored = false
-                            if hm.FloorMaterial == Enum.Material.Air then
-                                local flat = Vector3.new(savedVel.X, 0, savedVel.Z)
-                                if flat.Magnitude > hm.WalkSpeed then
-                                    flat = flat.Unit * hm.WalkSpeed
+                            if not isRagdoll then
+                                -- Відновлюємо горизонталь savedVel (rubber-band ефект)
+                                -- Якщо в повітрі — зберігаємо Y щоб не ламати стрибок
+                                local hmSt2 = hm:GetState()
+                                local inAir = hmSt2 == Enum.HumanoidStateType.Jumping
+                                    or hmSt2 == Enum.HumanoidStateType.Freefall
+                                local curVel = rp.AssemblyLinearVelocity
+                                local flatSpd = Vector2.new(savedVel.X, savedVel.Z).Magnitude
+                                local maxSpd = math.max(hm.WalkSpeed, 2)
+                                local newX, newZ
+                                if flatSpd > maxSpd * 1.5 then
+                                    -- обрізаємо горизонталь
+                                    newX = savedVel.X / flatSpd * maxSpd
+                                    newZ = savedVel.Z / flatSpd * maxSpd
+                                else
+                                    newX = savedVel.X
+                                    newZ = savedVel.Z
                                 end
-                                rp.AssemblyLinearVelocity = Vector3.new(flat.X, savedVel.Y, flat.Z)
-                            else
-                                rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0)
+                                -- В повітрі зберігаємо Y щоб стрибок не обривався
+                                local newY = inAir and math.max(savedVel.Y, curVel.Y) or savedVel.Y
+                                rp.AssemblyLinearVelocity = Vector3.new(newX, newY, newZ)
                             end
                         end)
-                        task.wait(math.random(100, 250) / 1000)
+                        local gapMs = math.random(220 - s * 17, 350 - s * 25)
+                        task.wait(math.max(gapMs, 30) / 1000)
                     else
                         if rp then pcall(function() rp.Anchored = false end) end
                         task.wait(0.1)
@@ -1639,6 +1665,11 @@ local function JoinSmallestServer()
         Notify("Server Hop", L("ntf_srv_fail"), 3)
     end)
 end
+
+-- ================================================================
+-- BUILD GUI — wrapped in function to avoid Lua 200-local limit
+-- ================================================================
+local function BuildGUI()
 
 -- GUI
 local GuiP = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui") or LP:WaitForChild("PlayerGui")
@@ -2534,9 +2565,12 @@ end
 local function MkToggleBind(tab, icon, lblKey, logicName, descKey)
     local row = MkToggle(tab, icon, lblKey, logicName, descKey)
     if not row then return end
+    -- Бінди лише на PC: на мобільному немає клавіатури,
+    -- показувати кнопку немає сенсу — вона б застрягала в стані "?"
+    if IsMob then return end
     local bindBtn = Instance.new("TextButton", row)
-    bindBtn.Size = UDim2.new(0, 42, 0, IsMob and 22 or 18)
-    bindBtn.Position = UDim2.new(1, IsMob and -148 or -138, 0.5, IsMob and -11 or -9)
+    bindBtn.Size = UDim2.new(0, 42, 0, 18)
+    bindBtn.Position = UDim2.new(1, -138, 0.5, -9)
     bindBtn.BackgroundColor3 = P.dark; bindBtn.BorderSizePixel = 0
     bindBtn.Text = tostring(Binds[logicName] or ""):gsub("Enum.KeyCode.", "")
     bindBtn.TextColor3 = P.dim; bindBtn.Font = Enum.Font.GothamBold; bindBtn.TextSize = 9
@@ -2755,6 +2789,9 @@ AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
+MkSlider("Misc", "📡", "sl_fakelag_str", 1, 10, Config.FakeLagStrength, "FakeLagStrength", function(v)
+    Config.FakeLagStrength = v
+end)
 AddHdr("Misc", "💡", "hdr_effects")
 MkToggle("Misc", "💡", "lbl_fullbright", "FullBright", "desc_fullbright")
 AddHdr("Misc", "🛡", "hdr_protection")
@@ -2966,6 +3003,14 @@ UIS.InputBegan:Connect(function(inp, gpe)
             end
             Notify("BIND", nm .. " → " .. tostring(key):gsub("Enum.KeyCode.", ""), 2)
             waitingBind = nil
+        elseif inp.UserInputType == Enum.UserInputType.Touch then
+            -- Скидаємо очікування на мобільному (захист від застрягання)
+            local nm = waitingBind; waitingBind = nil
+            local d = AllRows[nm]
+            if d and d.bindBtn then
+                d.bindBtn.Text = tostring(Binds[nm] or ""):gsub("Enum.KeyCode.", "")
+                d.bindBtn.TextColor3 = P.dim
+            end
         end
         return
     end
@@ -3348,5 +3393,8 @@ task.spawn(function()
     UpdateFOVCircle(); RefreshLanguage()
     Notify("OMNI", L("ntf_loaded"), 3)
 end)
+
+end -- BuildGUI
+BuildGUI()
 
 Notify("OMNI V305", L("ntf_startup"), 5)
