@@ -1093,6 +1093,11 @@ local TabBtns  = {}
 local CurTab   = "Combat"
 local LocalizableElements = {}
 
+-- Forward declarations (використовуються у UpdVis до свого оголошення)
+local QuickBtnActive    = {}
+local fcZ               = nil
+local UpdateQuickBtnColor  -- визначена нижче
+
 local function UpdVis(nm)
     local d = AllRows[nm]
     if not d then return end
@@ -1679,9 +1684,10 @@ local function JoinSmallestServer()
 end
 
 -- GUI
-local GuiP = LP:WaitForChild("PlayerGui", 5)
+local GuiP = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui") or LP:WaitForChild("PlayerGui")
 pcall(function() local c = game:GetService("CoreGui"); local _ = c.Name; GuiP = c end)
 
+if not GuiP then GuiP = LP:WaitForChild("PlayerGui") end
 local Scr = Instance.new("ScreenGui", GuiP)
 Scr.Name = RndStr(12); Scr.ResetOnSpawn = false
 Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; Scr.IgnoreGuiInset = true
@@ -2177,7 +2183,7 @@ end
 -- ================================================================
 -- QUICK BUTTONS — будь-яку функцію можна вивести на екран
 -- ================================================================
-local QuickBtnActive = {}  -- nm -> {btn, stroke, lbl}
+QuickBtnActive = {}  -- nm -> {btn, stroke, lbl} (forward declared above)
 
 local QuickBtnDefs = {
     {nm="Fly",          icon="✈️", lbl="Fly"},
@@ -2211,7 +2217,7 @@ local function GetQuickBtnCount()
     return c
 end
 
-local function UpdateQuickBtnColor(nm)
+UpdateQuickBtnColor = function(nm)
     local e = QuickBtnActive[nm]
     if not e or not e.btn or not e.btn.Parent then return end
     local on = State[nm]
@@ -2451,7 +2457,7 @@ if IsTab then
     end)
 end
 
-local fcZ = Instance.new("TextButton", Scr)
+fcZ = Instance.new("TextButton", Scr)
 fcZ.Size = UDim2.new(0.5, 0, 1, -100); fcZ.Position = UDim2.new(0.5, 0, 0, 0)
 fcZ.BackgroundTransparency = 1; fcZ.Text = ""; fcZ.ZIndex = 5; fcZ.Visible = false
 local fcL = nil
