@@ -86,6 +86,7 @@ local Strings = {
         sl_esp_dist = "ESP Radius (studs)",
         sl_aim_predict = "Aim Predict ×",
         btn_mob_editor = "📐 Edit Button Layout",
+        hdr_quick_btns = "⚡ QUICK BUTTONS",
         lbl_fakelaginput = "FakeLag Bind (PC)",
     },
     UA = {
@@ -154,6 +155,7 @@ local Strings = {
         sl_esp_dist = "Радіус ESP (стадів)",
         sl_aim_predict = "Предікт прицілу ×",
         btn_mob_editor = "📐 Редактор кнопок",
+        hdr_quick_btns = "⚡ ШВИДКІ КНОПКИ",
         lbl_fakelaginput = "Бінд FakeLag (ПК)",
     },
 }
@@ -1111,6 +1113,10 @@ local function UpdVis(nm)
     if d.row then
         d.row.BackgroundColor3 = on and Color3.fromRGB(30, 38, 34) or Color3.fromRGB(24, 24, 36)
     end
+    -- Оновлюємо колір quick button якщо є
+    if QuickBtnActive and QuickBtnActive[nm] then
+        pcall(function() UpdateQuickBtnColor(nm) end)
+    end
 end
 
 local function RestoreMouse()
@@ -1548,6 +1554,19 @@ local function SetupSilentAimHook()
     if ok and silentAimHooked then Notify("Silent Aim", L("ntf_hook_ok"), 3) end
 end
 task.spawn(function() task.wait(2); SetupSilentAimHook() end)
+-- Mobile Silent Aim: якщо хуки недоступні — показуємо підказку
+task.spawn(function()
+    task.wait(3)
+    if IsMob and not silentAimHooked then
+        -- Перевіряємо ще раз чи є хуки
+        if not ENV.hasGetRawMeta or not ENV.hasGetNameCall then
+            Notify("Silent Aim", "⚠️ Exploit не підтримує хуки — Silent Aim недоступний. Використай Auto Aim.", 6)
+        else
+            -- Хуки є, але hook не встановлено — спробуємо ще раз
+            SetupSilentAimHook()
+        end
+    end
+end)
 
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
@@ -1967,6 +1986,327 @@ do
     end)
 end
 
+
+-- ================================================================
+-- MOBILE BUTTON EDITOR + QUICK BUTTONS
+-- ВАЖЛИВО: оголошуємо ВСЕ ДО того як GUI використовує ці змінні
+-- Виправлено: MobMovableBtns більше не nil при table.insert
+-- ================================================================
+local MOB_LAYOUT_FILE   = "OmniV305_MobLayout.json"
+local MobEditorActive   = false
+local MobEditorOverlays = {}
+local MobMovableBtns    = {}   -- { {btn=Frame, name="..."} }
+local MobSavedPositions = {}
+
+local function SaveMobLayout()
+    if not HasFileSystem() then return end
+    local data = {}
+    for _, entry in pairs(MobMovableBtns) do
+        local btn = entry.btn
+        if btn and btn.Parent then
+            data[entry.name] = {
+                xs = btn.Position.X.Scale, xo = btn.Position.X.Offset,
+                ys = btn.Position.Y.Scale, yo = btn.Position.Y.Offset,
+                sw = btn.Size.X.Offset,    sh = btn.Size.Y.Offset,
+            }
+        end
+    end
+    pcall(function() writefile(MOB_LAYOUT_FILE, HttpService:JSONEncode(data)) end)
+end
+
+local function LoadMobLayout()
+    if not HasFileSystem() then return end
+    local ok, raw = pcall(readfile, MOB_LAYOUT_FILE)
+    if not ok or not raw or raw == "" then return end
+    local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
+    if not ok2 or not data then return end
+    MobSavedPositions = data
+    for _, entry in pairs(MobMovableBtns) do
+        local pos = data[entry.name]
+        if pos and entry.btn and entry.btn.Parent then
+            pcall(function()
+                entry.btn.Position = UDim2.new(pos.xs or 0, pos.xo or 0, pos.ys or 0, pos.yo or 0)
+                if pos.sw and pos.sh and pos.sw > 20 and pos.sh > 20 then
+                    entry.btn.Size = UDim2.new(0, pos.sw, 0, pos.sh)
+                end
+            end)
+        end
+    end
+end
+
+local function MakeDraggableMob(entry)
+    local btn = entry.btn
+    if not btn or not btn.Parent then return end
+
+    local dr, ds, absStart = false, nil, nil
+    local rzDr, rzDs, rzAbsSize = false, nil, nil
+
+    -- Рамка-оверлей
+    local ov = Instance.new("Frame", btn)
+    ov.Name = "EditorOverlay"
+    ov.Size = UDim2.new(1, 6, 1, 6)
+    ov.Position = UDim2.new(0, -3, 0, -3)
+    ov.BackgroundTransparency = 1; ov.BorderSizePixel = 0
+    ov.ZIndex = btn.ZIndex + 10
+    local ovStroke = Instance.new("UIStroke", ov)
+    ovStroke.Color = Color3.fromRGB(0, 200, 100); ovStroke.Thickness = 2.5
+    Instance.new("UICorner", ov).CornerRadius = UDim.new(0, 12)
+
+    -- Підпис
+    local ovLbl = Instance.new("TextLabel", ov)
+    ovLbl.Size = UDim2.new(1, 0, 0, 14)
+    ovLbl.Position = UDim2.new(0, 0, 0, -18)
+    ovLbl.BackgroundTransparency = 1
+    ovLbl.Text = entry.name
+    ovLbl.TextColor3 = Color3.fromRGB(0, 255, 130)
+    ovLbl.Font = Enum.Font.GothamBold; ovLbl.TextSize = 11
+    ovLbl.ZIndex = ov.ZIndex + 1
+
+    -- Handle для зміни розміру (нижній правий кут, ⤡)
+    local rzH = Instance.new("TextButton", ov)
+    rzH.Name = "ResizeHandle"
+    rzH.Size = UDim2.new(0, 22, 0, 22)
+    rzH.Position = UDim2.new(1, -19, 1, -19)
+    rzH.BackgroundColor3 = Color3.fromRGB(0, 140, 80)
+    rzH.Text = "⤡"; rzH.TextSize = 13; rzH.TextColor3 = Color3.fromRGB(255, 255, 255)
+    rzH.Font = Enum.Font.GothamBold; rzH.BorderSizePixel = 0
+    rzH.ZIndex = ov.ZIndex + 2; rzH.AutoButtonColor = false
+    Instance.new("UICorner", rzH).CornerRadius = UDim.new(0, 6)
+
+    -- Resize: почало
+    local connR1 = rzH.InputBegan:Connect(function(inp)
+        if not MobEditorActive then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            rzDr = true; rzDs = inp.Position
+            rzAbsSize = Vector2.new(btn.AbsoluteSize.X, btn.AbsoluteSize.Y)
+        end
+    end)
+    -- Resize: рух
+    local connR2 = UIS.InputChanged:Connect(function(inp)
+        if not rzDr or not MobEditorActive or not rzAbsSize then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local d = inp.Position - rzDs
+            local newW = math.clamp(rzAbsSize.X + d.X, 32, 340)
+            local newH = math.clamp(rzAbsSize.Y + d.Y, 28, 220)
+            btn.Size = UDim2.new(0, newW, 0, newH)
+        end
+    end)
+    -- Resize: кінець
+    local connR3 = UIS.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            if rzDr then rzDr = false; rzAbsSize = nil end
+        end
+    end)
+
+    -- Move: почало
+    local conn1 = btn.InputBegan:Connect(function(inp)
+        if not MobEditorActive or rzDr then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dr = true; ds = inp.Position
+            absStart = Vector2.new(btn.AbsolutePosition.X, btn.AbsolutePosition.Y)
+        end
+    end)
+    -- Move: рух (через UIS щоб не зупинявся при виході за межі кнопки)
+    local conn2 = UIS.InputChanged:Connect(function(inp)
+        if not dr or not MobEditorActive or not absStart or rzDr then return end
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local d = inp.Position - ds
+            local vp = Camera.ViewportSize
+            local bsz = btn.AbsoluteSize
+            local newX = math.clamp(absStart.X + d.X, 0, vp.X - bsz.X)
+            local newY = math.clamp(absStart.Y + d.Y, 0, vp.Y - bsz.Y)
+            btn.Position = UDim2.new(0, newX, 0, newY)
+        end
+    end)
+    -- Move: кінець
+    local conn3 = UIS.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.Touch
+            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            if dr then dr = false; absStart = nil end
+        end
+    end)
+
+    table.insert(MobEditorOverlays, {
+        ov = ov,
+        conn1 = conn1, conn2 = conn2, conn3 = conn3,
+        connR1 = connR1, connR2 = connR2, connR3 = connR3,
+    })
+end
+
+local function EnterMobEditor()
+    MobEditorActive = true
+    -- Чистимо старі оверлеї
+    for _, d in pairs(MobEditorOverlays) do
+        pcall(function() d.ov:Destroy() end)
+        pcall(function() d.conn1:Disconnect(); d.conn2:Disconnect(); d.conn3:Disconnect() end)
+        pcall(function()
+            if d.connR1 then d.connR1:Disconnect() end
+            if d.connR2 then d.connR2:Disconnect() end
+            if d.connR3 then d.connR3:Disconnect() end
+        end)
+    end
+    MobEditorOverlays = {}
+    -- Робимо всі кнопки перетягуваними і змінюваними за розміром
+    for _, entry in pairs(MobMovableBtns) do
+        MakeDraggableMob(entry)
+    end
+    Notify("Editor", "📐 Тягни ✱ Змінюй розмір ⤡ · натисни 📐 щоб зберегти", 4)
+end
+
+local function ExitMobEditor()
+    MobEditorActive = false
+    for _, d in pairs(MobEditorOverlays) do
+        pcall(function() d.ov:Destroy() end)
+        pcall(function() d.conn1:Disconnect(); d.conn2:Disconnect(); d.conn3:Disconnect() end)
+        pcall(function()
+            if d.connR1 then d.connR1:Disconnect() end
+            if d.connR2 then d.connR2:Disconnect() end
+            if d.connR3 then d.connR3:Disconnect() end
+        end)
+    end
+    MobEditorOverlays = {}
+    SaveMobLayout()
+    Notify("Editor", "✅ Layout saved!", 2)
+end
+
+-- ================================================================
+-- QUICK BUTTONS — будь-яку функцію можна вивести на екран
+-- ================================================================
+local QuickBtnActive = {}  -- nm -> {btn, stroke, lbl}
+
+local QuickBtnDefs = {
+    {nm="Fly",          icon="✈️", lbl="Fly"},
+    {nm="Speed",        icon="👟", lbl="Speed"},
+    {nm="Noclip",       icon="👻", lbl="Noclip"},
+    {nm="ESP",          icon="👁",  lbl="ESP"},
+    {nm="Hitbox",       icon="📦", lbl="Hitbox"},
+    {nm="Aim",          icon="🎯", lbl="AutoAim"},
+    {nm="SilentAim",    icon="🔇", lbl="SilentAim"},
+    {nm="Bhop",         icon="🐇", lbl="Bhop"},
+    {nm="HighJump",     icon="⬆️", lbl="HiJump"},
+    {nm="InfiniteJump", icon="♾️", lbl="InfJump"},
+    {nm="AntiVoid",     icon="🌊", lbl="AntiVoid"},
+    {nm="NoFallDamage", icon="🛡",  lbl="NoFall"},
+    {nm="Spin",         icon="🌀", lbl="Spin"},
+    {nm="ShadowLock",   icon="🧲", lbl="Magnet"},
+    {nm="FullBright",   icon="💡", lbl="FBright"},
+    {nm="AntiAFK",      icon="💤", lbl="AntAFK"},
+    {nm="FakeLag",      icon="📡", lbl="FakeLag"},
+    {nm="Freecam",      icon="📷", lbl="FreeCam"},
+    {nm="Potato",       icon="🥔", lbl="Potato"},
+}
+
+local QB_SIZE  = IsMob and 64 or 52
+local QB_GAP   = IsMob and 8  or 6
+local QB_COL_X = {}  -- колонки позицій
+
+local function GetQuickBtnCount()
+    local c = 0
+    for _ in pairs(QuickBtnActive) do c += 1 end
+    return c
+end
+
+local function UpdateQuickBtnColor(nm)
+    local e = QuickBtnActive[nm]
+    if not e or not e.btn or not e.btn.Parent then return end
+    local on = State[nm]
+    pcall(function()
+        TweenService:Create(e.btn, TweenInfo.new(0.1), {
+            BackgroundColor3 = on and Color3.fromRGB(0, 105, 52) or Color3.fromRGB(15, 15, 22)
+        }):Play()
+        e.stroke.Color = on and Color3.fromRGB(0, 220, 110) or Color3.fromRGB(48, 48, 68)
+        e.lbl.TextColor3 = on and Color3.fromRGB(0, 255, 130) or Color3.fromRGB(140, 140, 160)
+    end)
+end
+
+local function CreateQuickBtn(def)
+    if QuickBtnActive[def.nm] then return end
+    local cnt = GetQuickBtnCount()
+    -- Розміщення: два стовпці справа
+    local col = cnt % 2
+    local row = math.floor(cnt / 2)
+    local vp  = Camera.ViewportSize
+    local startX = vp.X - (QB_SIZE + QB_GAP) * 2 - 8
+    local startY = IsMob and 200 or 160
+    local posX = startX + col * (QB_SIZE + QB_GAP)
+    local posY = startY + row * (QB_SIZE + QB_GAP)
+
+    local qb = Instance.new("Frame", Scr)
+    qb.Size = UDim2.new(0, QB_SIZE, 0, QB_SIZE)
+    qb.Position = UDim2.new(0, posX, 0, posY)
+    qb.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+    qb.BorderSizePixel = 0; qb.ZIndex = 50
+    Instance.new("UICorner", qb).CornerRadius = UDim.new(0, 12)
+    local qStroke = Instance.new("UIStroke", qb)
+    qStroke.Thickness = 2; qStroke.Color = Color3.fromRGB(48, 48, 68)
+
+    -- Прозора кнопка-тригер на весь розмір
+    local qBtn = Instance.new("TextButton", qb)
+    qBtn.Size = UDim2.new(1, 0, 1, 0); qBtn.BackgroundTransparency = 1
+    qBtn.Text = ""; qBtn.ZIndex = 51; qBtn.AutoButtonColor = false
+
+    -- Іконка
+    local qIco = Instance.new("TextLabel", qb)
+    qIco.Size = UDim2.new(1, 0, 0, QB_SIZE * 0.54)
+    qIco.Position = UDim2.new(0, 0, 0, 4)
+    qIco.BackgroundTransparency = 1
+    qIco.Text = def.icon; qIco.TextSize = IsMob and 19 or 16
+    qIco.Font = Enum.Font.Gotham; qIco.TextColor3 = Color3.fromRGB(220, 220, 220)
+    qIco.ZIndex = 52
+
+    -- Підпис (назва функції)
+    local qLbl = Instance.new("TextLabel", qb)
+    qLbl.Size = UDim2.new(1, -4, 0, QB_SIZE * 0.36)
+    qLbl.Position = UDim2.new(0, 2, 0, QB_SIZE * 0.58)
+    qLbl.BackgroundTransparency = 1; qLbl.Text = def.lbl
+    qLbl.TextSize = IsMob and 9 or 8; qLbl.Font = Enum.Font.GothamBold
+    qLbl.TextColor3 = Color3.fromRGB(140, 140, 160)
+    qLbl.ZIndex = 52; qLbl.TextWrapped = true
+
+    -- Тап = тогл
+    qBtn.MouseButton1Click:Connect(function()
+        if MobEditorActive then return end
+        Toggle(def.nm)
+        if def.nm == "Fly" then UpdFly() end
+        if def.nm == "Freecam" then
+            pcall(function() fcZ.Visible = State.Freecam and IsTab end)
+        end
+        UpdateQuickBtnColor(def.nm)
+    end)
+
+    QuickBtnActive[def.nm] = {btn = qb, stroke = qStroke, lbl = qLbl}
+    table.insert(MobMovableBtns, {btn = qb, name = "QB_" .. def.nm})
+    -- Завантажуємо позицію якщо є збережена
+    local savedPos = MobSavedPositions["QB_" .. def.nm]
+    if savedPos then
+        pcall(function()
+            qb.Position = UDim2.new(savedPos.xs or 0, savedPos.xo or posX, savedPos.ys or 0, savedPos.yo or posY)
+            if savedPos.sw and savedPos.sh and savedPos.sw > 20 then
+                qb.Size = UDim2.new(0, savedPos.sw, 0, savedPos.sh)
+            end
+        end)
+    end
+    UpdateQuickBtnColor(def.nm)
+end
+
+local function RemoveQuickBtn(nm)
+    local e = QuickBtnActive[nm]
+    if not e then return end
+    for i, v in ipairs(MobMovableBtns) do
+        if v.name == "QB_" .. nm then table.remove(MobMovableBtns, i); break end
+    end
+    pcall(function() if e.btn and e.btn.Parent then e.btn:Destroy() end end)
+    QuickBtnActive[nm] = nil
+end
+
+local QuickBtnStates = {}
+for _, d in pairs(QuickBtnDefs) do QuickBtnStates[d.nm] = false end
+
 local mB = Instance.new("TextButton", Scr)
 mB.Size = UDim2.new(0, MBS, 0, MBS); mB.Position = UDim2.new(0, 10, 0.5, -MBS / 2)
 mB.BackgroundColor3 = P.bg; mB.Text = "M"; mB.TextColor3 = P.acc
@@ -2078,143 +2418,6 @@ task.spawn(function()
 end)
 
 function UpdFly() flyH.Visible = State.Fly and IsTab end
-
--- ================================================================
--- MOBILE BUTTON EDITOR — з збереженням позицій у файл
--- Кожна кнопка має ім'я (MobBtnNames), позиції зберігаються в JSON
--- ================================================================
-local MOB_LAYOUT_FILE = "OmniV305_MobLayout.json"
-local MobEditorActive  = false
-local MobEditorOverlays = {}
--- { index = { btn=..., name=... } } — індексований список
-local MobMovableBtns   = {}  -- { {btn=Frame, name="mB"}, ... }
--- Поточні збережені позиції { name = {xs,xo,ys,yo} }
-local MobSavedPositions = {}
-
-local function SaveMobLayout()
-    if not HasFileSystem() then return end
-    local data = {}
-    for _, entry in pairs(MobMovableBtns) do
-        local btn = entry.btn
-        if btn and btn.Parent then
-            data[entry.name] = {
-                xs = btn.Position.X.Scale,
-                xo = btn.Position.X.Offset,
-                ys = btn.Position.Y.Scale,
-                yo = btn.Position.Y.Offset,
-            }
-        end
-    end
-    pcall(function()
-        writefile(MOB_LAYOUT_FILE, HttpService:JSONEncode(data))
-    end)
-end
-
-local function LoadMobLayout()
-    if not HasFileSystem() then return end
-    local ok, raw = pcall(readfile, MOB_LAYOUT_FILE)
-    if not ok or not raw or raw == "" then return end
-    local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
-    if not ok2 or not data then return end
-    MobSavedPositions = data
-    -- Відразу застосовуємо до існуючих кнопок
-    for _, entry in pairs(MobMovableBtns) do
-        local pos = data[entry.name]
-        if pos and entry.btn and entry.btn.Parent then
-            pcall(function()
-                entry.btn.Position = UDim2.new(pos.xs, pos.xo, pos.ys, pos.yo)
-            end)
-        end
-    end
-end
-
-local function MakeDraggableMob(entry)
-    local btn = entry.btn
-    if not btn or not btn.Parent then return end
-
-    local dr, ds, absStart = false, nil, nil
-
-    local ov = Instance.new("Frame", btn)
-    ov.Name = "EditorOverlay"
-    ov.Size = UDim2.new(1, 6, 1, 6)
-    ov.Position = UDim2.new(0, -3, 0, -3)
-    ov.BackgroundTransparency = 1; ov.BorderSizePixel = 0
-    ov.ZIndex = btn.ZIndex + 10
-    local ovStroke = Instance.new("UIStroke", ov)
-    ovStroke.Color = Color3.fromRGB(0, 200, 100); ovStroke.Thickness = 2.5
-    Instance.new("UICorner", ov).CornerRadius = UDim.new(0, 12)
-    -- Підпис
-    local ovLbl = Instance.new("TextLabel", ov)
-    ovLbl.Size = UDim2.new(1, 0, 0, 14)
-    ovLbl.Position = UDim2.new(0, 0, 0, -16)
-    ovLbl.BackgroundTransparency = 1
-    ovLbl.Text = entry.name
-    ovLbl.TextColor3 = Color3.fromRGB(0, 255, 130)
-    ovLbl.Font = Enum.Font.GothamBold; ovLbl.TextSize = 11
-    ovLbl.ZIndex = ov.ZIndex + 1
-
-    local conn1 = btn.InputBegan:Connect(function(inp)
-        if not MobEditorActive then return end
-        if inp.UserInputType == Enum.UserInputType.Touch
-            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            dr = true
-            ds = inp.Position
-            -- Використовуємо AbsolutePosition щоб уникнути стрибків при Scale≠0
-            absStart = Vector2.new(btn.AbsolutePosition.X, btn.AbsolutePosition.Y)
-        end
-    end)
-    local conn2 = btn.InputChanged:Connect(function(inp)
-        if not dr or not MobEditorActive or not absStart then return end
-        if inp.UserInputType == Enum.UserInputType.Touch
-            or inp.UserInputType == Enum.UserInputType.MouseMovement then
-            local d = inp.Position - ds
-            local vp = Camera.ViewportSize
-            local bsz = btn.AbsoluteSize
-            local newX = math.clamp(absStart.X + d.X, 0, vp.X - bsz.X)
-            local newY = math.clamp(absStart.Y + d.Y, 0, vp.Y - bsz.Y)
-            -- Зберігаємо як Scale=0, щоб позиція не прив'язувалась до краю
-            btn.Position = UDim2.new(0, newX, 0, newY)
-        end
-    end)
-    local conn3 = btn.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.Touch
-            or inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            dr = false; absStart = nil
-        end
-    end)
-
-    table.insert(MobEditorOverlays, {
-        ov = ov, conn1 = conn1, conn2 = conn2, conn3 = conn3
-    })
-end
-
-local function EnterMobEditor()
-    MobEditorActive = true
-    for _, d in pairs(MobEditorOverlays) do
-        pcall(function() d.ov:Destroy() end)
-        pcall(function() d.conn1:Disconnect() end)
-        pcall(function() d.conn2:Disconnect() end)
-        pcall(function() d.conn3:Disconnect() end)
-    end
-    MobEditorOverlays = {}
-    for _, entry in pairs(MobMovableBtns) do
-        MakeDraggableMob(entry)
-    end
-    Notify("Editor", "📐 Drag buttons · tap 📐 to save", 3)
-end
-
-local function ExitMobEditor()
-    MobEditorActive = false
-    for _, d in pairs(MobEditorOverlays) do
-        pcall(function() d.ov:Destroy() end)
-        pcall(function() d.conn1:Disconnect() end)
-        pcall(function() d.conn2:Disconnect() end)
-        pcall(function() d.conn3:Disconnect() end)
-    end
-    MobEditorOverlays = {}
-    SaveMobLayout()
-    Notify("Editor", "✅ Layout saved!", 2)
-end
 
 local mobEditorBtn = nil
 if IsTab then
@@ -2762,6 +2965,61 @@ MkToggle("Config", "🎲", "lbl_speed_jitter", "SpeedAntiBan", "desc_speed_jitte
 MkToggle("Config", "📦", "lbl_hitbox_rand", "HitboxRandomize", "desc_hitbox_rand")
 MkToggle("Config", "🎯", "lbl_aim_anti", "AimAntiDetect", "desc_aim_anti")
 
+-- Quick Buttons налаштування в Config tab (тільки мобільні)
+if IsTab then
+    AddHdr("Config", "⚡", "hdr_quick_btns")
+    local _qbPg = TabPages["Config"]
+    for _, _qdef in ipairs(QuickBtnDefs) do
+        local _qrow = Instance.new("TextButton", _qbPg)
+        _qrow.Size = UDim2.new(0.95, 0, 0, BH)
+        _qrow.BackgroundColor3 = P.btn; _qrow.BorderSizePixel = 0
+        _qrow.AutoButtonColor = false; _qrow.Text = ""; _qrow.ClipsDescendants = true
+        Instance.new("UICorner", _qrow).CornerRadius = UDim.new(0, 8)
+        Instance.new("UIStroke", _qrow).Color = P.brd
+
+        local _qic = Instance.new("TextLabel", _qrow)
+        _qic.Size = UDim2.new(0, 28, 1, 0); _qic.Position = UDim2.new(0, 6, 0, 0)
+        _qic.BackgroundTransparency = 1; _qic.Text = _qdef.icon
+        _qic.TextSize = IsMob and 16 or 13; _qic.Font = Enum.Font.Gotham; _qic.TextColor3 = P.dim
+
+        local _qlbl = Instance.new("TextLabel", _qrow)
+        _qlbl.Size = UDim2.new(1, -90, 1, 0); _qlbl.Position = UDim2.new(0, 36, 0, 0)
+        _qlbl.BackgroundTransparency = 1; _qlbl.Text = _qdef.lbl .. " (Quick)"
+        _qlbl.TextColor3 = P.txt; _qlbl.Font = Enum.Font.GothamBold; _qlbl.TextSize = FS
+        _qlbl.TextXAlignment = Enum.TextXAlignment.Left
+
+        local _qswBG = Instance.new("Frame", _qrow)
+        _qswBG.Size = UDim2.new(0, 36, 0, 18); _qswBG.Position = UDim2.new(1, -44, 0.5, -9)
+        _qswBG.BackgroundColor3 = P.swOff; _qswBG.BorderSizePixel = 0
+        Instance.new("UICorner", _qswBG).CornerRadius = UDim.new(1, 0)
+        local _qswDot = Instance.new("Frame", _qswBG)
+        _qswDot.Size = UDim2.new(0, 12, 0, 12); _qswDot.Position = UDim2.new(0, 3, 0.5, -6)
+        _qswDot.BackgroundColor3 = Color3.fromRGB(200, 200, 210); _qswDot.BorderSizePixel = 0
+        Instance.new("UICorner", _qswDot).CornerRadius = UDim.new(1, 0)
+
+        local _qnm = _qdef.nm
+        local function _qRefresh()
+            local _on = QuickBtnStates[_qnm]
+            TweenService:Create(_qswBG, TweenInfo.new(0.12), {
+                BackgroundColor3 = _on and Color3.fromRGB(0, 200, 100) or P.swOff
+            }):Play()
+            TweenService:Create(_qswDot, TweenInfo.new(0.12), {
+                Position = _on and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
+            }):Play()
+        end
+        _qrow.MouseButton1Click:Connect(function()
+            QuickBtnStates[_qnm] = not QuickBtnStates[_qnm]
+            if QuickBtnStates[_qnm] then
+                CreateQuickBtn(_qdef)
+            else
+                RemoveQuickBtn(_qnm)
+            end
+            _qRefresh()
+        end)
+    end
+end
+
+
 -- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
     if waitingBind then
@@ -2839,6 +3097,10 @@ task.spawn(function()
                 math.floor(38 + pulse * 20), math.floor(38 + pulse * 20), math.floor(48 + pulse * 20))
             for nm, d in pairs(AllRows) do
                 if State[nm] and d.accent then d.accent.BackgroundColor3 = acol end
+            end
+            -- Оновлюємо кольори Quick Buttons
+            for _qbnm, _ in pairs(QuickBtnActive) do
+                pcall(function() UpdateQuickBtnColor(_qbnm) end)
             end
             if (State.Aim or State.SilentAim) and not (aimLocked and aimTarget) then
                 fovStroke.Color = Color3.fromRGB(180, 180, 200)
