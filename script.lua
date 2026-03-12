@@ -2373,6 +2373,7 @@ if IsTab then table.insert(MobMovableBtns, {btn = mB, name = "MenuBtn"}) end
 local flyH = Instance.new("Frame", Scr)
 flyH.Size = UDim2.new(0, 140, 0, 64); flyH.Position = UDim2.new(1, -154, 1, -160)
 flyH.BackgroundTransparency = 1; flyH.Visible = false; flyH.ZIndex = 50
+do -- flyH interior (flyBG + MkFlyB не потрібні поза цим блоком)
 local flyBG = Instance.new("Frame", flyH)
 flyBG.Size = UDim2.new(1, 0, 1, 0); flyBG.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
 flyBG.BackgroundTransparency = 0.3; flyBG.BorderSizePixel = 0; flyBG.ZIndex = 49
@@ -2414,6 +2415,7 @@ local function MkFlyB(t, x, cb)
 end
 MkFlyB("▲", 4, function(v) MobUp = v end)
 MkFlyB("▼", 72, function(v) MobDn = v end)
+end -- flyH interior
 
 -- Реєструємо flyH для редактора
 if IsTab then table.insert(MobMovableBtns, {btn = flyH, name = "FlyBtns"}) end
@@ -2460,21 +2462,23 @@ end
 fcZ = Instance.new("TextButton", Scr)
 fcZ.Size = UDim2.new(0.5, 0, 1, -100); fcZ.Position = UDim2.new(0.5, 0, 0, 0)
 fcZ.BackgroundTransparency = 1; fcZ.Text = ""; fcZ.ZIndex = 5; fcZ.Visible = false
-local fcL = nil
-fcZ.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch then fcL = i.Position end
-end)
-fcZ.InputChanged:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch and fcL then
-        local d = i.Position - fcL
-        FC_Y = FC_Y - math.rad(d.X * 0.4)
-        FC_P = math.clamp(FC_P - math.rad(d.Y * 0.4), -math.rad(89), math.rad(89))
-        fcL = i.Position
-    end
-end)
-fcZ.InputEnded:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch then fcL = nil end
-end)
+do -- fcZ touch handlers (fcL shared між callback-ами)
+    local fcL = nil
+    fcZ.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then fcL = i.Position end
+    end)
+    fcZ.InputChanged:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch and fcL then
+            local d = i.Position - fcL
+            FC_Y = FC_Y - math.rad(d.X * 0.4)
+            FC_P = math.clamp(FC_P - math.rad(d.Y * 0.4), -math.rad(89), math.rad(89))
+            fcL = i.Position
+        end
+    end)
+    fcZ.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then fcL = nil end
+    end)
+end -- fcZ touch handlers
 
 local descPopup = Instance.new("Frame", Scr)
 descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
@@ -2483,8 +2487,8 @@ descPopup.BackgroundColor3 = Color3.fromRGB(16, 16, 28)
 descPopup.BorderSizePixel = 0; descPopup.Visible = false; descPopup.ZIndex = 200
 descPopup.ClipsDescendants = true
 Instance.new("UICorner", descPopup).CornerRadius = UDim.new(0, 12)
-local descStroke = Instance.new("UIStroke", descPopup)
-descStroke.Color = P.acc; descStroke.Thickness = 2
+do local descStroke = Instance.new("UIStroke", descPopup)
+descStroke.Color = P.acc; descStroke.Thickness = 2 end
 
 local descTitle = Instance.new("TextLabel", descPopup)
 descTitle.Size = UDim2.new(1, -10, 0, 24); descTitle.Position = UDim2.new(0, 5, 0, 8)
@@ -2744,7 +2748,6 @@ end
 
 local langBtnRef = nil
 local autoSaveLblRef = nil
-local safeInfoLblRef = nil
 
 local function RefreshLanguage()
     for _, el in pairs(LocalizableElements) do
@@ -2803,7 +2806,7 @@ do
     infoLbl.BackgroundTransparency = 1; infoLbl.TextColor3 = Color3.fromRGB(100, 230, 140)
     infoLbl.Font = Enum.Font.GothamBold; infoLbl.TextSize = IsMob and 10 or 9
     infoLbl.TextXAlignment = Enum.TextXAlignment.Left; infoLbl.TextWrapped = true
-    infoLbl.Text = ""; safeInfoLblRef = infoLbl
+    infoLbl.Text = ""
 
     task.spawn(function()
         while task.wait(0.8) do
@@ -3116,6 +3119,7 @@ task.spawn(function()
 end)
 
 -- RENDER STEPPED
+do -- FPS/Ping locals scope (використовуються тільки в RenderStepped)
 local FrameLog   = {}
 local lastPing   = 0
 local pingTk     = 0
@@ -3266,6 +3270,7 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 end)
+end -- FPS/Ping locals scope
 
 -- HEARTBEAT
 RunService.Heartbeat:Connect(function(dt)
