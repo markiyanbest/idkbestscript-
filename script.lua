@@ -1954,13 +1954,16 @@ local function MkStat(parent, ico, lbl, zI)
     return row, vL
 end
 
-local exFpsRow, eF = MkStat(exS, "🖥", "FPS", 21)
-exFpsRow.Position = UDim2.new(0, 8, 0, 6)
-local exDiv = Instance.new("Frame", exS)
-exDiv.Size = UDim2.new(1, -16, 0, 1); exDiv.Position = UDim2.new(0, 8, 0, 31)
-exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60); exDiv.BorderSizePixel = 0; exDiv.ZIndex = 21
-local exPingRow, eP = MkStat(exS, "📶", "PING", 21)
-exPingRow.Position = UDim2.new(0, 8, 0, 33)
+local eF, eP  -- FPS/Ping text refs, потрібні в RenderStepped
+do  -- exFpsRow/exDiv/exPingRow (тільки layout, не потрібні далі)
+    local exFpsRow; exFpsRow, eF = MkStat(exS, "🖥", "FPS", 21)
+    exFpsRow.Position = UDim2.new(0, 8, 0, 6)
+    local exDiv = Instance.new("Frame", exS)
+    exDiv.Size = UDim2.new(1, -16, 0, 1); exDiv.Position = UDim2.new(0, 8, 0, 31)
+    exDiv.BackgroundColor3 = Color3.fromRGB(40, 40, 60); exDiv.BorderSizePixel = 0; exDiv.ZIndex = 21
+    local exPingRow; exPingRow, eP = MkStat(exS, "📶", "PING", 21)
+    exPingRow.Position = UDim2.new(0, 8, 0, 33)
+end  -- exFpsRow/exDiv/exPingRow
 
 do
     local exDr, exDs, exAbsStart = false, nil, nil
@@ -2209,8 +2212,6 @@ local QuickBtnDefs = {
 
 local QB_SIZE  = IsMob and 64 or 52
 local QB_GAP   = IsMob and 8  or 6
-local QB_COL_X = {}  -- колонки позицій
-
 local function GetQuickBtnCount()
     local c = 0
     for _ in pairs(QuickBtnActive) do c += 1 end
@@ -2322,18 +2323,19 @@ Instance.new("UICorner", mB).CornerRadius = UDim.new(0, 12)
 local mSt = Instance.new("UIStroke", mB)
 mSt.Thickness = 2; mSt.Color = P.acc
 
-local mCnt = Instance.new("TextLabel", mB)
-mCnt.Size = UDim2.new(1, 0, 0, 12); mCnt.Position = UDim2.new(0, 0, 1, -13)
-mCnt.BackgroundTransparency = 1; mCnt.TextSize = 8; mCnt.Font = Enum.Font.GothamBold
-mCnt.TextColor3 = P.grn; mCnt.ZIndex = 101; mCnt.Text = ""
-
-task.spawn(function()
-    while task.wait(0.6) do
-        local c = 0
-        for _, v in pairs(State) do if v then c += 1 end end
-        mCnt.Text = c > 0 and ("●" .. c) or ""
-    end
-end)
+do  -- mCnt scope (оновлюється тільки всередині task.spawn)
+    local mCnt = Instance.new("TextLabel", mB)
+    mCnt.Size = UDim2.new(1, 0, 0, 12); mCnt.Position = UDim2.new(0, 0, 1, -13)
+    mCnt.BackgroundTransparency = 1; mCnt.TextSize = 8; mCnt.Font = Enum.Font.GothamBold
+    mCnt.TextColor3 = P.grn; mCnt.ZIndex = 101; mCnt.Text = ""
+    task.spawn(function()
+        while task.wait(0.6) do
+            local c = 0
+            for _, v in pairs(State) do if v then c += 1 end end
+            mCnt.Text = c > 0 and ("●" .. c) or ""
+        end
+    end)
+end  -- mCnt scope
 
 do
     local dr, ds, dp, mv, mt = false, nil, nil, false, 0
@@ -2480,6 +2482,14 @@ do -- fcZ touch handlers (fcL shared між callback-ами)
     end)
 end -- fcZ touch handlers
 
+-- Forward refs (потрібні зовні блоку UI-builder)
+local RefreshLanguage
+local ShowDesc, HideDesc, AddHdr
+local langBtnRef, autoSaveLblRef = nil, nil
+local waitingBind = nil
+
+do -- UI builder scope (звільняємо регістри)
+do -- descPopup/ShowDesc/HideDesc/AddHdr nested scope
 local descPopup = Instance.new("Frame", Scr)
 descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
 descPopup.Position = UDim2.new(0.5, -(MW - 30) / 2, 0.5, -50)
@@ -2510,7 +2520,7 @@ descClose.TextColor3 = P.txt; descClose.Font = Enum.Font.GothamBold; descClose.T
 descClose.BorderSizePixel = 0; descClose.ZIndex = 202; descClose.AutoButtonColor = false
 Instance.new("UICorner", descClose).CornerRadius = UDim.new(1, 0)
 
-local function ShowDesc(title, descKey)
+ShowDesc = function(title, descKey)
     descTitle.Text = title; descBody.Text = L(descKey)
     local textH = math.max(60, math.min(descBody.TextBounds.Y + 10, 160))
     local totalH = textH + 48
@@ -2521,15 +2531,14 @@ local function ShowDesc(title, descKey)
     descBody.Size = UDim2.new(1, -14, 0, textH)
 end
 
-local function HideDesc()
+HideDesc = function()
     TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
     task.delay(0.12, function() descPopup.Visible = false end)
 end
 descClose.MouseButton1Click:Connect(HideDesc)
+end -- descPopup/ShowDesc/HideDesc/AddHdr nested scope
 
-local waitingBind = nil
-
-local function AddHdr(tab, icon, langKey)
+AddHdr = function(tab, icon, langKey)
     local pg = TabPages[tab]; if not pg then return end
     local f = Instance.new("Frame", pg)
     f.Size = UDim2.new(0.95, 0, 0, IsMob and 22 or 18)
@@ -2746,10 +2755,7 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     table.insert(LocalizableElements, {type = "slider", obj = tl, langKey = lblKey})
 end
 
-local langBtnRef = nil
-local autoSaveLblRef = nil
-
-local function RefreshLanguage()
+RefreshLanguage = function()
     for _, el in pairs(LocalizableElements) do
         pcall(function()
             if el.type == "header" then el.obj.Text = el.icon .. "  " .. L(el.langKey)
@@ -2793,36 +2799,33 @@ MkSlider("Move", "✖", "sl_safe_mult", 10, 40, math.floor(Config.SafeSpeedMult 
     Config.SafeSpeedMult = v / 10
 end)
 
-do
+task.spawn(function()  -- Move info panel (ізолюємо регістри)
     local pg = TabPages["Move"]
     local infoF = Instance.new("Frame", pg)
     infoF.Size = UDim2.new(0.95, 0, 0, IsMob and 44 or 36)
     infoF.BackgroundColor3 = Color3.fromRGB(14, 18, 14); infoF.BorderSizePixel = 0
     Instance.new("UICorner", infoF).CornerRadius = UDim.new(0, 8)
-    local infoSt = Instance.new("UIStroke", infoF)
-    infoSt.Color = Color3.fromRGB(0, 160, 80); infoSt.Transparency = 0.5
+    do local infoSt = Instance.new("UIStroke", infoF)
+    infoSt.Color = Color3.fromRGB(0, 160, 80); infoSt.Transparency = 0.5 end
     local infoLbl = Instance.new("TextLabel", infoF)
     infoLbl.Size = UDim2.new(1, -10, 1, 0); infoLbl.Position = UDim2.new(0, 5, 0, 0)
     infoLbl.BackgroundTransparency = 1; infoLbl.TextColor3 = Color3.fromRGB(100, 230, 140)
     infoLbl.Font = Enum.Font.GothamBold; infoLbl.TextSize = IsMob and 10 or 9
     infoLbl.TextXAlignment = Enum.TextXAlignment.Left; infoLbl.TextWrapped = true
     infoLbl.Text = ""
-
-    task.spawn(function()
-        while task.wait(0.8) do
-            pcall(function()
-                local cap = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
-                local setSpd = Config.WalkSpeed; local active = State.SafeSpeedMode
-                local eff = active and math.min(setSpd, cap) or setSpd
-                local warn = (setSpd > cap and active) and " ⚠️" or ""
-                infoLbl.Text = string.format(L("stat_safe_info"),
-                    math.floor(gameBaseSpeed), Config.SafeSpeedMult, cap, warn, setSpd, eff)
-                infoLbl.TextColor3 = (setSpd > cap and active)
-                    and Color3.fromRGB(255, 180, 50) or Color3.fromRGB(100, 230, 140)
-            end)
-        end
-    end)
-end
+    while task.wait(0.8) do
+        pcall(function()
+            local cap = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
+            local setSpd = Config.WalkSpeed; local active = State.SafeSpeedMode
+            local eff = active and math.min(setSpd, cap) or setSpd
+            local warn = (setSpd > cap and active) and " ⚠️" or ""
+            infoLbl.Text = string.format(L("stat_safe_info"),
+                math.floor(gameBaseSpeed), Config.SafeSpeedMult, cap, warn, setSpd, eff)
+            infoLbl.TextColor3 = (setSpd > cap and active)
+                and Color3.fromRGB(255, 180, 50) or Color3.fromRGB(100, 230, 140)
+        end)
+    end
+end)
 
 AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
@@ -2975,7 +2978,8 @@ MkToggle("Config", "📦", "lbl_hitbox_rand", "HitboxRandomize", "desc_hitbox_ra
 MkToggle("Config", "🎯", "lbl_aim_anti", "AimAntiDetect", "desc_aim_anti")
 
 -- Quick Buttons налаштування в Config tab (тільки мобільні)
-if IsTab then
+-- Виконується в окремій функції щоб не витрачати регістри головного блоку
+if IsTab then task.spawn(function()
     AddHdr("Config", "⚡", "hdr_quick_btns")
     local _qbPg = TabPages["Config"]
     for _, _qdef in ipairs(QuickBtnDefs) do
@@ -3026,8 +3030,9 @@ if IsTab then
             _qRefresh()
         end)
     end
-end
+end) end
 
+end -- UI builder scope
 
 -- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
