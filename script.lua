@@ -2643,7 +2643,7 @@ local ShowDesc, HideDesc, AddHdr
 local langBtnRef, autoSaveLblRef = nil, nil
 local waitingBind = nil
 
-do
+;(function()
 do
 local descPopup = Instance.new("Frame", Scr)
 descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
@@ -3188,7 +3188,7 @@ if IsTab then task.spawn(function()
     end
 end) end
 
-end
+end)()
 
 -- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
