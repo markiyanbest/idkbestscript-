@@ -334,6 +334,10 @@ local function SaveConfig()
     for k, v in pairs(Config) do data.config[k] = v end
     for _, k in pairs(SAVE_STATE_KEYS) do data.state[k] = State[k] or false end
     for _, k in pairs(SAVE_CFG_KEYS) do data.state[k] = State[k] or false end
+    -- Зберігаємо стан QB кнопок
+    local qbData = {}
+    for nm, on in pairs(QuickBtnStates) do qbData[nm] = on end
+    data.quickBtns = qbData
     local ok, err = pcall(function() writefile(CFG_FILE, HttpService:JSONEncode(data)) end)
     if ok then Notify("Config", L("ntf_saved"), 2); return true
     else Notify("Config", L("ntf_error") .. (err or "?"), 3); return false end
@@ -353,6 +357,25 @@ local function ApplyLoadedConfig(data)
     end
     if data.lang and (data.lang == "EN" or data.lang == "UA") then
         CurrentLang = data.lang
+    end
+    -- Відновлюємо QB кнопки після завантаження
+    if data.quickBtns then
+        task.spawn(function()
+            task.wait(2.5)
+            for nm, on in pairs(data.quickBtns) do
+                pcall(function()
+                    if on and not QuickBtnStates[nm] then
+                        for _, def in ipairs(QuickBtnDefs) do
+                            if def.nm == nm then
+                                QuickBtnStates[nm] = true
+                                CreateQuickBtn(def)
+                                break
+                            end
+                        end
+                    end
+                end)
+            end
+        end)
     end
 end
 
@@ -948,73 +971,88 @@ local function UndoPotato()
 end
 
 -- ============================================================
--- FULLBRIGHT — FIXED
--- Зберігає оригінальні значення Lighting та вимикає Atmosphere/ефекти
+-- FULLBRIGHT — Heartbeat (гра не може скинути)
 -- ============================================================
-local _fbOrigLighting = nil
+local _fbOrigLighting    = nil
 local _fbDisabledEffects = {}
+local _fbHeartbeatConn   = nil
+local _fbFrameCount      = 0
 
-local function ApplyFullBright()
-    -- Зберігаємо оригінальні значення
-    _fbOrigLighting = {
-        Brightness          = Lighting.Brightness,
-        ClockTime           = Lighting.ClockTime,
-        FogEnd              = Lighting.FogEnd,
-        FogStart            = Lighting.FogStart,
-        GlobalShadows       = Lighting.GlobalShadows,
-        Ambient             = Lighting.Ambient,
-        OutdoorAmbient      = Lighting.OutdoorAmbient,
-    }
-    pcall(function() _fbOrigLighting.EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale end)
-    pcall(function() _fbOrigLighting.EnvironmentDiffuseScale  = Lighting.EnvironmentDiffuseScale  end)
-    pcall(function() _fbOrigLighting.ExposureCompensation     = Lighting.ExposureCompensation     end)
-    pcall(function() _fbOrigLighting.ShadowSoftness           = Lighting.ShadowSoftness           end)
-
-    -- Максимальний свет
+local function _fbApplyFrame()
     pcall(function()
-        Lighting.Brightness          = 8
+        Lighting.Brightness          = 10
         Lighting.ClockTime           = 14
-        Lighting.FogEnd              = 100000
-        Lighting.FogStart            = 0
+        Lighting.FogEnd              = 999999
+        Lighting.FogStart            = -999999
         Lighting.GlobalShadows       = false
-        Lighting.Ambient             = Color3.fromRGB(178, 178, 178)
-        Lighting.OutdoorAmbient      = Color3.fromRGB(178, 178, 178)
+        Lighting.Ambient             = Color3.new(1, 1, 1)
+        Lighting.OutdoorAmbient      = Color3.new(1, 1, 1)
     end)
     pcall(function() Lighting.EnvironmentSpecularScale = 1 end)
     pcall(function() Lighting.EnvironmentDiffuseScale  = 1 end)
     pcall(function() Lighting.ExposureCompensation     = 0 end)
     pcall(function() Lighting.ShadowSoftness           = 0 end)
-
-    -- Вимикаємо Atmosphere і всі ефекти що затемнюють
-    _fbDisabledEffects = {}
-    for _, v in pairs(Lighting:GetChildren()) do
-        local shouldDisable = false
-        if v:IsA("Atmosphere") then shouldDisable = true end
-        if v:IsA("ColorCorrectionEffect") then shouldDisable = true end
-        if v:IsA("BloomEffect") then shouldDisable = true end
-        if v:IsA("BlurEffect") and v ~= Blur then shouldDisable = true end
-        if v:IsA("SunRaysEffect") then shouldDisable = true end
-        if v:IsA("DepthOfFieldEffect") then shouldDisable = true end
-        if shouldDisable then
+    _fbFrameCount += 1
+    if _fbFrameCount >= 30 then
+        _fbFrameCount = 0
+        for _, v in pairs(Lighting:GetDescendants()) do
             pcall(function()
-                _fbDisabledEffects[v] = v.Enabled
-                v.Enabled = false
+                if v:IsA("Atmosphere") then
+                    v.Density = 0; v.Haze = 0; v.Glare = 0
+                    v.Color = Color3.new(1,1,1); v.Enabled = false
+                elseif v:IsA("ColorCorrectionEffect") then
+                    v.Brightness = 0; v.Contrast = 0; v.Saturation = 0; v.Enabled = false
+                elseif v:IsA("BloomEffect")        then v.Intensity = 0; v.Enabled = false
+                elseif v:IsA("SunRaysEffect")      then v.Intensity = 0; v.Enabled = false
+                elseif v:IsA("DepthOfFieldEffect") then v.Enabled = false
+                elseif v:IsA("BlurEffect") and v ~= Blur then v.Size = 0; v.Enabled = false
+                end
             end)
         end
     end
 end
 
+local function ApplyFullBright()
+    if not _fbOrigLighting then
+        _fbOrigLighting = {
+            Brightness = Lighting.Brightness, ClockTime = Lighting.ClockTime,
+            FogEnd = Lighting.FogEnd, FogStart = Lighting.FogStart,
+            GlobalShadows = Lighting.GlobalShadows,
+            Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient,
+        }
+        pcall(function() _fbOrigLighting.EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale end)
+        pcall(function() _fbOrigLighting.EnvironmentDiffuseScale  = Lighting.EnvironmentDiffuseScale  end)
+        pcall(function() _fbOrigLighting.ExposureCompensation     = Lighting.ExposureCompensation     end)
+        pcall(function() _fbOrigLighting.ShadowSoftness           = Lighting.ShadowSoftness           end)
+        _fbDisabledEffects = {}
+        for _, v in pairs(Lighting:GetDescendants()) do
+            if v:IsA("Atmosphere") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect")
+            or v:IsA("SunRaysEffect") or v:IsA("DepthOfFieldEffect")
+            or (v:IsA("BlurEffect") and v ~= Blur) then
+                pcall(function()
+                    local d = {Enabled = v.Enabled}
+                    if v:IsA("Atmosphere") then
+                        d.Density=v.Density; d.Haze=v.Haze; d.Glare=v.Glare; d.Color=v.Color
+                    end
+                    _fbDisabledEffects[v] = d
+                end)
+            end
+        end
+    end
+    if _fbHeartbeatConn then _fbHeartbeatConn:Disconnect() end
+    _fbFrameCount = 0
+    _fbHeartbeatConn = RunService.Heartbeat:Connect(_fbApplyFrame)
+    _fbApplyFrame()
+end
+
 local function RemoveFullBright()
-    -- Відновлюємо Lighting
+    if _fbHeartbeatConn then _fbHeartbeatConn:Disconnect(); _fbHeartbeatConn = nil end
     if _fbOrigLighting then
         pcall(function()
-            Lighting.Brightness     = _fbOrigLighting.Brightness
-            Lighting.ClockTime      = _fbOrigLighting.ClockTime
-            Lighting.FogEnd         = _fbOrigLighting.FogEnd
-            Lighting.FogStart       = _fbOrigLighting.FogStart
-            Lighting.GlobalShadows  = _fbOrigLighting.GlobalShadows
-            Lighting.Ambient        = _fbOrigLighting.Ambient
-            Lighting.OutdoorAmbient = _fbOrigLighting.OutdoorAmbient
+            Lighting.Brightness = _fbOrigLighting.Brightness; Lighting.ClockTime = _fbOrigLighting.ClockTime
+            Lighting.FogEnd = _fbOrigLighting.FogEnd; Lighting.FogStart = _fbOrigLighting.FogStart
+            Lighting.GlobalShadows = _fbOrigLighting.GlobalShadows
+            Lighting.Ambient = _fbOrigLighting.Ambient; Lighting.OutdoorAmbient = _fbOrigLighting.OutdoorAmbient
         end)
         pcall(function() if _fbOrigLighting.EnvironmentSpecularScale ~= nil then Lighting.EnvironmentSpecularScale = _fbOrigLighting.EnvironmentSpecularScale end end)
         pcall(function() if _fbOrigLighting.EnvironmentDiffuseScale  ~= nil then Lighting.EnvironmentDiffuseScale  = _fbOrigLighting.EnvironmentDiffuseScale  end end)
@@ -1022,11 +1060,14 @@ local function RemoveFullBright()
         pcall(function() if _fbOrigLighting.ShadowSoftness           ~= nil then Lighting.ShadowSoftness           = _fbOrigLighting.ShadowSoftness           end end)
         _fbOrigLighting = nil
     end
-
-    -- Відновлюємо ефекти
     for v, orig in pairs(_fbDisabledEffects) do
         pcall(function()
-            if v and v.Parent then v.Enabled = orig end
+            if v and v.Parent then
+                v.Enabled = orig.Enabled
+                if v:IsA("Atmosphere") and orig.Density ~= nil then
+                    v.Density=orig.Density; v.Haze=orig.Haze; v.Glare=orig.Glare; v.Color=orig.Color
+                end
+            end
         end)
     end
     _fbDisabledEffects = {}
@@ -1177,6 +1218,8 @@ local function UpdVis(nm)
 end
 
 local function RestoreMouse()
+    -- НЕ чіпаємо MouseBehavior вручну — PlayerModule сам знає про ShiftLock.
+    -- Будь-яке ручне встановлення MouseBehavior може скинути ShiftLock.
     task.spawn(function()
         task.wait(0.05)
         pcall(function()
@@ -1184,6 +1227,7 @@ local function RestoreMouse()
                 return require(LP.PlayerScripts:WaitForChild("PlayerModule", 3))
             end)
             if ok and pm then
+                -- Відновлення через PlayerModule зберігає ShiftLock стан
                 pcall(function()
                     local controls = pm:GetControls()
                     if controls and controls.updateMouseBehavior then
@@ -1191,31 +1235,20 @@ local function RestoreMouse()
                     end
                 end)
                 pcall(function()
-                    local camera = pm:GetCameras()
-                    if camera and camera.activeCameraController then
-                        camera.activeCameraController:Reset()
+                    local cam = pm:GetCameras()
+                    if cam and cam.activeCameraController then
+                        cam.activeCameraController:Reset()
                     end
                 end)
             end
         end)
         task.wait(0.05)
-        pcall(function()
-            UIS.MouseBehavior    = Enum.MouseBehavior.Default
-            UIS.MouseIconEnabled = true
-        end)
-        task.wait(0.05)
+        -- Відновлюємо тільки камеру — мишку НЕ чіпаємо
         pcall(function()
             local C = LP.Character
             local H = C and C:FindFirstChildOfClass("Humanoid")
-            Camera.CameraType = Enum.CameraType.Custom
-            if H then
-                Camera.CameraSubject = H
-            end
-        end)
-        task.wait(0.3)
-        pcall(function()
-            UIS.MouseBehavior    = Enum.MouseBehavior.Default
-            UIS.MouseIconEnabled = true
+            Camera.CameraType    = Enum.CameraType.Custom
+            if H then Camera.CameraSubject = H end
         end)
     end)
 end
