@@ -704,11 +704,10 @@ local function UpdateESP()
 
         local hp     = math.max(0, math.floor(hum.Health))
         local rawMax = hum.MaxHealth
-        -- Захист від math.huge (нескінченне HP в деяких іграх)
         local isInf  = rawMax ~= rawMax or rawMax == math.huge or rawMax > 1e9
-        local mxh    = isInf and hp or math.max(1, math.floor(rawMax))
+        local mxh    = isInf and math.max(1, hp) or math.max(1, math.floor(rawMax))
         local ds     = myHRP and math.floor((myHRP.Position - head.Position).Magnitude) or 0
-        local ratio  = math.clamp(hp / math.max(1, mxh), 0, 1)
+        local ratio  = math.clamp(hp / mxh, 0, 1)
 
         local nameColor
         if ds <= 30 then
@@ -728,7 +727,6 @@ local function UpdateESP()
                 or Color3.fromRGB(255, 60, 60)
 
         ca.infoLbl.TextColor3 = hpColor
-        -- Якщо HP нескінченне — показуємо тільки поточне HP
         local hpText = isInf and tostring(hp) or (hp .. "/" .. mxh)
         ca.infoLbl.Text = "HP: " .. hpText .. " | " .. ds .. "m"
 
@@ -1140,6 +1138,7 @@ local function ForceRestore()
 
     ncStuck = 0
     lastNcPos = Vector3.zero
+    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
 end
 
 local _fakeLagToken = 0
@@ -1182,10 +1181,10 @@ local function UpdVis(nm)
 end
 
 local function RestoreMouse()
-    -- Нічого не робимо з MouseBehavior/CameraType — всі зміни ламають ShiftLock.
-    -- Відновлення камери відбувається безпосередньо в Toggle("Freecam") OFF.
+    -- Тільки скидаємо MouseBehavior. НЕ чіпаємо CameraType/CameraSubject —
+    -- вони відновлюються безпосередньо в Toggle("Freecam") OFF з затримкою.
+    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
 end
-
 
 local UpdFly
 local LockedTarget = nil
@@ -1282,15 +1281,16 @@ local function Toggle(nm)
             UndoPotato()
         elseif nm == "Freecam" then
             pcall(function() if R then R.Anchored = false end end)
-            -- Відновлюємо камеру одразу тут — не через RestoreMouse
-            -- щоб не заважати ShiftLock стану PlayerModule
-            task.defer(function()
+            task.spawn(function()
+                task.wait(0.05)
                 pcall(function()
-                    local C2 = LP.Character
-                    local H2 = C2 and C2:FindFirstChildOfClass("Humanoid")
                     Camera.CameraType = Enum.CameraType.Custom
+                    local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
                     if H2 then Camera.CameraSubject = H2 end
+                    UIS.MouseBehavior = Enum.MouseBehavior.Default
                 end)
+                task.wait(0.05)
+                pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
             end)
         elseif nm == "Spin" and R then
             for _, v in pairs(R:GetChildren()) do
@@ -1491,6 +1491,7 @@ LP.CharacterAdded:Connect(function(char)
     if hum then
         Camera.CameraType = Enum.CameraType.Custom
         Camera.CameraSubject = hum
+        pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
         task.spawn(function()
             task.wait(1.2)
             pcall(function()
@@ -2840,10 +2841,6 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
             or inp.UserInputType == Enum.UserInputType.Touch then
             if dragging then dragging = false; pg.ScrollingEnabled = true end
         end
-    end)
-    -- Скидаємо drag якщо мишка вийшла за межі вікна (класична причина застрягання)
-    UIS.WindowFocusReleased:Connect(function()
-        if dragging then dragging = false; pg.ScrollingEnabled = true end
     end)
 
     if configKey then
