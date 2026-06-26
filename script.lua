@@ -1,7 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V312 — PERFECT EDITION (EN/UA) [FINAL FIX]     ██
--- ██  Fixes: UnlockMouse on RightAlt, Real Potato FPS     ██
--- ██  Kept: AC Bypass, Smart Server Hop, Old Jump Logic   ██
+-- ██  OMNI V312 — PERFECT EDITION (EN/UA) [AC BYPASS + JOIN] ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -30,6 +28,7 @@ local Strings = {
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
         hdr_effects = "EFFECTS", hdr_protection = "PROTECTION", hdr_server_hop = "SERVER HOP",
+        hdr_target_join = "JOIN BY SERVER ID",
         hdr_save_config = "SAVE CONFIG", hdr_speed_vals = "SPEED VALUES", hdr_jump_vals = "JUMP VALUES",
         hdr_hitbox_cfg = "HITBOX", hdr_aim_settings = "AIM SETTINGS", hdr_anti_void = "ANTI-VOID",
         hdr_anti_ban = "ANTI-BAN", hdr_language = "LANGUAGE", hdr_mouse_fix = "MOUSE FIX",
@@ -72,6 +71,7 @@ local Strings = {
         btn_rejoin = "Rejoin (same server)", btn_random = "Random server",
         btn_biggest = "Biggest server", btn_smallest = "Smallest server",
         btn_unlock_mouse = "🔓 Unlock Mouse (Press RightAlt)",
+        btn_join_target = "➡️ Join Server",
         ntf_saved = "💾 Saved", ntf_loaded = "📂 Config loaded ✓", ntf_reset = "🔄 Reset",
         ntf_no_write = "❌ writefile unavailable", ntf_no_read = "❌ readfile unavailable",
         ntf_no_file = "📂 File not found", ntf_json_err = "❌ JSON error", ntf_error = "❌ Error: ",
@@ -83,6 +83,8 @@ local Strings = {
         ntf_startup = "✅ Perfect Edition · AC Bypass · Spider",
         ntf_lang = "Language changed to: ",
         ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
+        ntf_target_invalid = "❌ Invalid Server ID",
+        ntf_target_join = "➡️ Teleporting to Server...",
         stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV312_Config.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
         btn_lang_toggle = "🌐 Language: English → Українська",
@@ -103,6 +105,7 @@ local Strings = {
         hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
         hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
         hdr_effects = "ЕФЕКТИ", hdr_protection = "ЗАХИСТ", hdr_server_hop = "ЗМІНА СЕРВЕРА",
+        hdr_target_join = "ЗАХІД ЗА ID СЕРВЕРА",
         hdr_save_config = "ЗБЕРЕЖЕННЯ КОНФІГУ", hdr_speed_vals = "ЗНАЧЕННЯ ШВИДКОСТІ",
         hdr_jump_vals = "ЗНАЧЕННЯ СТРИБКА", hdr_hitbox_cfg = "ХІТБОКС", hdr_aim_settings = "НАЛАШТУВАННЯ ПРИЦІЛУ",
         hdr_anti_void = "АНТИ-ВОЙД", hdr_anti_ban = "АНТИ-БАН", hdr_language = "МОВА", hdr_mouse_fix = "ФІКС МИШІ",
@@ -148,6 +151,7 @@ local Strings = {
         btn_rejoin = "Повторний вхід (той самий сервер)", btn_random = "Рандомний сервер",
         btn_biggest = "Найбільший сервер", btn_smallest = "Найменший сервер",
         btn_unlock_mouse = "🔓 Розблокувати мишу (Натисни RightAlt)",
+        btn_join_target = "➡️ Зайти на сервер",
         ntf_saved = "💾 Збережено", ntf_loaded = "📂 Конфіг завантажено ✓", ntf_reset = "🔄 Скинуто",
         ntf_no_write = "❌ writefile недоступний", ntf_no_read = "❌ readfile недоступний",
         ntf_no_file = "📂 Файл не знайдено", ntf_json_err = "❌ Помилка JSON", ntf_error = "❌ Помилка: ",
@@ -159,6 +163,8 @@ local Strings = {
         ntf_startup = "✅ Ідеальна Версія · AC Bypass · Spider",
         ntf_lang = "Мову змінено на: ",
         ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
+        ntf_target_invalid = "❌ Невірний ID сервера",
+        ntf_target_join = "➡️ Телепорт на сервер...",
         stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV312_Config.json",
         stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
         btn_lang_toggle = "🌐 Мова: Українська → English",
@@ -196,9 +202,6 @@ ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
 ENV.hasSynapse       = _envCheck(function() return syn ~= nil end)
                     or _envCheck(function() return SENTINEL_V2 ~= nil end)
 
--- ============================================================
--- ANTI-CHEAT BYPASS (UNIVERSAL REMOTE BLOCKER)
--- ============================================================
 local acBypassInstalled = false
 local function SetupACBypass()
     if acBypassInstalled then return end
@@ -215,13 +218,13 @@ local function SetupACBypass()
                     local blocked = {"kick", "ban", "anticheat", "anti_cheat", "exploit", "hack", "speed", "noclip", "fly", "teleport", "detect", "report", "logs"}
                     for _, b in ipairs(blocked) do
                         if string.find(name, b) then
-                            return -- Block remote
+                            return
                         end
                     end
                 end
             elseif method == "Kick" then
                 if self == LP then
-                    return -- Block local kick
+                    return
                 end
             end
             return oldNamecall(...)
@@ -632,9 +635,6 @@ local function GetBestAimTarget()
     return nil
 end
 
--- ============================================================
--- ESP SYSTEM
--- ============================================================
 local ESPCache = {}
 local ESP_UPDATE_INTERVAL = 0.1
 local _espLastUpdate = 0
@@ -650,14 +650,11 @@ local function UpdateESP()
     local now = tick()
     if now - _espLastUpdate < ESP_UPDATE_INTERVAL then return end
     _espLastUpdate = now
-
     if not State.ESP then return end
-
     local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 
     for _, p in pairs(Players:GetPlayers()) do
         if p == LP then continue end
-
         local char = p.Character
         local head = char and FindHead(char)
         local hum  = char and char:FindFirstChildOfClass("Humanoid")
@@ -743,7 +740,6 @@ local function UpdateESP()
         end
 
         ca.bb.MaxDistance = Config.ESPMaxDist
-
         local hp     = math.max(0, math.floor(hum.Health))
         local rawMax = hum.MaxHealth
         local isInf  = rawMax ~= rawMax or rawMax == math.huge or rawMax > 1e9
@@ -815,9 +811,6 @@ for _, p in pairs(Players:GetPlayers()) do
     end
 end
 
--- ============================================================
--- HITBOX SYSTEM
--- ============================================================
 local hbParts = {}
 
 local function ApplyHB(part)
@@ -873,9 +866,6 @@ end)
 
 local savedShd, savedQ = true, Enum.QualityLevel.Automatic
 
--- ================================================================
--- FPS BOOST (REAL POTATO MODE)
--- ================================================================
 local _potatoToken  = 0
 local _potatoOrig   = {}
 local POTATO_CHUNK  = 40
@@ -903,7 +893,6 @@ local function DoPotato()
         Lighting.GlobalShadows = false
         Lighting.FogEnd = 500
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-        -- FIX: Switch to Compatibility for massive FPS boost
         _potatoOrig.Tech = Lighting.Technology
         Lighting.Technology = Enum.Technology.Compatibility
     end)
@@ -915,7 +904,6 @@ local function DoPotato()
             or v:IsA("Beam") or v:IsA("BillboardGui")
             or v:IsA("SurfaceGui") or v:IsA("PointLight")
             or v:IsA("SpotLight") or v:IsA("SelectionBox")
-            -- FIX: Disable Decals, Textures, Fire, Smoke
             or v:IsA("Decal") or v:IsA("Texture")
             or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Explosion") then
             table.insert(effects, v)
@@ -1010,9 +998,6 @@ local function UndoPotato()
     end)
 end
 
--- ============================================================
--- FULLBRIGHT
--- ============================================================
 local _fbOrigLighting = nil
 local _fbDisabledEffects = {}
 
@@ -1089,9 +1074,6 @@ local function RemoveFullBright()
     _fbDisabledEffects = {}
 end
 
--- ============================================================
--- NOCLIP
--- ============================================================
 local ncOrigCanCollide = {}
 local ncStuck = 0
 local lastNcPos = Vector3.zero
@@ -1207,9 +1189,6 @@ local LocalizableElements = {}
 local QuickBtnActive    = {}
 local UpdateQuickBtnColor
 
--- ============================================================
--- MOUSE UNLOCK FUNCTION
--- ============================================================
 local function UnlockMouse()
     pcall(function()
         UIS.MouseBehavior = Enum.MouseBehavior.Default
@@ -1355,7 +1334,6 @@ local function Toggle(nm)
                     Camera.CameraType = Enum.CameraType.Custom
                     local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
                     if H2 then Camera.CameraSubject = H2 end
-                    UIS.MouseBehavior = Enum.MouseBehavior.Default
                 end)
             end)
         elseif nm == "Spin" and R then
@@ -1365,7 +1343,6 @@ local function Toggle(nm)
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
             if R then pcall(function() R.Anchored = false end) end
-            pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
         elseif nm == "InfiniteJump" and H then
             pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
         elseif nm == "Aim" then
@@ -1379,7 +1356,7 @@ local function Toggle(nm)
         elseif nm == "Fly" and H then
             pcall(function() H.PlatformStand = false end)
         elseif nm == "Speed" and H then
-            pcall(function() H.WalkSpeed = GetSafeSpeed() end)
+            pcall(function() H.WalkSpeed = gameBaseSpeed end)
         elseif nm == "HighJump" and H then
             pcall(function()
                 H.UseJumpPower = true
@@ -1461,9 +1438,6 @@ local function Toggle(nm)
     Notify(nm, State[nm] and "ON ✓" or "OFF ✗", 1)
 end
 
--- ============================================================
--- HIGH JUMP DETECTOR (OLD LOGIC RESTORED)
--- ============================================================
 local _hjConn = nil
 local _hjFired = false
 
@@ -1568,7 +1542,7 @@ LP.CharacterAdded:Connect(function(char)
             end)
         end)
         task.wait(0.5)
-        if State.Speed then pcall(function() hum.WalkSpeed = GetSafeSpeed() end) end
+        if State.Speed then pcall(function() hum.WalkSpeed = gameBaseSpeed end) end
         if State.HighJump then
             pcall(function()
                 hum.UseJumpPower = true
@@ -1580,9 +1554,6 @@ LP.CharacterAdded:Connect(function(char)
     end
 end)
 
--- ============================================================
--- SILENT AIM HOOK
--- ============================================================
 local silentAimHooked = false
 
 local function SetupSilentAimHook()
@@ -1756,9 +1727,6 @@ task.spawn(function()
     end
 end)
 
--- ============================================================
--- SERVER HOP (SMART LOGIC)
--- ============================================================
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
@@ -1875,7 +1843,17 @@ local function JoinSmallestServer()
     end)
 end
 
--- GUI
+local function JoinTargetServer(jobId)
+    if not jobId or #jobId < 5 then
+        Notify("Target Join", L("ntf_target_invalid"), 3)
+        return
+    end
+    Notify("Target Join", L("ntf_target_join"), 3)
+    task.delay(1, function()
+        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, jobId, LP) end)
+    end)
+end
+
 local GuiP = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui") or LP:WaitForChild("PlayerGui")
 pcall(function() local c = game:GetService("CoreGui"); local _ = c.Name; GuiP = c end)
 
@@ -2183,9 +2161,6 @@ do
     end)
 end
 
--- ================================================================
--- MOBILE BUTTON EDITOR + QUICK BUTTONS
--- ================================================================
 local MOB_LAYOUT_FILE   = "OmniV312_MobLayout.json"
 local MobEditorActive   = false
 local MobEditorOverlays = {}
@@ -2357,9 +2332,6 @@ local function ExitMobEditor()
     Notify("Editor", "✅ Layout saved!", 2)
 end
 
--- ================================================================
--- QUICK BUTTONS
--- ================================================================
 QuickBtnActive = {}
 
 local QuickBtnDefs = {
@@ -2810,6 +2782,38 @@ local function MkButton(tab, icon, lblKey, color, onClick)
     return row
 end
 
+local function MkInput(tab, icon, placeholder, onEnter)
+    local pg = TabPages[tab]; if not pg then return end
+    local h = IsMob and 40 or 34
+    local row = Instance.new("Frame", pg)
+    row.Size = UDim2.new(0.95, 0, 0, h)
+    row.BackgroundColor3 = P.btn; row.BorderSizePixel = 0
+    Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", row).Color = P.brd
+
+    local ic = Instance.new("TextLabel", row)
+    ic.Size = UDim2.new(0, 24, 1, 0); ic.Position = UDim2.new(0, 6, 0, 0)
+    ic.BackgroundTransparency = 1; ic.Text = icon
+    ic.TextSize = IsMob and 14 or 12; ic.Font = Enum.Font.Gotham; ic.TextColor3 = P.dim
+
+    local box = Instance.new("TextBox", row)
+    box.Size = UDim2.new(1, -40, 1, 0); box.Position = UDim2.new(0, 30, 0, 0)
+    box.BackgroundTransparency = 1
+    box.PlaceholderText = placeholder
+    box.Text = ""
+    box.Font = Enum.Font.GothamBold; box.TextSize = FS
+    box.TextColor3 = P.txt
+    box.TextXAlignment = Enum.TextXAlignment.Left
+    box.ClearTextOnFocus = false
+
+    if onEnter then
+        box.FocusLost:Connect(function(enter)
+            if enter then onEnter(box.Text) end
+        end)
+    end
+    return row, box
+end
+
 local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     local pg = TabPages[tab]; if not pg then return end
     local h = IsMob and 56 or 48
@@ -2989,6 +2993,21 @@ MkButton("Misc", "🎲", "btn_random", Color3.fromRGB(22, 28, 38), JoinRandomSer
 MkButton("Misc", "👥", "btn_biggest", Color3.fromRGB(22, 28, 38), JoinBiggestServer)
 MkButton("Misc", "🕵️", "btn_smallest", Color3.fromRGB(22, 28, 38), JoinSmallestServer)
 
+AddHdr("Misc", "🔗", "hdr_target_join")
+local _, targetInput = MkInput("Misc", "🔗", "Введи Server ID (JobId)...", function(text)
+    if text and #text > 5 then
+        JoinTargetServer(text)
+    end
+end)
+MkButton("Misc", "➡️", "btn_join_target", Color3.fromRGB(22, 28, 38), function()
+    local txt = targetInput and targetInput.Text or ""
+    if txt == "" then
+        Notify("Target Join", L("ntf_target_invalid"), 3)
+        return
+    end
+    JoinTargetServer(txt)
+end)
+
 do
     local pg = TabPages["Config"]
     local closeRow = Instance.new("TextButton", pg)
@@ -3087,7 +3106,7 @@ MkSlider("Config", "✈️", "sl_fly_speed", 0, 300, Config.FlySpeed, "FlySpeed"
 MkSlider("Config", "👟", "sl_walk_speed", 16, 200, Config.WalkSpeed, "WalkSpeed", function(v)
     Config.WalkSpeed = v
     local h = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-    if State.Speed and h then pcall(function() h.WalkSpeed = GetSafeSpeed() end) end
+    if State.Speed and h then pcall(function() h.WalkSpeed = gameBaseSpeed end) end
 end)
 
 AddHdr("Config", "⬆️", "hdr_jump_vals")
@@ -3179,7 +3198,6 @@ end) end
 
 end)()
 
--- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
     if waitingBind then
         if inp.UserInputType == Enum.UserInputType.Keyboard then
@@ -3210,7 +3228,6 @@ UIS.InputBegan:Connect(function(inp, gpe)
     end
 end)
 
--- FIXED: Freecam mouse rotation handling
 UIS.InputChanged:Connect(function(inp, gpe)
     if not State.Freecam then return end
     if inp.UserInputType == Enum.UserInputType.MouseMovement then
@@ -3226,7 +3243,6 @@ UIS.InputChanged:Connect(function(inp, gpe)
     end
 end)
 
--- INFINITE JUMP (OLD LOGIC RESTORED)
 UIS.JumpRequest:Connect(function()
     local C = LP.Character
     local H = C and C:FindFirstChildOfClass("Humanoid")
@@ -3246,7 +3262,6 @@ UIS.JumpRequest:Connect(function()
     end)
 end)
 
--- ANIMATION LOOP
 task.spawn(function()
     local t = 0
     while true do
@@ -3277,7 +3292,6 @@ task.spawn(function()
     end
 end)
 
--- RENDER STEPPED
 ;(function()
 local FrameLog   = {}
 local lastPing   = 0
@@ -3318,6 +3332,7 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
+    -- FLY (AC BYPASS THROUGH CFRAME)
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -3329,28 +3344,13 @@ RunService.RenderStepped:Connect(function(dt)
             if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then upD = -1 end
             dir = dir + Vector3.new(0, upD, 0)
 
-            local target_vel
             if dir.Magnitude > 0.05 then
                 dir = dir.Unit
-                if Config.FlyAntiBan then
-                    _flyNoiseT = _flyNoiseT + 0.005
-                    local nx = PseudoNoise(_flyNoiseT) * 0.12
-                    local ny = PseudoNoise(_flyNoiseT + 100) * 0.06
-                    local nz = PseudoNoise(_flyNoiseT + 200) * 0.12
-                    target_vel = dir * Config.FlySpeed + Vector3.new(nx, ny, nz)
-                else
-                    target_vel = dir * Config.FlySpeed
-                end
-                if HRP.Position.Y > Config.FlyHeightMax then
-                    target_vel = Vector3.new(target_vel.X, math.min(target_vel.Y, -0.1), target_vel.Z)
-                end
-            else
-                target_vel = Vector3.new(0, -1.8, 0)
+                HRP.CFrame = HRP.CFrame + (dir * Config.FlySpeed * dt)
             end
-
-            local cur_vel = HRP.AssemblyLinearVelocity
-            local lerp_vel = cur_vel:Lerp(target_vel, math.clamp(dt * 18, 0, 1))
-            HRP.AssemblyLinearVelocity = lerp_vel
+            
+            HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            HRP.AssemblyAngularVelocity = Vector3.zero
 
             if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
                 HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
@@ -3434,7 +3434,6 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 end)()
 
--- HEARTBEAT
 RunService.Heartbeat:Connect(function(dt)
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3458,33 +3457,15 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
+    -- SPEED (AC BYPASS THROUGH CFRAME)
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
-            Hum.WalkSpeed = targetSpd
+            Hum.WalkSpeed = gameBaseSpeed
             if Hum.MoveDirection.Magnitude > 0.1 then
-                local md = Hum.MoveDirection.Unit
-                local vel = HRP.AssemblyLinearVelocity
-                local flatVel = Vector3.new(vel.X, 0, vel.Z)
-                if State.SafeSpeedMode then
-                    local cycle = tick() % 0.60
-                    local onTime = 0.60 * 0.82
-                    if cycle > onTime then
-                        local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
-                        local want = md * targetSpd * math.max(brake, 0.15)
-                        HRP.AssemblyLinearVelocity = Vector3.new(
-                            vel.X + (want.X - vel.X) * 0.30, vel.Y, vel.Z + (want.Z - vel.Z) * 0.30)
-                    else
-                        if flatVel.Magnitude < targetSpd * 0.9 then
-                            local want = md * targetSpd
-                            HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
-                        end
-                    end
-                else
-                    if flatVel.Magnitude < targetSpd * 0.9 then
-                        local want = md * targetSpd
-                        HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
-                    end
+                local extraSpd = targetSpd - gameBaseSpeed
+                if extraSpd > 0 then
+                    HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * extraSpd * dt)
                 end
             end
         end)
@@ -3544,7 +3525,6 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
--- STEPPED — NOCLIP
 RunService.Stepped:Connect(function()
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3595,7 +3575,6 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- INITIAL CONFIG LOAD
 task.spawn(function()
     task.wait(0.6)
     if not HasFileSystem() then return end
