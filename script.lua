@@ -194,7 +194,7 @@ ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
 ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
 
 -- ═══════════════════════════════════════════════════════════
--- 🛡️ ULTIMATE BYPASS #1: Smart Remote Hook (Anti-Kick/Anti-Report)
+-- 🛡️ ULTIMATE BYPASS #1: Smart Remote Hook (Optimized)
 -- ═══════════════════════════════════════════════════════════
 local _ncChain = nil
 local acBypassInstalled = false
@@ -205,31 +205,35 @@ local function SetupACBypass()
 
     _ncChain = hookmetamethod(game, "__namecall", function(...)
         local method = getnamecallmethod()
-        local args = {...}
-        local self = args[1]
-
-        if method == "FireServer" or method == "InvokeServer" then
+        if method ~= "FireServer" and method ~= "InvokeServer" and method ~= "Kick" then
+            return _ncChain(...)
+        end
+        
+        local self = ...
+        if method == "Kick" then
+            if self == LP then return end
+        else
             if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
                 local name = string.lower(self.Name)
                 local blocked = {"kick","ban","anticheat","anti_cheat","exploit","hack","detect","report","logs","_ac","ac_","byfron","hyperion"}
                 for _, b in ipairs(blocked) do
                     if string.find(name, b) then return end
                 end
-                for i = 2, #args do
-                    local arg = args[i]
-                    if typeof(arg) == "string" then
-                        local argLower = string.lower(arg)
-                        if string.find(argLower, "teleport") or (string.find(argLower, "speed") and string.find(argLower, "detect")) or string.find(argLower, "noclip") then
-                            return
+                if method == "FireServer" then
+                    local args = {...}
+                    for i = 2, #args do
+                        local arg = args[i]
+                        if typeof(arg) == "string" then
+                            local argLower = string.lower(arg)
+                            if string.find(argLower, "teleport") or (string.find(argLower, "speed") and string.find(argLower, "detect")) or string.find(argLower, "noclip") then
+                                return
+                            end
                         end
                     end
+                    if #args > 10 then return end
                 end
-                if method == "FireServer" and #args > 10 then return end
             end
-        elseif method == "Kick" then
-            if self == LP then return end
         end
-
         return _ncChain(...)
     end)
     acBypassInstalled = true
@@ -292,8 +296,9 @@ local function SafeDel(o)
     pcall(function() if o and o.Parent then o:Destroy() end end)
 end
 
+-- Виправлення: якщо ПК з сенсорним екраном, не вважаємо його мобілкою
 local IsMob = UIS.TouchEnabled and not UIS.KeyboardEnabled
-local IsTab = UIS.TouchEnabled
+local IsTab = IsMob 
 
 local Blur = Instance.new("BlurEffect")
 Blur.Size   = 0
@@ -479,9 +484,6 @@ task.spawn(function()
     end)
 end)
 
--- ═══════════════════════════════════════════════════════════
--- 🛡️ ULTIMATE BYPASS #2: Safe Speed via Velocity (No CFrame TP)
--- ═══════════════════════════════════════════════════════════
 local function GetSafeSpeed()
     local base = Config.WalkSpeed
     if State.SafeSpeedMode then
@@ -636,7 +638,7 @@ local function GetBestAimTarget()
 end
 
 local ESPCache = {}
-local ESP_UPDATE_INTERVAL = 0.1
+local ESP_UPDATE_INTERVAL = 0.2 
 local _espLastUpdate = 0
 
 local function ClearESP()
@@ -1574,18 +1576,18 @@ local function SetupSilentAimHook()
     end
 
     local ok = pcall(function()
-        _ncChain = hookmetamethod(game, "__namecall", function(self, ...)
+        _ncChain = hookmetamethod(game, "__namecall", function(...)
             local method = getnamecallmethod() or ""
-            if not State.SilentAim then
-                return _ncChain(self, ...)
+            if not State.SilentAim or (method ~= "Raycast" and method ~= "FindPartOnRay" and method ~= "FindPartOnRayWithIgnoreList") then
+                return _ncChain(...)
             end
-
+            local self = ...
             if method == "Raycast" and self == Workspace then
                 local target = GetBestAimTarget()
                 local part = target and FindAimPart(target)
                 if part then
                     local args = {...}
-                    local origin = args[1]
+                    local origin = args[2]
                     if typeof(origin) == "Vector3" then
                         local vel = part.AssemblyLinearVelocity
                         local predPos = part.Position + vel * 0.05
@@ -1597,19 +1599,18 @@ local function SetupSilentAimHook()
                                 (math.random() - 0.5) * 0.15
                             )
                         end
-                        args[2] = dir.Unit * dir.Magnitude
-                        return _ncChain(self, unpack(args))
+                        args[3] = dir.Unit * dir.Magnitude
+                        return _ncChain(self, unpack(args, 2))
                     end
                 end
             end
 
-            if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
-                and self == Workspace then
+            if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then
                 local target = GetBestAimTarget()
                 local part = target and FindAimPart(target)
                 if part then
                     local args = {...}
-                    local ray = args[1]
+                    local ray = args[2]
                     if typeof(ray) == "Ray" then
                         local origin = ray.Origin
                         local dir = (part.Position - origin)
@@ -1620,13 +1621,13 @@ local function SetupSilentAimHook()
                                 (math.random() - 0.5) * 0.15
                             )
                         end
-                        args[1] = Ray.new(origin, dir.Unit * 5000)
-                        return _ncChain(self, unpack(args))
+                        args[2] = Ray.new(origin, dir.Unit * 5000)
+                        return _ncChain(self, unpack(args, 2))
                     end
                 end
             end
 
-            return _ncChain(self, ...)
+            return _ncChain(...)
         end)
     end)
 
@@ -2592,7 +2593,6 @@ ShowDesc = function(title, descKey)
 end
 
 HideDesc = function()
-    -- ВИПРАВЛЕНО ТУТ: було {Size: ...}, стало {Size = ...}
     TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
     task.delay(0.12, function() descPopup.Visible = false end)
 end
@@ -3210,8 +3210,8 @@ end)
 task.spawn(function()
     local t = 0
     while true do
-        task.wait(0.1)
-        t += 0.1
+        task.wait(0.2)
+        t += 0.2
         local pulse = (math.sin(t * 2) + 1) / 2
         local aR = math.floor(0 + pulse * 15)
         local aG = math.floor(180 + pulse * 30)
@@ -3239,16 +3239,13 @@ task.spawn(function()
 end)
 
 do
-local FrameLog   = {}
 local lastPing   = 0
 local pingTk     = 0
 
 RunService.RenderStepped:Connect(function(dt)
     local now = tick()
 
-    table.insert(FrameLog, now)
-    while FrameLog[1] and FrameLog[1] < now - 1 do table.remove(FrameLog, 1) end
-    local fps = #FrameLog
+    local fps = math.floor(workspace:GetRealPhysicsFPS())
     if now - pingTk > 2 then pingTk = now; pcall(function() lastPing = LP:GetNetworkPing() end) end
     local pm = math.floor(lastPing * 1000)
     local fc = fps >= 55 and Color3.fromRGB(130, 255, 170) or fps >= 30 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
@@ -3388,9 +3385,6 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 end
 
--- ═══════════════════════════════════════════════════════════
--- 🛡️ ULTIMATE BYPASS #3: Safe Speed & Noclip Loops (Velocity & Collisions)
--- ═══════════════════════════════════════════════════════════
 RunService.Heartbeat:Connect(function(dt)
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3414,7 +3408,6 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- Safe Speed via Velocity
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
@@ -3490,13 +3483,14 @@ RunService.Stepped:Connect(function()
         for _, v in pairs(Char:GetDescendants()) do
             if v:IsA("BasePart") then
                 pcall(function()
-                    if ncOrigCanCollide[v] == nil then
-                        ncOrigCanCollide[v] = v.CanCollide
-                    end
                     if _ncGroupWorks then
-                        v.CollisionGroup = SafeGroup
+                        if v.CollisionGroup ~= SafeGroup then
+                            v.CollisionGroup = SafeGroup
+                        end
                     else
-                        v.CanCollide = false
+                        if v.CanCollide then
+                            v.CanCollide = false
+                        end
                     end
                 end)
             end
