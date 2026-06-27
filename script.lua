@@ -296,7 +296,6 @@ local function SafeDel(o)
     pcall(function() if o and o.Parent then o:Destroy() end end)
 end
 
--- Виправлення: якщо ПК з сенсорним екраном, не вважаємо його мобілкою
 local IsMob = UIS.TouchEnabled and not UIS.KeyboardEnabled
 local IsTab = IsMob 
 
@@ -2424,35 +2423,40 @@ do
     end)
 end
 
+-- Спрощена логіка кнопки M: клік -> відкрити/закрити. Перетягування залишається простим.
 do
-    local dr, ds, dp, mv, mt = false, nil, nil, false, 0
-    mB.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1
-            or inp.UserInputType == Enum.UserInputType.Touch then
-            dr = true; ds = inp.Position; dp = mB.Position; mv = false; mt = tick()
+    local mDragging = false
+    local mStartPos = nil
+    local mStartInput = nil
+    
+    mB.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            mDragging = false
+            mStartInput = input
+            mStartPos = mB.Position
         end
     end)
-    mB.InputChanged:Connect(function(inp)
-        if not dr then return end
-        if inp.UserInputType == Enum.UserInputType.MouseMovement
-            or inp.UserInputType == Enum.UserInputType.Touch then
-            local d = inp.Position - ds
-            if d.Magnitude > 8 then mv = true end
-            mB.Position = UDim2.new(dp.X.Scale, dp.X.Offset + d.X, dp.Y.Scale, dp.Y.Offset + d.Y)
+    
+    UIS.InputChanged:Connect(function(input)
+        if mStartInput and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - mStartInput.Position
+            if delta.Magnitude > 8 then
+                mDragging = true
+            end
+            if mDragging then
+                mB.Position = UDim2.new(mStartPos.X.Scale, mStartPos.X.Offset + delta.X, mStartPos.Y.Scale, mStartPos.Y.Offset + delta.Y)
+            end
         end
     end)
-    mB.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1
-            or inp.UserInputType == Enum.UserInputType.Touch then
-            if dr and not mv and (tick() - mt) < 0.35 then
+    
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if not mDragging then
                 if Main.Visible then CloseMenu() else OpenMenu() end
             end
-            dr = false
+            mDragging = false
+            mStartInput = nil
         end
-    end)
-    UIS.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1
-            or inp.UserInputType == Enum.UserInputType.Touch then dr = false end
     end)
 end
 
@@ -3239,15 +3243,25 @@ task.spawn(function()
 end)
 
 do
-local lastPing   = 0
-local pingTk     = 0
+local _frameCount = 0
+local _lastFpsTime = tick()
+local _currentFps = 60
+local lastPing = 0
+local pingTk = 0
 
 RunService.RenderStepped:Connect(function(dt)
+    _frameCount += 1
     local now = tick()
-
-    local fps = math.floor(workspace:GetRealPhysicsFPS())
+    if now - _lastFpsTime >= 0.5 then
+        _currentFps = math.floor(_frameCount / (now - _lastFpsTime))
+        _frameCount = 0
+        _lastFpsTime = now
+    end
+    
     if now - pingTk > 2 then pingTk = now; pcall(function() lastPing = LP:GetNetworkPing() end) end
     local pm = math.floor(lastPing * 1000)
+    
+    local fps = _currentFps
     local fc = fps >= 55 and Color3.fromRGB(130, 255, 170) or fps >= 30 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
     local pc = pm <= 80 and Color3.fromRGB(130, 255, 170) or pm <= 150 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
     fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
