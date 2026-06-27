@@ -210,25 +210,20 @@ local function SetupACBypass()
 
         if method == "FireServer" or method == "InvokeServer" then
             if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
-                -- 1. Блокування за назвою
                 local name = string.lower(self.Name)
                 local blocked = {"kick","ban","anticheat","anti_cheat","exploit","hack","detect","report","logs","_ac","ac_","byfron","hyperion"}
                 for _, b in ipairs(blocked) do
                     if string.find(name, b) then return end
                 end
-                
-                -- 2. Смарт-блокування за аргументами (пробиває обфускацію назв)
                 for i = 2, #args do
                     local arg = args[i]
                     if typeof(arg) == "string" then
                         local argLower = string.lower(arg)
                         if string.find(argLower, "teleport") or (string.find(argLower, "speed") and string.find(argLower, "detect")) or string.find(argLower, "noclip") then
-                            return -- Блокуємо підозрілі текстові репорти
+                            return
                         end
                     end
                 end
-                
-                -- 3. Блокування масових відправок (спам-детекти)
                 if method == "FireServer" and #args > 10 then return end
             end
         elseif method == "Kick" then
@@ -2597,7 +2592,8 @@ ShowDesc = function(title, descKey)
 end
 
 HideDesc = function()
-    TweenService:Create(descPopup, TweenInfo.new(0.12), {Size: UDim2.new(0, MW - 30, 0, 0)}):Play()
+    -- ВИПРАВЛЕНО ТУТ: було {Size: ...}, стало {Size = ...}
+    TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
     task.delay(0.12, function() descPopup.Visible = false end)
 end
 descClose.MouseButton1Click:Connect(HideDesc)
@@ -3422,11 +3418,10 @@ RunService.Heartbeat:Connect(function(dt)
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
-            Hum.WalkSpeed = gameBaseSpeed -- Залишаємо базовою для сервера
+            Hum.WalkSpeed = gameBaseSpeed
             
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local targetVel = Hum.MoveDirection * targetSpd
-                -- Застосовуємо через Velocity, не чіпаючи Y (гравітацію)
                 HRP.AssemblyLinearVelocity = Vector3.new(targetVel.X, HRP.AssemblyLinearVelocity.Y, targetVel.Z)
             end
         end)
