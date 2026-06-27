@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V312 — PERFECT EDITION (EN/UA) [AC BYPASS + JOIN] ██
+-- ██  OMNI V312 — ULTIMATE EDITION (EN/UA) [MAX AC BYPASS] ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -21,9 +21,7 @@ local CurrentLang = "EN"
 
 local Strings = {
     EN = {
-        title = "OMNI V312",
-        subtitle_mobile = "MOBILE · PERFECT EDITION",
-        subtitle_pc = "UNIVERSAL · PERFECT EDITION",
+        title = "OMNI V312 ULTIMATE", subtitle_mobile = "MOBILE · MAX BYPASS", subtitle_pc = "UNIVERSAL · MAX BYPASS",
         tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
@@ -47,18 +45,18 @@ local Strings = {
         desc_esp = "Shows player name, HP and distance as clean text. No boxes.",
         desc_fly = "Allows free flight in any direction. Use W/A/S/D + Space/Ctrl.",
         desc_freecam = "Detaches camera from character for free spectating.",
-        desc_speed = "Increases your walk speed beyond the game default.",
+        desc_speed = "Increases your walk speed via Velocity (Bypasses AC).",
         desc_bhop = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
         desc_high_jump = "Increases your jump height/power significantly. Bypasses AC.",
         desc_infinite_jump = "Allows jumping in mid-air infinitely. Bypasses AC.",
-        desc_noclip = "Universal noclip: bypasses all anti-collision systems across all places.",
+        desc_noclip = "Universal noclip via Collision Groups. Bypasses AC.",
         desc_spider = "Allows you to climb any wall automatically by walking into it.",
         desc_no_fall = "Prevents fall damage by resetting state before landing.",
         desc_anti_void = "Teleports you back to safety if you fall below the void threshold.",
         desc_safe_speed = "Caps your speed relative to the game's base speed to avoid rubber-banding.",
         desc_spin = "Spins your character rapidly around the Y axis.",
         desc_potato = "Disables shadows, particles, textures, fire and lowers quality for better FPS.",
-        desc_fake_lag = "Simulates lag by briefly anchoring your character while moving.",
+        desc_fake_lag = "Simulates lag by briefly freezing your character's velocity while moving.",
         desc_anti_afk = "Prevents the game from kicking you for being idle.",
         desc_speed_jitter = "Adds small random variation to speed to avoid anti-cheat detection.",
         desc_hitbox_rand = "Adds small random variation to hitbox size to avoid detection.",
@@ -78,13 +76,11 @@ local Strings = {
         ntf_rejoin = "🔄 Rejoining...", ntf_search_rnd = "🎲 Searching random...",
         ntf_search_big = "👥 Searching biggest...", ntf_search_sml = "🕵️ Searching smallest...",
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
-        ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
+        ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Smart Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Perfect Edition · AC Bypass · Spider",
-        ntf_lang = "Language changed to: ",
-        ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
-        ntf_target_invalid = "❌ Invalid Server ID",
-        ntf_target_join = "➡️ Teleporting to Server...",
+        ntf_startup = "✅ Ultimate Edition · Max AC Bypass Loaded",
+        ntf_lang = "Language changed to: ", ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
+        ntf_target_invalid = "❌ Invalid Server ID", ntf_target_join = "➡️ Teleporting to Server...",
         stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV312_Config.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
         btn_lang_toggle = "🌐 Language: English → Українська",
@@ -99,8 +95,7 @@ local Strings = {
         ntf_sa_hook_fail = "❌ Silent Aim: hook failed (try different exploit)",
     },
     UA = {
-        title = "OMNI V312", subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
-        subtitle_pc = "УНІВЕРСАЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
+        title = "OMNI V312 ULTIMATE", subtitle_mobile = "МОБІЛЬНА · МАКС ОБХІД", subtitle_pc = "УНІВЕРСАЛЬНА · МАКС ОБХІД",
         tab_combat = "Бій", tab_move = "Рух", tab_misc = "Інше", tab_config = "Налашт.",
         hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
         hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
@@ -112,7 +107,7 @@ local Strings = {
         lbl_auto_aim = "Авто Прицілювання", lbl_silent_aim = "Тихий Прицілювання",
         lbl_shadow_lock = "Магніт (ShadowLock)", lbl_hitbox = "Розширення хітбокса", lbl_esp = "ESP",
         lbl_fly = "Літання", lbl_freecam = "Вільна камера", lbl_speed = "Швидкість", lbl_bhop = "Bhop",
-        lbl_high_jump = "Високий стрибок", lbl_infinite_jump = "Нескінченний стрибок", lbl_noclip = "Нокліп", 
+        lbl_high_jump = "Високий стрибок", lbl_infinite_jump = "Нескінченний стрибок", lbl_noclip = "Нокліп",
         lbl_spider = "Павук",
         lbl_no_fall = "Без пошкодження від падіння", lbl_anti_void = "Анти-Войд",
         lbl_safe_speed = "Безпечна швидкість (Анти Rubber-Band)", lbl_spin = "Обертання",
@@ -126,18 +121,18 @@ local Strings = {
         desc_esp = "Показує нік гравця, HP та дистанцію чистим текстом. Без квадратів.",
         desc_fly = "Дозволяє вільний політ у будь-якому напрямку. W/A/S/D + Пробіл/Ctrl.",
         desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду.",
-        desc_speed = "Збільшує швидкість ходьби понад стандартну гри.",
+        desc_speed = "Збільшує швидкість через Velocity (Обходить АЧ).",
         desc_bhop = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
         desc_high_jump = "Значно збільшує висоту/силу стрибка. Обходить античіт.",
         desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно. Обходить античіт.",
-        desc_noclip = "Універсальний нокліп: обходить усі антиколізійні системи у всіх плейсах.",
+        desc_noclip = "Універсальний нокліп через Collision Groups. Обходить античіт.",
         desc_spider = "Дозволяє автоматично лазити по будь-яких стінах, просто йдучи в них.",
         desc_no_fall = "Запобігає пошкодженню від падіння скидаючи стан перед приземленням.",
         desc_anti_void = "Телепортує назад у безпечне місце при падінні нижче порога войду.",
         desc_safe_speed = "Обмежує швидкість відносно базової швидкості гри для уникнення відкиду.",
         desc_spin = "Швидко обертає персонажа навколо осі Y.",
         desc_potato = "Вимикає тіні, частинки, текстури, вогонь та знижує якість для кращого FPS.",
-        desc_fake_lag = "Імітує лаг, короткочасно закріплюючи персонажа під час руху.",
+        desc_fake_lag = "Імітує лаг, короткочасно заморожуючи швидкість персонажа під час руху.",
         desc_anti_afk = "Запобігає кіку за бездіяльність.",
         desc_speed_jitter = "Додає невелику випадкову варіацію швидкості для уникнення античіту.",
         desc_hitbox_rand = "Додає невелику випадкову варіацію розміру хітбокса для уникнення детекту.",
@@ -159,12 +154,10 @@ local Strings = {
         ntf_search_big = "👥 Шукаю найбільший...", ntf_search_sml = "🕵️ Шукаю найменший...",
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
-        ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ідеальна Версія · AC Bypass · Spider",
-        ntf_lang = "Мову змінено на: ",
-        ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
-        ntf_target_invalid = "❌ Невірний ID сервера",
-        ntf_target_join = "➡️ Телепорт на сервер...",
+        ntf_hook_ok = "🔇 Смарт-Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
+        ntf_startup = "✅ Ultimate Edition · Макс Обхід АЧ",
+        ntf_lang = "Мову змінено на: ", ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
+        ntf_target_invalid = "❌ Невірний ID сервера", ntf_target_join = "➡️ Телепорт на сервер...",
         stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV312_Config.json",
         stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
         btn_lang_toggle = "🌐 Мова: Українська → English",
@@ -199,38 +192,52 @@ ENV.hasNewCClosure   = _envCheck(function() return newcclosure ~= nil end)
 ENV.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
 ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
 ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
-ENV.hasSynapse       = _envCheck(function() return syn ~= nil end)
-                    or _envCheck(function() return SENTINEL_V2 ~= nil end)
 
+-- ═══════════════════════════════════════════════════════════
+-- 🛡️ ULTIMATE BYPASS #1: Smart Remote Hook (Anti-Kick/Anti-Report)
+-- ═══════════════════════════════════════════════════════════
+local _ncChain = nil
 local acBypassInstalled = false
+
 local function SetupACBypass()
     if acBypassInstalled then return end
-    if ENV.hasHookMeta and hookmetamethod and getnamecallmethod then
-        local oldNamecall
-        oldNamecall = hookmetamethod(game, "__namecall", function(...)
-            local method = getnamecallmethod()
-            local args = {...}
-            local self = args[1]
-            
-            if method == "FireServer" or method == "InvokeServer" then
-                if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
-                    local name = string.lower(self.Name)
-                    local blocked = {"kick", "ban", "anticheat", "anti_cheat", "exploit", "hack", "speed", "noclip", "fly", "teleport", "detect", "report", "logs"}
-                    for _, b in ipairs(blocked) do
-                        if string.find(name, b) then
-                            return
+    if not (ENV.hasHookMeta and hookmetamethod and getnamecallmethod) then return end
+
+    _ncChain = hookmetamethod(game, "__namecall", function(...)
+        local method = getnamecallmethod()
+        local args = {...}
+        local self = args[1]
+
+        if method == "FireServer" or method == "InvokeServer" then
+            if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
+                -- 1. Блокування за назвою
+                local name = string.lower(self.Name)
+                local blocked = {"kick","ban","anticheat","anti_cheat","exploit","hack","detect","report","logs","_ac","ac_","byfron","hyperion"}
+                for _, b in ipairs(blocked) do
+                    if string.find(name, b) then return end
+                end
+                
+                -- 2. Смарт-блокування за аргументами (пробиває обфускацію назв)
+                for i = 2, #args do
+                    local arg = args[i]
+                    if typeof(arg) == "string" then
+                        local argLower = string.lower(arg)
+                        if string.find(argLower, "teleport") or (string.find(argLower, "speed") and string.find(argLower, "detect")) or string.find(argLower, "noclip") then
+                            return -- Блокуємо підозрілі текстові репорти
                         end
                     end
                 end
-            elseif method == "Kick" then
-                if self == LP then
-                    return
-                end
+                
+                -- 3. Блокування масових відправок (спам-детекти)
+                if method == "FireServer" and #args > 10 then return end
             end
-            return oldNamecall(...)
-        end)
-        acBypassInstalled = true
-    end
+        elseif method == "Kick" then
+            if self == LP then return end
+        end
+
+        return _ncChain(...)
+    end)
+    acBypassInstalled = true
 end
 task.spawn(function() task.wait(1); SetupACBypass() end)
 
@@ -262,6 +269,16 @@ pcall(function()
             end
         end
     end)
+end)
+
+local _ncGroupWorks = false
+pcall(function()
+    local testPart = Instance.new("Part")
+    testPart.Size = Vector3.new(1, 1, 1)
+    testPart.CollisionGroup = SafeGroup
+    testPart.Parent = Workspace
+    _ncGroupWorks = (testPart.CollisionGroup == SafeGroup)
+    testPart:Destroy()
 end)
 
 local function RndStr(n)
@@ -441,21 +458,7 @@ task.spawn(function()
     end
 end)
 
-local _pSeed = math.random(1, 99999)
-local function PseudoNoise(x)
-    local xi = math.floor(x) % 256
-    local xf = x - math.floor(x)
-    local u  = xf * xf * (3 - 2 * xf)
-    local a  = (xi * 1664525 + 1013904223 + _pSeed) % 2 ^ 32
-    local b  = ((xi + 1) * 1664525 + 1013904223 + _pSeed) % 2 ^ 32
-    local na = (a / 2 ^ 32) * 2 - 1
-    local nb = (b / 2 ^ 32) * 2 - 1
-    return na + u * (nb - na)
-end
-
 local _speedNoiseT = 0
-local _flyNoiseT   = 100
-
 local gameBaseSpeed = 16
 
 task.spawn(function()
@@ -481,6 +484,9 @@ task.spawn(function()
     end)
 end)
 
+-- ═══════════════════════════════════════════════════════════
+-- 🛡️ ULTIMATE BYPASS #2: Safe Speed via Velocity (No CFrame TP)
+-- ═══════════════════════════════════════════════════════════
 local function GetSafeSpeed()
     local base = Config.WalkSpeed
     if State.SafeSpeedMode then
@@ -489,10 +495,9 @@ local function GetSafeSpeed()
     end
     if not Config.SpeedAntiBan then return base end
     _speedNoiseT = _speedNoiseT + 0.008
-    local n   = PseudoNoise(_speedNoiseT)
+    local n = math.noise(_speedNoiseT, 0, 0) * 2
     local jit = Config.SpeedJitter
-    if math.random(1, 220) == 1 then return math.max(base * 0.82, 14) end
-    return math.clamp(base + n * jit, base * 0.9, base * 1.12)
+    return math.clamp(base + n * jit, base * 0.92, base * 1.08)
 end
 
 local function IsAlive(c)
@@ -659,7 +664,7 @@ local function UpdateESP()
         local head = char and FindHead(char)
         local hum  = char and char:FindFirstChildOfClass("Humanoid")
 
-        if not char or not head or not hum or hum.Health <= 0 then
+        if not char or not head or not head.Parent or not hum or hum.Health <= 0 then
             if ESPCache[p] then
                 pcall(function()
                     if ESPCache[p].bb and ESPCache[p].bb.Parent then
@@ -815,6 +820,9 @@ local hbParts = {}
 
 local function ApplyHB(part)
     if not part or not part:IsA("BasePart") then return end
+    if part.Name == "HumanoidRootPart" then return end
+    if part.Parent and (part.Parent:IsA("Accessory") or part.Parent:IsA("Hat")) then return end
+
     if not hbParts[part] then
         hbParts[part] = {
             S = part.Size, T = part.Transparency,
@@ -849,6 +857,7 @@ task.spawn(function()
             if p == LP or not IsAlive(p.Character) then continue end
             for _, v in pairs(p.Character:GetDescendants()) do
                 if v:IsA("BasePart")
+                    and v.Name ~= "HumanoidRootPart"
                     and not (v.Parent and (v.Parent:IsA("Accessory") or v.Parent:IsA("Hat")))
                     and v.Size.Magnitude > 0.3
                     and v.Size.X < s - 0.2 then
@@ -1080,18 +1089,6 @@ local lastNcPos = Vector3.zero
 local ncRay = RaycastParams.new()
 ncRay.FilterType = Enum.RaycastFilterType.Exclude
 
-local _ncGroupWorks = false
-task.spawn(function()
-    task.wait(1)
-    pcall(function()
-        local testPart = Instance.new("Part")
-        testPart.CollisionGroup = SafeGroup
-        testPart.Parent = Workspace
-        _ncGroupWorks = (testPart.CollisionGroup == SafeGroup)
-        testPart:Destroy()
-    end)
-end)
-
 local function NoclipApply(char)
     if not char then return end
     for _, v in pairs(char:GetDescendants()) do
@@ -1122,6 +1119,8 @@ local function ForceRestore()
     local H = C:FindFirstChildOfClass("Humanoid")
     local R = C:FindFirstChild("HumanoidRootPart")
 
+    local wasNoclip = State.Noclip
+
     if H then
         pcall(function()
             H.PlatformStand = false
@@ -1139,15 +1138,17 @@ local function ForceRestore()
         end
     end
 
-    for v, orig in pairs(ncOrigCanCollide) do
-        pcall(function()
-            if v and v.Parent then
-                v.CollisionGroup = "Default"
-                v.CanCollide = orig
-            end
-        end)
-    end
-    ncOrigCanCollide = {}
+    task.defer(function()
+        for v, orig in pairs(ncOrigCanCollide) do
+            pcall(function()
+                if v and v.Parent then
+                    v.CollisionGroup = "Default"
+                    v.CanCollide = orig
+                end
+            end)
+        end
+        ncOrigCanCollide = {}
+    end)
 
     if R then
         task.spawn(function()
@@ -1385,10 +1386,9 @@ local function Toggle(nm)
                     local hm = cr and cr:FindFirstChildOfClass("Humanoid")
 
                     if rp and hm and not State.Fly and not State.Freecam then
-                        local savedVel = rp.AssemblyLinearVelocity
                         local pwr = math.clamp(Config.FakeLagPower, 1, 100)
 
-                        local lagMin = math.floor(5  + pwr * 0.9)
+                        local lagMin = math.floor(5 + pwr * 0.9)
                         local lagMax = math.floor(15 + pwr * 2.5)
                         local lagTime = math.random(lagMin, lagMax) / 1000
 
@@ -1398,25 +1398,40 @@ local function Toggle(nm)
                         normalMax = math.max(normalMax, normalMin + 30)
                         local normalTime = math.random(normalMin, normalMax) / 1000
 
-                        pcall(function() rp.Anchored = true end)
-                        task.wait(lagTime)
-                        if not State.FakeLag or _fakeLagToken ~= myToken then
-                            pcall(function() rp.Anchored = false end)
-                            break
-                        end
+                        local savedVel = rp.AssemblyLinearVelocity
+                        local savedCF = rp.CFrame
+
                         pcall(function()
-                            rp.Anchored = false
-                            if hm.FloorMaterial == Enum.Material.Air then
-                                local flat = Vector3.new(savedVel.X, 0, savedVel.Z)
-                                if flat.Magnitude > hm.WalkSpeed then
-                                    flat = flat.Unit * hm.WalkSpeed
-                                end
-                                rp.AssemblyLinearVelocity = Vector3.new(flat.X, savedVel.Y, flat.Z)
-                            else
-                                rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0)
-                            end
+                            rp.AssemblyLinearVelocity = Vector3.zero
+                            rp.AssemblyAngularVelocity = Vector3.zero
                         end)
-                        task.wait(normalTime)
+
+                        local lagStart = tick()
+                        while tick() - lagStart < lagTime do
+                            if not State.FakeLag or _fakeLagToken ~= myToken then break end
+                            pcall(function()
+                                rp.AssemblyLinearVelocity = Vector3.zero
+                                if (rp.CFrame.Position - savedCF.Position).Magnitude > 0.5 then
+                                    rp.CFrame = rp.CFrame:Lerp(savedCF, 0.5)
+                                end
+                            end)
+                            task.wait()
+                        end
+
+                        if State.FakeLag and _fakeLagToken == myToken then
+                            pcall(function()
+                                if hm.FloorMaterial == Enum.Material.Air then
+                                    local flat = Vector3.new(savedVel.X, 0, savedVel.Z)
+                                    if flat.Magnitude > hm.WalkSpeed then
+                                        flat = flat.Unit * hm.WalkSpeed
+                                    end
+                                    rp.AssemblyLinearVelocity = Vector3.new(flat.X, savedVel.Y, flat.Z)
+                                else
+                                    rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0)
+                                end
+                            end)
+                            task.wait(normalTime)
+                        end
                     else
                         if rp then pcall(function() rp.Anchored = false end) end
                         task.wait(0.1)
@@ -1558,160 +1573,99 @@ local silentAimHooked = false
 
 local function SetupSilentAimHook()
     if silentAimHooked then return end
-
-    if ENV.hasHookMeta and hookmetamethod then
-        local ok = pcall(function()
-            hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
-                local method = getnamecallmethod and getnamecallmethod() or ""
-                if not State.SilentAim then return self[method](self, ...) end
-                if (method == "Raycast") and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local vel = part.AssemblyLinearVelocity
-                            local predPos = part.Position + vel * 0.05
-                            local dir = (predPos - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
-                            end
-                            args[2] = dir.Unit * dir.Magnitude
-                            return self[method](self, unpack(args))
-                        end
-                    end
-                end
-                return self[method](self, ...)
-            end) or function(self, ...)
-                local method = getnamecallmethod and getnamecallmethod() or ""
-                if not State.SilentAim then return self[method](self, ...) end
-                if method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local dir = (part.Position - origin)
-                            args[2] = dir.Unit * dir.Magnitude
-                            return self[method](self, unpack(args))
-                        end
-                    end
-                end
-                return self[method](self, ...)
-            end)
-        end)
-        if ok then
-            silentAimHooked = true
-            Notify("Silent Aim", L("ntf_hook_ok") .. " [hookmetamethod]", 3)
-            return
-        end
+    if not (ENV.hasHookMeta and hookmetamethod and getnamecallmethod) then
+        Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
+        return
     end
 
-    if ENV.hasGetRawMeta and ENV.hasGetNameCall then
-        local ok = pcall(function()
-            local mt = getrawmetatable(game)
-            if not mt then error("no mt") end
-            local oldNC = rawget(mt, "__namecall")
-            if not oldNC then error("no __namecall") end
-
-            if setreadonly then pcall(function() setreadonly(mt, false) end) end
-            if make_writeable then pcall(function() make_writeable(mt) end) end
-
-            local function hookBody(self, ...)
-                local method = getnamecallmethod()
-                if not State.SilentAim then return oldNC(self, ...) end
-                if method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local vel = part.AssemblyLinearVelocity
-                            local predPos = part.Position + vel * 0.05
-                            local dir = (predPos - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
-                            end
-                            args[2] = dir.Unit * dir.Magnitude
-                            return oldNC(self, unpack(args))
-                        end
-                    end
-                end
-                if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
-                    and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local ray = args[1]
-                        if typeof(ray) == "Ray" then
-                            local origin = ray.Origin
-                            local dir = (part.Position - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
-                            end
-                            args[1] = Ray.new(origin, dir.Unit * 5000)
-                            return oldNC(self, unpack(args))
-                        end
-                    end
-                end
-                return oldNC(self, ...)
+    local ok = pcall(function()
+        _ncChain = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod() or ""
+            if not State.SilentAim then
+                return _ncChain(self, ...)
             end
 
-            local newNC = newcclosure and newcclosure(hookBody) or hookBody
-            rawset(mt, "__namecall", newNC)
-
-            if setreadonly then pcall(function() setreadonly(mt, true) end) end
-            if make_read_only then pcall(function() make_readonly(mt) end) end
-            silentAimHooked = true
-        end)
-        if silentAimHooked then
-            Notify("Silent Aim", L("ntf_hook_ok") .. " [rawmeta]", 3)
-            return
-        end
-    end
-
-    if ENV.hasHookFunction and hookfunction then
-        local ok = pcall(function()
-            local origRaycast = Workspace.Raycast
-            hookfunction(origRaycast, newcclosure and newcclosure(function(self, origin, dir, params)
-                if not State.SilentAim then return origRaycast(self, origin, dir, params) end
+            if method == "Raycast" and self == Workspace then
                 local target = GetBestAimTarget()
                 local part = target and FindAimPart(target)
-                if part and typeof(origin) == "Vector3" then
-                    local vel = part.AssemblyLinearVelocity
-                    local predPos = part.Position + vel * 0.05
-                    local newDir = (predPos - origin)
-                    return origRaycast(self, origin, newDir.Unit * newDir.Magnitude, params)
+                if part then
+                    local args = {...}
+                    local origin = args[1]
+                    if typeof(origin) == "Vector3" then
+                        local vel = part.AssemblyLinearVelocity
+                        local predPos = part.Position + vel * 0.05
+                        local dir = (predPos - origin)
+                        if Config.AimAntiDetect then
+                            dir = dir + Vector3.new(
+                                (math.random() - 0.5) * 0.15,
+                                (math.random() - 0.5) * 0.10,
+                                (math.random() - 0.5) * 0.15
+                            )
+                        end
+                        args[2] = dir.Unit * dir.Magnitude
+                        return _ncChain(self, unpack(args))
+                    end
                 end
-                return origRaycast(self, origin, dir, params)
-            end) or function(self, origin, dir, params)
-                return Workspace:Raycast(origin, dir, params)
-            end)
-            silentAimHooked = true
+            end
+
+            if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
+                and self == Workspace then
+                local target = GetBestAimTarget()
+                local part = target and FindAimPart(target)
+                if part then
+                    local args = {...}
+                    local ray = args[1]
+                    if typeof(ray) == "Ray" then
+                        local origin = ray.Origin
+                        local dir = (part.Position - origin)
+                        if Config.AimAntiDetect then
+                            dir = dir + Vector3.new(
+                                (math.random() - 0.5) * 0.15,
+                                (math.random() - 0.5) * 0.10,
+                                (math.random() - 0.5) * 0.15
+                            )
+                        end
+                        args[1] = Ray.new(origin, dir.Unit * 5000)
+                        return _ncChain(self, unpack(args))
+                    end
+                end
+            end
+
+            return _ncChain(self, ...)
         end)
-        if silentAimHooked then
-            Notify("Silent Aim", L("ntf_hook_ok") .. " [hookfunction]", 3)
-            return
+    end)
+
+    if ok then
+        silentAimHooked = true
+        Notify("Silent Aim", L("ntf_hook_ok") .. " [chained]", 3)
+    else
+        if ENV.hasHookFunction and hookfunction then
+            pcall(function()
+                local origRaycast = Workspace.Raycast
+                local hookedFn = newcclosure and newcclosure(function(self, origin, dir, params)
+                    if not State.SilentAim then return origRaycast(self, origin, dir, params) end
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part and typeof(origin) == "Vector3" then
+                        local vel = part.AssemblyLinearVelocity
+                        local predPos = part.Position + vel * 0.05
+                        local newDir = (predPos - origin)
+                        return origRaycast(self, origin, newDir.Unit * newDir.Magnitude, params)
+                    end
+                    return origRaycast(self, origin, dir, params)
+                end) or function(self, origin, dir, params)
+                    return origRaycast(self, origin, dir, params)
+                end
+                hookfunction(origRaycast, hookedFn)
+                silentAimHooked = true
+                Notify("Silent Aim", L("ntf_hook_ok") .. " [hookfunction]", 3)
+            end)
         end
     end
 
-    Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
+    if not silentAimHooked then
+        Notify("Silent Aim", L("ntf_sa_hook_fail"), 5)
+    end
 end
 
 task.spawn(function() task.wait(2); SetupSilentAimHook() end)
@@ -1720,7 +1674,7 @@ task.spawn(function()
     task.wait(4)
     if IsMob and not silentAimHooked then
         if not ENV.hasGetRawMeta and not ENV.hasGetNameCall and not ENV.hasHookMeta then
-            Notify("Silent Aim", "⚠️ Exploit не підтримує хуки. Використай Auto Aim.", 6)
+            Notify("Silent Aim", "⚠️ Exploit doesn't support hooks. Use Auto Aim.", 6)
         else
             SetupSilentAimHook()
         end
@@ -1731,7 +1685,9 @@ local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
     ok, result = pcall(function()
-        if syn then return syn.request({Url = url, Method = "GET"}).Body end
+        if syn and syn.request then
+            return syn.request({Url = url, Method = "GET"}).Body
+        end
     end)
     if ok and result then return result end
     ok, result = pcall(function()
@@ -1826,13 +1782,10 @@ local function JoinSmallestServer()
                     table.insert(valid, s)
                 end
             end
-            
             if #valid > 0 then
                 table.sort(valid, function(a, b) return a.playing < b.playing end)
-                
                 local maxRange = math.max(1, math.floor(#valid * 0.3))
                 local chosen = valid[math.random(1, maxRange)]
-                
                 Notify("Server Hop", "🕵️ " .. chosen.playing .. L("ntf_players"), 2)
                 task.wait(1)
                 pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP) end)
@@ -2313,7 +2266,7 @@ local function EnterMobEditor()
     for _, entry in pairs(MobMovableBtns) do
         MakeDraggableMob(entry)
     end
-    Notify("Editor", "📐 Тягни ✱ Змінюй розмір ⤡ · натисни 📐 щоб зберегти", 4)
+    Notify("Editor", "📐 Drag ✱ Resize ⤡ · press 📐 to save", 4)
 end
 
 local function ExitMobEditor()
@@ -2601,7 +2554,6 @@ local ShowDesc, HideDesc, AddHdr
 local langBtnRef, autoSaveLblRef = nil, nil
 local waitingBind = nil
 
-;(function()
 do
 local descPopup = Instance.new("Frame", Scr)
 descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
@@ -2645,7 +2597,7 @@ ShowDesc = function(title, descKey)
 end
 
 HideDesc = function()
-    TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
+    TweenService:Create(descPopup, TweenInfo.new(0.12), {Size: UDim2.new(0, MW - 30, 0, 0)}):Play()
     task.delay(0.12, function() descPopup.Visible = false end)
 end
 descClose.MouseButton1Click:Connect(HideDesc)
@@ -2913,7 +2865,6 @@ RefreshLanguage = function()
     if autoSaveLblRef then pcall(function() autoSaveLblRef.Text = L("stat_auto_save") end) end
 end
 
--- POPULATE TABS
 AddHdr("Combat", "🎯", "hdr_aiming")
 MkToggleBind("Combat", "🎯", "lbl_auto_aim", "Aim", "desc_auto_aim")
 MkToggleBind("Combat", "🔇", "lbl_silent_aim", "SilentAim", "desc_silent_aim")
@@ -2994,7 +2945,7 @@ MkButton("Misc", "👥", "btn_biggest", Color3.fromRGB(22, 28, 38), JoinBiggestS
 MkButton("Misc", "🕵️", "btn_smallest", Color3.fromRGB(22, 28, 38), JoinSmallestServer)
 
 AddHdr("Misc", "🔗", "hdr_target_join")
-local _, targetInput = MkInput("Misc", "🔗", "Введи Server ID (JobId)...", function(text)
+local _, targetInput = MkInput("Misc", "🔗", "Enter Server ID (JobId)...", function(text)
     if text and #text > 5 then
         JoinTargetServer(text)
     end
@@ -3196,8 +3147,6 @@ if IsTab then task.spawn(function()
     end
 end) end
 
-end)()
-
 UIS.InputBegan:Connect(function(inp, gpe)
     if waitingBind then
         if inp.UserInputType == Enum.UserInputType.Keyboard then
@@ -3265,34 +3214,35 @@ end)
 task.spawn(function()
     local t = 0
     while true do
-        task.wait(0.033)
-        t += 0.02
+        task.wait(0.1)
+        t += 0.1
         local pulse = (math.sin(t * 2) + 1) / 2
         local aR = math.floor(0 + pulse * 15)
         local aG = math.floor(180 + pulse * 30)
         local aB = math.floor(95 + pulse * 20)
         local acol = Color3.fromRGB(aR, aG, aB)
         pcall(function()
-            mSt.Color = acol; mB.TextColor3 = acol
+            mSt.Color = acol
+            mB.TextColor3 = acol
             tGrad.Rotation = (t * 15) % 360
-            tAcc.BackgroundColor3 = acol; tIco.TextColor3 = acol
+            tAcc.BackgroundColor3 = acol
+            tIco.TextColor3 = acol
             exStroke.Color = acol
             mainS.Color = Color3.fromRGB(
-                math.floor(38 + pulse * 20), math.floor(38 + pulse * 20), math.floor(48 + pulse * 20))
+                math.floor(38 + pulse * 20),
+                math.floor(38 + pulse * 20),
+                math.floor(48 + pulse * 20)
+            )
             for nm, d in pairs(AllRows) do
-                if State[nm] and d.accent then d.accent.BackgroundColor3 = acol end
-            end
-            for _qbnm, _ in pairs(QuickBtnActive) do
-                pcall(function() UpdateQuickBtnColor(_qbnm) end)
-            end
-            if (State.Aim or State.Aim) and not (aimLocked and aimTarget) then
-                fovStroke.Color = Color3.fromRGB(180, 180, 200)
+                if State[nm] and d.accent then
+                    d.accent.BackgroundColor3 = acol
+                end
             end
         end)
     end
 end)
 
-;(function()
+do
 local FrameLog   = {}
 local lastPing   = 0
 local pingTk     = 0
@@ -3332,7 +3282,6 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    -- FLY (AC BYPASS THROUGH CFRAME)
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -3347,9 +3296,18 @@ RunService.RenderStepped:Connect(function(dt)
             if dir.Magnitude > 0.05 then
                 dir = dir.Unit
                 HRP.CFrame = HRP.CFrame + (dir * Config.FlySpeed * dt)
+                local flatVel = Vector3.new(HRP.AssemblyLinearVelocity.X, 0, HRP.AssemblyLinearVelocity.Z)
+                if flatVel.Magnitude > Config.FlySpeed * 1.2 then
+                    HRP.AssemblyLinearVelocity = Vector3.new(
+                        flatVel.X * 0.5,
+                        HRP.AssemblyLinearVelocity.Y,
+                        flatVel.Z * 0.5
+                    )
+                end
+            else
+                HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end
-            
-            HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+
             HRP.AssemblyAngularVelocity = Vector3.zero
 
             if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
@@ -3432,8 +3390,11 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 end)
-end)()
+end
 
+-- ═══════════════════════════════════════════════════════════
+-- 🛡️ ULTIMATE BYPASS #3: Safe Speed & Noclip Loops (Velocity & Collisions)
+-- ═══════════════════════════════════════════════════════════
 RunService.Heartbeat:Connect(function(dt)
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3457,16 +3418,16 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- SPEED (AC BYPASS THROUGH CFRAME)
+    -- Safe Speed via Velocity
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
-            Hum.WalkSpeed = gameBaseSpeed
+            Hum.WalkSpeed = gameBaseSpeed -- Залишаємо базовою для сервера
+            
             if Hum.MoveDirection.Magnitude > 0.1 then
-                local extraSpd = targetSpd - gameBaseSpeed
-                if extraSpd > 0 then
-                    HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * extraSpd * dt)
-                end
+                local targetVel = Hum.MoveDirection * targetSpd
+                -- Застосовуємо через Velocity, не чіпаючи Y (гравітацію)
+                HRP.AssemblyLinearVelocity = Vector3.new(targetVel.X, HRP.AssemblyLinearVelocity.Y, targetVel.Z)
             end
         end)
     end
@@ -3537,8 +3498,11 @@ RunService.Stepped:Connect(function()
                     if ncOrigCanCollide[v] == nil then
                         ncOrigCanCollide[v] = v.CanCollide
                     end
-                    if _ncGroupWorks then v.CollisionGroup = SafeGroup end
-                    v.CanCollide = false
+                    if _ncGroupWorks then
+                        v.CollisionGroup = SafeGroup
+                    else
+                        v.CanCollide = false
+                    end
                 end)
             end
         end
