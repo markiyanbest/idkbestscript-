@@ -203,13 +203,12 @@ local function SetupACBypass()
     if acBypassInstalled then return end
     if not (ENV.hasHookMeta and hookmetamethod and getnamecallmethod) then return end
 
-    _ncChain = hookmetamethod(game, "__namecall", function(...)
+    _ncChain = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
         if method ~= "FireServer" and method ~= "InvokeServer" and method ~= "Kick" then
-            return _ncChain(...)
+            return _ncChain(self, ...)
         end
         
-        local self = ...
         if method == "Kick" then
             if self == LP then return end
         else
@@ -221,7 +220,7 @@ local function SetupACBypass()
                 end
                 if method == "FireServer" then
                     local args = {...}
-                    for i = 2, #args do
+                    for i = 1, #args do
                         local arg = args[i]
                         if typeof(arg) == "string" then
                             local argLower = string.lower(arg)
@@ -234,7 +233,7 @@ local function SetupACBypass()
                 end
             end
         end
-        return _ncChain(...)
+        return _ncChain(self, ...)
     end)
     acBypassInstalled = true
 end
@@ -1575,18 +1574,18 @@ local function SetupSilentAimHook()
     end
 
     local ok = pcall(function()
-        _ncChain = hookmetamethod(game, "__namecall", function(...)
+        _ncChain = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod() or ""
             if not State.SilentAim or (method ~= "Raycast" and method ~= "FindPartOnRay" and method ~= "FindPartOnRayWithIgnoreList") then
-                return _ncChain(...)
+                return _ncChain(self, ...)
             end
-            local self = ...
+            
             if method == "Raycast" and self == Workspace then
                 local target = GetBestAimTarget()
                 local part = target and FindAimPart(target)
                 if part then
                     local args = {...}
-                    local origin = args[2]
+                    local origin = args[1]
                     if typeof(origin) == "Vector3" then
                         local vel = part.AssemblyLinearVelocity
                         local predPos = part.Position + vel * 0.05
@@ -1598,8 +1597,8 @@ local function SetupSilentAimHook()
                                 (math.random() - 0.5) * 0.15
                             )
                         end
-                        args[3] = dir.Unit * dir.Magnitude
-                        return _ncChain(self, unpack(args, 2))
+                        args[2] = dir.Unit * dir.Magnitude
+                        return _ncChain(self, unpack(args))
                     end
                 end
             end
@@ -1609,7 +1608,7 @@ local function SetupSilentAimHook()
                 local part = target and FindAimPart(target)
                 if part then
                     local args = {...}
-                    local ray = args[2]
+                    local ray = args[1]
                     if typeof(ray) == "Ray" then
                         local origin = ray.Origin
                         local dir = (part.Position - origin)
@@ -1620,13 +1619,13 @@ local function SetupSilentAimHook()
                                 (math.random() - 0.5) * 0.15
                             )
                         end
-                        args[2] = Ray.new(origin, dir.Unit * 5000)
-                        return _ncChain(self, unpack(args, 2))
+                        args[1] = Ray.new(origin, dir.Unit * 5000)
+                        return _ncChain(self, unpack(args))
                     end
                 end
             end
 
-            return _ncChain(...)
+            return _ncChain(self, ...)
         end)
     end)
 
@@ -2423,7 +2422,6 @@ do
     end)
 end
 
--- Спрощена логіка кнопки M: клік -> відкрити/закрити. Перетягування залишається простим.
 do
     local mDragging = false
     local mStartPos = nil
@@ -3250,7 +3248,7 @@ local lastPing = 0
 local pingTk = 0
 
 RunService.RenderStepped:Connect(function(dt)
-    _frameCount += 1
+    _frameCount = _frameCount + 1
     local now = tick()
     if now - _lastFpsTime >= 0.5 then
         _currentFps = math.floor(_frameCount / (now - _lastFpsTime))
@@ -3514,7 +3512,7 @@ RunService.Stepped:Connect(function()
             or HRP.AssemblyLinearVelocity.Magnitude > 5
         local delta = (HRP.Position - lastNcPos).Magnitude
 
-        if moving and delta < 0.06 then ncStuck += 1 else ncStuck = 0 end
+        if moving and delta < 0.06 then ncStuck = ncStuck + 1 else ncStuck = 0 end
 
         if ncStuck >= 3 then
             local md = Hum.MoveDirection.Magnitude > 0.05
@@ -3525,9 +3523,9 @@ RunService.Stepped:Connect(function()
                 return Workspace:Raycast(HRP.Position, md * 8, ncRay)
             end)
             if ok and r then
-                HRP.CFrame += md * (r.Distance + 2.5)
+                HRP.CFrame = HRP.CFrame + md * (r.Distance + 2.5)
             else
-                HRP.CFrame += md * 0.6 + Vector3.new(0, 0.15, 0)
+                HRP.CFrame = HRP.CFrame + md * 0.6 + Vector3.new(0, 0.15, 0)
             end
             if ncStuck >= 6 then
                 HRP.AssemblyLinearVelocity = Vector3.new(
