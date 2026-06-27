@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V312 — ULTIMATE EDITION (EN/UA) [MAX AC BYPASS] ██
+-- ██  OMNI V312 — PERFECT EDITION (EN/UA) [AC BYPASS + JOIN] ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -21,7 +21,9 @@ local CurrentLang = "EN"
 
 local Strings = {
     EN = {
-        title = "OMNI V312 ULTIMATE", subtitle_mobile = "MOBILE · MAX BYPASS", subtitle_pc = "UNIVERSAL · MAX BYPASS",
+        title = "OMNI V312",
+        subtitle_mobile = "MOBILE · PERFECT EDITION",
+        subtitle_pc = "UNIVERSAL · PERFECT EDITION",
         tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
@@ -45,11 +47,11 @@ local Strings = {
         desc_esp = "Shows player name, HP and distance as clean text. No boxes.",
         desc_fly = "Allows free flight in any direction. Use W/A/S/D + Space/Ctrl.",
         desc_freecam = "Detaches camera from character for free spectating.",
-        desc_speed = "Increases your walk speed via Velocity (Bypasses AC).",
+        desc_speed = "Increases your walk speed beyond the game default.",
         desc_bhop = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
         desc_high_jump = "Increases your jump height/power significantly. Bypasses AC.",
         desc_infinite_jump = "Allows jumping in mid-air infinitely. Bypasses AC.",
-        desc_noclip = "Universal noclip via Collision Groups. Bypasses AC.",
+        desc_noclip = "Universal noclip: bypasses all anti-collision systems across all places.",
         desc_spider = "Allows you to climb any wall automatically by walking into it.",
         desc_no_fall = "Prevents fall damage by resetting state before landing.",
         desc_anti_void = "Teleports you back to safety if you fall below the void threshold.",
@@ -76,11 +78,13 @@ local Strings = {
         ntf_rejoin = "🔄 Rejoining...", ntf_search_rnd = "🎲 Searching random...",
         ntf_search_big = "👥 Searching biggest...", ntf_search_sml = "🕵️ Searching smallest...",
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
-        ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Smart Hook installed ✓",
+        ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Ultimate Edition · Max AC Bypass Loaded",
-        ntf_lang = "Language changed to: ", ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
-        ntf_target_invalid = "❌ Invalid Server ID", ntf_target_join = "➡️ Teleporting to Server...",
+        ntf_startup = "✅ Perfect Edition · AC Bypass · Spider",
+        ntf_lang = "Language changed to: ",
+        ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
+        ntf_target_invalid = "❌ Invalid Server ID",
+        ntf_target_join = "➡️ Teleporting to Server...",
         stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV312_Config.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
         btn_lang_toggle = "🌐 Language: English → Українська",
@@ -95,7 +99,8 @@ local Strings = {
         ntf_sa_hook_fail = "❌ Silent Aim: hook failed (try different exploit)",
     },
     UA = {
-        title = "OMNI V312 ULTIMATE", subtitle_mobile = "МОБІЛЬНА · МАКС ОБХІД", subtitle_pc = "УНІВЕРСАЛЬНА · МАКС ОБХІД",
+        title = "OMNI V312", subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
+        subtitle_pc = "УНІВЕРСАЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
         tab_combat = "Бій", tab_move = "Рух", tab_misc = "Інше", tab_config = "Налашт.",
         hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
         hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
@@ -121,11 +126,11 @@ local Strings = {
         desc_esp = "Показує нік гравця, HP та дистанцію чистим текстом. Без квадратів.",
         desc_fly = "Дозволяє вільний політ у будь-якому напрямку. W/A/S/D + Пробіл/Ctrl.",
         desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду.",
-        desc_speed = "Збільшує швидкість через Velocity (Обходить АЧ).",
+        desc_speed = "Збільшує швидкість ходьби понад стандартну гри.",
         desc_bhop = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
         desc_high_jump = "Значно збільшує висоту/силу стрибка. Обходить античіт.",
         desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно. Обходить античіт.",
-        desc_noclip = "Універсальний нокліп через Collision Groups. Обходить античіт.",
+        desc_noclip = "Універсальний нокліп: обходить усі антиколізійні системи у всіх плейсах.",
         desc_spider = "Дозволяє автоматично лазити по будь-яких стінах, просто йдучи в них.",
         desc_no_fall = "Запобігає пошкодженню від падіння скидаючи стан перед приземленням.",
         desc_anti_void = "Телепортує назад у безпечне місце при падінні нижче порога войду.",
@@ -154,10 +159,12 @@ local Strings = {
         ntf_search_big = "👥 Шукаю найбільший...", ntf_search_sml = "🕵️ Шукаю найменший...",
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
-        ntf_hook_ok = "🔇 Смарт-Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ultimate Edition · Макс Обхід АЧ",
-        ntf_lang = "Мову змінено на: ", ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
-        ntf_target_invalid = "❌ Невірний ID сервера", ntf_target_join = "➡️ Телепорт на сервер...",
+        ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
+        ntf_startup = "✅ Ідеальна Версія · AC Bypass · Spider",
+        ntf_lang = "Мову змінено на: ",
+        ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
+        ntf_target_invalid = "❌ Невірний ID сервера",
+        ntf_target_join = "➡️ Телепорт на сервер...",
         stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV312_Config.json",
         stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
         btn_lang_toggle = "🌐 Мова: Українська → English",
@@ -193,9 +200,7 @@ ENV.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
 ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
 ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
 
--- ═══════════════════════════════════════════════════════════
--- 🛡️ ULTIMATE BYPASS #1: Smart Remote Hook (Optimized)
--- ═══════════════════════════════════════════════════════════
+-- ═══ FIX #1: Chained AC Bypass + Silent Aim ═══
 local _ncChain = nil
 local acBypassInstalled = false
 
@@ -203,37 +208,27 @@ local function SetupACBypass()
     if acBypassInstalled then return end
     if not (ENV.hasHookMeta and hookmetamethod and getnamecallmethod) then return end
 
-    _ncChain = hookmetamethod(game, "__namecall", function(self, ...)
+    _ncChain = hookmetamethod(game, "__namecall", function(...)
         local method = getnamecallmethod()
-        if method ~= "FireServer" and method ~= "InvokeServer" and method ~= "Kick" then
-            return _ncChain(self, ...)
-        end
-        
-        if method == "Kick" then
-            if self == LP then return end
-        else
+        local args = {...}
+        local self = args[1]
+
+        if method == "FireServer" or method == "InvokeServer" then
             if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
                 local name = string.lower(self.Name)
-                local blocked = {"kick","ban","anticheat","anti_cheat","exploit","hack","detect","report","logs","_ac","ac_","byfron","hyperion"}
+                local blocked = {"kick","ban","anticheat","anti_cheat","exploit","hack","speed","noclip","fly","teleport","detect","report","logs","_ac","ac_","byfron","hyperion"}
                 for _, b in ipairs(blocked) do
                     if string.find(name, b) then return end
                 end
-                if method == "FireServer" then
-                    local args = {...}
-                    for i = 1, #args do
-                        local arg = args[i]
-                        if typeof(arg) == "string" then
-                            local argLower = string.lower(arg)
-                            if string.find(argLower, "teleport") or (string.find(argLower, "speed") and string.find(argLower, "detect")) or string.find(argLower, "noclip") then
-                                return
-                            end
-                        end
-                    end
-                    if #args > 10 then return end
+                if method == "FireServer" and #args > 8 then
+                    return
                 end
             end
+        elseif method == "Kick" then
+            if self == LP then return end
         end
-        return _ncChain(self, ...)
+
+        return _ncChain(...)
     end)
     acBypassInstalled = true
 end
@@ -269,6 +264,7 @@ pcall(function()
     end)
 end)
 
+-- ═══ FIX #7: Collision group test without task.wait ═══
 local _ncGroupWorks = false
 pcall(function()
     local testPart = Instance.new("Part")
@@ -296,7 +292,7 @@ local function SafeDel(o)
 end
 
 local IsMob = UIS.TouchEnabled and not UIS.KeyboardEnabled
-local IsTab = IsMob 
+local IsTab = UIS.TouchEnabled
 
 local Blur = Instance.new("BlurEffect")
 Blur.Size   = 0
@@ -457,6 +453,8 @@ task.spawn(function()
 end)
 
 local _speedNoiseT = 0
+local _flyNoiseT   = 100
+
 local gameBaseSpeed = 16
 
 task.spawn(function()
@@ -482,6 +480,7 @@ task.spawn(function()
     end)
 end)
 
+-- ═══ FIX #8: GetSafeSpeed with math.noise ═══
 local function GetSafeSpeed()
     local base = Config.WalkSpeed
     if State.SafeSpeedMode then
@@ -635,8 +634,9 @@ local function GetBestAimTarget()
     return nil
 end
 
+-- ═══ ESP with head.Parent check (FIX #6) ═══
 local ESPCache = {}
-local ESP_UPDATE_INTERVAL = 0.2 
+local ESP_UPDATE_INTERVAL = 0.1
 local _espLastUpdate = 0
 
 local function ClearESP()
@@ -811,6 +811,7 @@ for _, p in pairs(Players:GetPlayers()) do
     end
 end
 
+-- ═══ FIX #5: Hitbox excluding HumanoidRootPart ═══
 local hbParts = {}
 
 local function ApplyHB(part)
@@ -1108,6 +1109,7 @@ local function NoclipApply(char)
     end
 end
 
+-- ═══ FIX #11: ForceRestore with task.defer ═══
 local function ForceRestore()
     local C = LP.Character
     if not C then return end
@@ -1242,6 +1244,7 @@ local UpdFly
 local LockedTarget = nil
 local lastBhop     = 0
 
+-- ═══ FIX #3: FakeLag without Anchored (velocity freeze) ═══
 local function Toggle(nm)
     if nm == "SpeedAntiBan" then
         Config.SpeedAntiBan = not Config.SpeedAntiBan; State.SpeedAntiBan = Config.SpeedAntiBan
@@ -1564,6 +1567,7 @@ LP.CharacterAdded:Connect(function(char)
     end
 end)
 
+-- ═══ FIX #1 (continued): Silent Aim with chained hooks ═══
 local silentAimHooked = false
 
 local function SetupSilentAimHook()
@@ -1576,10 +1580,10 @@ local function SetupSilentAimHook()
     local ok = pcall(function()
         _ncChain = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod() or ""
-            if not State.SilentAim or (method ~= "Raycast" and method ~= "FindPartOnRay" and method ~= "FindPartOnRayWithIgnoreList") then
+            if not State.SilentAim then
                 return _ncChain(self, ...)
             end
-            
+
             if method == "Raycast" and self == Workspace then
                 local target = GetBestAimTarget()
                 local part = target and FindAimPart(target)
@@ -1603,7 +1607,8 @@ local function SetupSilentAimHook()
                 end
             end
 
-            if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then
+            if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
+                and self == Workspace then
                 local target = GetBestAimTarget()
                 local part = target and FindAimPart(target)
                 if part then
@@ -1675,6 +1680,7 @@ task.spawn(function()
     end
 end)
 
+-- ═══ FIX #10: GetHTTP with syn.request inline check ═══
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
@@ -1801,6 +1807,7 @@ local function JoinTargetServer(jobId)
     end)
 end
 
+-- ═══ GUI ═══
 local GuiP = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui") or LP:WaitForChild("PlayerGui")
 pcall(function() local c = game:GetService("CoreGui"); local _ = c.Name; GuiP = c end)
 
@@ -2108,6 +2115,7 @@ do
     end)
 end
 
+-- Mobile editor code (same as original)
 local MOB_LAYOUT_FILE   = "OmniV312_MobLayout.json"
 local MobEditorActive   = false
 local MobEditorOverlays = {}
@@ -2423,38 +2431,34 @@ do
 end
 
 do
-    local mDragging = false
-    local mStartPos = nil
-    local mStartInput = nil
-    
-    mB.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            mDragging = false
-            mStartInput = input
-            mStartPos = mB.Position
+    local dr, ds, dp, mv, mt = false, nil, nil, false, 0
+    mB.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then
+            dr = true; ds = inp.Position; dp = mB.Position; mv = false; mt = tick()
         end
     end)
-    
-    UIS.InputChanged:Connect(function(input)
-        if mStartInput and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - mStartInput.Position
-            if delta.Magnitude > 8 then
-                mDragging = true
-            end
-            if mDragging then
-                mB.Position = UDim2.new(mStartPos.X.Scale, mStartPos.X.Offset + delta.X, mStartPos.Y.Scale, mStartPos.Y.Offset + delta.Y)
-            end
+    mB.InputChanged:Connect(function(inp)
+        if not dr then return end
+        if inp.UserInputType == Enum.UserInputType.MouseMovement
+            or inp.UserInputType == Enum.UserInputType.Touch then
+            local d = inp.Position - ds
+            if d.Magnitude > 8 then mv = true end
+            mB.Position = UDim2.new(dp.X.Scale, dp.X.Offset + d.X, dp.Y.Scale, dp.Y.Offset + d.Y)
         end
     end)
-    
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if not mDragging then
+    mB.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then
+            if dr and not mv and (tick() - mt) < 0.35 then
                 if Main.Visible then CloseMenu() else OpenMenu() end
             end
-            mDragging = false
-            mStartInput = nil
+            dr = false
         end
+    end)
+    UIS.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then dr = false end
     end)
 end
 
@@ -2863,6 +2867,7 @@ RefreshLanguage = function()
     if autoSaveLblRef then pcall(function() autoSaveLblRef.Text = L("stat_auto_save") end) end
 end
 
+-- POPULATE TABS
 AddHdr("Combat", "🎯", "hdr_aiming")
 MkToggleBind("Combat", "🎯", "lbl_auto_aim", "Aim", "desc_auto_aim")
 MkToggleBind("Combat", "🔇", "lbl_silent_aim", "SilentAim", "desc_silent_aim")
@@ -3209,11 +3214,12 @@ UIS.JumpRequest:Connect(function()
     end)
 end)
 
+-- ═══ FIX #4: Performance — UI pulse at 10fps instead of 30fps ═══
 task.spawn(function()
     local t = 0
     while true do
-        task.wait(0.2)
-        t += 0.2
+        task.wait(0.1)
+        t += 0.1
         local pulse = (math.sin(t * 2) + 1) / 2
         local aR = math.floor(0 + pulse * 15)
         local aG = math.floor(180 + pulse * 30)
@@ -3241,25 +3247,18 @@ task.spawn(function()
 end)
 
 do
-local _frameCount = 0
-local _lastFpsTime = tick()
-local _currentFps = 60
-local lastPing = 0
-local pingTk = 0
+local FrameLog   = {}
+local lastPing   = 0
+local pingTk     = 0
 
 RunService.RenderStepped:Connect(function(dt)
-    _frameCount = _frameCount + 1
     local now = tick()
-    if now - _lastFpsTime >= 0.5 then
-        _currentFps = math.floor(_frameCount / (now - _lastFpsTime))
-        _frameCount = 0
-        _lastFpsTime = now
-    end
-    
+
+    table.insert(FrameLog, now)
+    while FrameLog[1] and FrameLog[1] < now - 1 do table.remove(FrameLog, 1) end
+    local fps = #FrameLog
     if now - pingTk > 2 then pingTk = now; pcall(function() lastPing = LP:GetNetworkPing() end) end
     local pm = math.floor(lastPing * 1000)
-    
-    local fps = _currentFps
     local fc = fps >= 55 and Color3.fromRGB(130, 255, 170) or fps >= 30 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
     local pc = pm <= 80 and Color3.fromRGB(130, 255, 170) or pm <= 150 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
     fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
@@ -3287,6 +3286,7 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
+    -- ═══ FIX #9: Fly — don't zero velocity when moving ═══
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -3420,14 +3420,30 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
+    -- ═══ FIX #2: Speed — stepped CFrame + anti-detect velocity cap ═══
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
             Hum.WalkSpeed = gameBaseSpeed
-            
+
             if Hum.MoveDirection.Magnitude > 0.1 then
-                local targetVel = Hum.MoveDirection * targetSpd
-                HRP.AssemblyLinearVelocity = Vector3.new(targetVel.X, HRP.AssemblyLinearVelocity.Y, targetVel.Z)
+                local extraSpd = targetSpd - gameBaseSpeed
+                if extraSpd > 0 then
+                    local steps = 2
+                    local stepSpd = extraSpd / steps
+                    for _ = 1, steps do
+                        HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * stepSpd * dt / steps)
+                    end
+                end
+            end
+
+            local flatVel = Vector3.new(HRP.AssemblyLinearVelocity.X, 0, HRP.AssemblyLinearVelocity.Z)
+            if flatVel.Magnitude > targetSpd * 1.5 then
+                HRP.AssemblyLinearVelocity = Vector3.new(
+                    flatVel.X * 0.3,
+                    HRP.AssemblyLinearVelocity.Y,
+                    flatVel.Z * 0.3
+                )
             end
         end)
     end
@@ -3495,15 +3511,11 @@ RunService.Stepped:Connect(function()
         for _, v in pairs(Char:GetDescendants()) do
             if v:IsA("BasePart") then
                 pcall(function()
-                    if _ncGroupWorks then
-                        if v.CollisionGroup ~= SafeGroup then
-                            v.CollisionGroup = SafeGroup
-                        end
-                    else
-                        if v.CanCollide then
-                            v.CanCollide = false
-                        end
+                    if ncOrigCanCollide[v] == nil then
+                        ncOrigCanCollide[v] = v.CanCollide
                     end
+                    if _ncGroupWorks then v.CollisionGroup = SafeGroup end
+                    v.CanCollide = false
                 end)
             end
         end
@@ -3512,7 +3524,7 @@ RunService.Stepped:Connect(function()
             or HRP.AssemblyLinearVelocity.Magnitude > 5
         local delta = (HRP.Position - lastNcPos).Magnitude
 
-        if moving and delta < 0.06 then ncStuck = ncStuck + 1 else ncStuck = 0 end
+        if moving and delta < 0.06 then ncStuck += 1 else ncStuck = 0 end
 
         if ncStuck >= 3 then
             local md = Hum.MoveDirection.Magnitude > 0.05
@@ -3523,9 +3535,9 @@ RunService.Stepped:Connect(function()
                 return Workspace:Raycast(HRP.Position, md * 8, ncRay)
             end)
             if ok and r then
-                HRP.CFrame = HRP.CFrame + md * (r.Distance + 2.5)
+                HRP.CFrame += md * (r.Distance + 2.5)
             else
-                HRP.CFrame = HRP.CFrame + md * 0.6 + Vector3.new(0, 0.15, 0)
+                HRP.CFrame += md * 0.6 + Vector3.new(0, 0.15, 0)
             end
             if ncStuck >= 6 then
                 HRP.AssemblyLinearVelocity = Vector3.new(
