@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V312 — PERFECT EDITION (EN/UA) [FLY FIX + AC BYPASS] ██
+-- ██  OMNI V312 — PERFECT EDITION (EN/UA) [ULTRA AC BYPASS] ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -80,7 +80,7 @@ local Strings = {
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
         ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Perfect Edition · AC Bypass · Spider · Fly Fixed",
+        ntf_startup = "✅ Perfect Edition · Ultra AC Bypass · Spider · Fly Fixed",
         ntf_lang = "Language changed to: ",
         ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
         ntf_target_invalid = "❌ Invalid Server ID",
@@ -160,7 +160,7 @@ local Strings = {
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
         ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ідеальна Версія · AC Bypass · Fly Fixed",
+        ntf_startup = "✅ Ідеальна Версія · Ultra AC Bypass · Fly Fixed",
         ntf_lang = "Мову змінено на: ",
         ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
         ntf_target_invalid = "❌ Невірний ID сервера",
@@ -203,33 +203,70 @@ ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
 local _ncChain = nil
 local acBypassInstalled = false
 
+-- [ ULTRA AC BYPASS ] --
 local function SetupACBypass()
     if acBypassInstalled then return end
-    if not (ENV.hasHookMeta and hookmetamethod and getnamecallmethod) then return end
+    acBypassInstalled = true
 
-    _ncChain = hookmetamethod(game, "__namecall", function(...)
-        local method = getnamecallmethod()
-        local args = {...}
-        local self = args[1]
+    -- 1. Блокування Kick через hookfunction (якщо підтримується)
+    if ENV.hasHookFunction and hookfunction and ENV.hasNewCClosure and newcclosure then
+        pcall(function()
+            local oldKick = LP.Kick
+            hookfunction(oldKick, newcclosure(function(...)
+                return -- Тихо ігноруємо кік
+            end))
+        end)
+    end
 
-        if method == "FireServer" or method == "InvokeServer" then
-            if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
-                local name = string.lower(self.Name)
-                local blocked = {"kick","ban","anticheat","anti_cheat","exploit","hack","speed","noclip","fly","teleport","detect","report","logs","_ac","ac_","byfron","hyperion"}
-                for _, b in ipairs(blocked) do
-                    if string.find(name, b) then return end
-                end
-                if method == "FireServer" and #args > 8 then
-                    return
+    -- 2. Перехоплення __namecall (Ремоути та події)
+    if ENV.hasHookMeta and hookmetamethod and getnamecallmethod then
+        _ncChain = hookmetamethod(game, "__namecall", function(...)
+            local method = getnamecallmethod()
+            local args = {...}
+            local self = args[1]
+
+            -- Блокуємо пряме викликання :Kick()
+            if method == "Kick" then
+                if self == LP then return end
+            end
+
+            if method == "FireServer" or method == "InvokeServer" then
+                if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
+                    
+                    -- Перевірка назви Ремоуту (розширений список)
+                    local name = string.lower(self.Name)
+                    local blockedNames = {
+                        "kick","ban","anticheat","anti_cheat","exploit","hack",
+                        "speed","noclip","fly","teleport","detect","report",
+                        "logs","_ac","ac_","byfron","hyperion","flag","cheat",
+                        "admin","mod","verify","checksum","memory"
+                    }
+                    for _, b in ipairs(blockedNames) do
+                        if string.find(name, b) then return end
+                    end
+
+                    -- Перевірка аргументів (що всередині відправляється)
+                    local blockedArgs = {
+                        "detected", "flag", "speed", "fly", "teleport", 
+                        "noclip", "exploit", "hack", "suspic", "cheat", 
+                        "anticheat", "kick", "ban", "log"
+                    }
+                    for i = 2, #args do
+                        if type(args[i]) == "string" then
+                            local lowerArg = string.lower(args[i])
+                            for _, badWord in ipairs(blockedArgs) do
+                                if string.find(lowerArg, badWord) then
+                                    return -- Блокуємо відправку, якщо знайшли тригерне слово
+                                end
+                            end
+                        end
+                    end
                 end
             end
-        elseif method == "Kick" then
-            if self == LP then return end
-        end
 
-        return _ncChain(...)
-    end)
-    acBypassInstalled = true
+            return _ncChain(...)
+        end)
+    end
 end
 task.spawn(function() task.wait(1); SetupACBypass() end)
 
