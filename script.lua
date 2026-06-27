@@ -200,7 +200,6 @@ ENV.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
 ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
 ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
 
--- ═══ FIX #1: Chained AC Bypass + Silent Aim ═══
 local _ncChain = nil
 local acBypassInstalled = false
 
@@ -264,7 +263,6 @@ pcall(function()
     end)
 end)
 
--- ═══ FIX #7: Collision group test without task.wait ═══
 local _ncGroupWorks = false
 pcall(function()
     local testPart = Instance.new("Part")
@@ -480,7 +478,6 @@ task.spawn(function()
     end)
 end)
 
--- ═══ FIX #8: GetSafeSpeed with math.noise ═══
 local function GetSafeSpeed()
     local base = Config.WalkSpeed
     if State.SafeSpeedMode then
@@ -634,7 +631,6 @@ local function GetBestAimTarget()
     return nil
 end
 
--- ═══ ESP with head.Parent check (FIX #6) ═══
 local ESPCache = {}
 local ESP_UPDATE_INTERVAL = 0.1
 local _espLastUpdate = 0
@@ -811,7 +807,6 @@ for _, p in pairs(Players:GetPlayers()) do
     end
 end
 
--- ═══ FIX #5: Hitbox excluding HumanoidRootPart ═══
 local hbParts = {}
 
 local function ApplyHB(part)
@@ -1109,7 +1104,6 @@ local function NoclipApply(char)
     end
 end
 
--- ═══ FIX #11: ForceRestore with task.defer ═══
 local function ForceRestore()
     local C = LP.Character
     if not C then return end
@@ -1244,7 +1238,6 @@ local UpdFly
 local LockedTarget = nil
 local lastBhop     = 0
 
--- ═══ FIX #3: FakeLag without Anchored (velocity freeze) ═══
 local function Toggle(nm)
     if nm == "SpeedAntiBan" then
         Config.SpeedAntiBan = not Config.SpeedAntiBan; State.SpeedAntiBan = Config.SpeedAntiBan
@@ -1290,28 +1283,22 @@ local function Toggle(nm)
     if not State[nm] then
         if nm == "Fly" then
             pcall(function()
-                if R then R.Anchored = false; R.AssemblyLinearVelocity = Vector3.zero end
+                if R then
+                    R.Anchored = false
+                    local v = R.AssemblyLinearVelocity
+                    R.AssemblyLinearVelocity = Vector3.new(v.X * 0.3, v.Y, v.Z * 0.3)
+                end
                 if H then H.PlatformStand = false end
             end)
         elseif nm == "Speed" then
             pcall(function()
-                if H then H.WalkSpeed = 0 end
+                if H then H.WalkSpeed = gameBaseSpeed end
                 if R then
-                    R.AssemblyLinearVelocity = Vector3.new(0, R.AssemblyLinearVelocity.Y, 0)
-                end
-            end)
-            task.delay(0.1, function()
-                local cc = LP.Character
-                local hh = cc and cc:FindFirstChildOfClass("Humanoid")
-                local rr = cc and cc:FindFirstChild("HumanoidRootPart")
-                if hh and not State.Speed then
-                    hh.WalkSpeed = gameBaseSpeed
-                end
-                if rr and not State.Speed then
-                    local v = rr.AssemblyLinearVelocity
-                    if Vector2.new(v.X, v.Z).Magnitude > 4 then
-                        rr.AssemblyLinearVelocity = Vector3.new(
-                            v.X * 0.08, v.Y, v.Z * 0.08)
+                    local v = R.AssemblyLinearVelocity
+                    local flat = Vector3.new(v.X, 0, v.Z)
+                    if flat.Magnitude > gameBaseSpeed * 1.5 then
+                        local clamped = flat.Unit * gameBaseSpeed
+                        R.AssemblyLinearVelocity = Vector3.new(clamped.X, v.Y, clamped.Z)
                     end
                 end
             end)
@@ -1567,7 +1554,6 @@ LP.CharacterAdded:Connect(function(char)
     end
 end)
 
--- ═══ FIX #1 (continued): Silent Aim with chained hooks ═══
 local silentAimHooked = false
 
 local function SetupSilentAimHook()
@@ -1680,7 +1666,6 @@ task.spawn(function()
     end
 end)
 
--- ═══ FIX #10: GetHTTP with syn.request inline check ═══
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
@@ -1782,10 +1767,13 @@ local function JoinSmallestServer()
                     table.insert(valid, s)
                 end
             end
+            
             if #valid > 0 then
                 table.sort(valid, function(a, b) return a.playing < b.playing end)
+                
                 local maxRange = math.max(1, math.floor(#valid * 0.3))
                 local chosen = valid[math.random(1, maxRange)]
+                
                 Notify("Server Hop", "🕵️ " .. chosen.playing .. L("ntf_players"), 2)
                 task.wait(1)
                 pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP) end)
@@ -1807,7 +1795,6 @@ local function JoinTargetServer(jobId)
     end)
 end
 
--- ═══ GUI ═══
 local GuiP = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui") or LP:WaitForChild("PlayerGui")
 pcall(function() local c = game:GetService("CoreGui"); local _ = c.Name; GuiP = c end)
 
@@ -2115,7 +2102,6 @@ do
     end)
 end
 
--- Mobile editor code (same as original)
 local MOB_LAYOUT_FILE   = "OmniV312_MobLayout.json"
 local MobEditorActive   = false
 local MobEditorOverlays = {}
@@ -2867,7 +2853,6 @@ RefreshLanguage = function()
     if autoSaveLblRef then pcall(function() autoSaveLblRef.Text = L("stat_auto_save") end) end
 end
 
--- POPULATE TABS
 AddHdr("Combat", "🎯", "hdr_aiming")
 MkToggleBind("Combat", "🎯", "lbl_auto_aim", "Aim", "desc_auto_aim")
 MkToggleBind("Combat", "🔇", "lbl_silent_aim", "SilentAim", "desc_silent_aim")
@@ -3214,7 +3199,6 @@ UIS.JumpRequest:Connect(function()
     end)
 end)
 
--- ═══ FIX #4: Performance — UI pulse at 10fps instead of 30fps ═══
 task.spawn(function()
     local t = 0
     while true do
@@ -3286,7 +3270,6 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    -- ═══ FIX #9: Fly — don't zero velocity when moving ═══
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -3301,16 +3284,8 @@ RunService.RenderStepped:Connect(function(dt)
             if dir.Magnitude > 0.05 then
                 dir = dir.Unit
                 HRP.CFrame = HRP.CFrame + (dir * Config.FlySpeed * dt)
-                local flatVel = Vector3.new(HRP.AssemblyLinearVelocity.X, 0, HRP.AssemblyLinearVelocity.Z)
-                if flatVel.Magnitude > Config.FlySpeed * 1.2 then
-                    HRP.AssemblyLinearVelocity = Vector3.new(
-                        flatVel.X * 0.5,
-                        HRP.AssemblyLinearVelocity.Y,
-                        flatVel.Z * 0.5
-                    )
-                end
             else
-                HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                HRP.AssemblyLinearVelocity = Vector3.zero
             end
 
             HRP.AssemblyAngularVelocity = Vector3.zero
@@ -3420,7 +3395,6 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- ═══ FIX #2: Speed — stepped CFrame + anti-detect velocity cap ═══
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
@@ -3429,20 +3403,18 @@ RunService.Heartbeat:Connect(function(dt)
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local extraSpd = targetSpd - gameBaseSpeed
                 if extraSpd > 0 then
-                    local steps = 2
-                    local stepSpd = extraSpd / steps
-                    for _ = 1, steps do
-                        HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * stepSpd * dt / steps)
-                    end
+                    HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * extraSpd * dt)
                 end
             end
 
             local flatVel = Vector3.new(HRP.AssemblyLinearVelocity.X, 0, HRP.AssemblyLinearVelocity.Z)
-            if flatVel.Magnitude > targetSpd * 1.5 then
+            local maxAllowed = targetSpd * 1.3
+            if flatVel.Magnitude > maxAllowed then
+                local clamped = flatVel.Unit * maxAllowed
                 HRP.AssemblyLinearVelocity = Vector3.new(
-                    flatVel.X * 0.3,
+                    clamped.X,
                     HRP.AssemblyLinearVelocity.Y,
-                    flatVel.Z * 0.3
+                    clamped.Z
                 )
             end
         end)
