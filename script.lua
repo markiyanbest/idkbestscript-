@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V312 — PERFECT EDITION (EN/UA) [FLY FIX + AC BYPASS] ██
+-- ██  OMNI V312 — PERFECT EDITION (EN/UA) [AC BYPASS + JOIN] ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -80,7 +80,7 @@ local Strings = {
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
         ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Perfect Edition · AC Bypass · Spider · Fly Fixed",
+        ntf_startup = "✅ Perfect Edition · AC Bypass · Spider",
         ntf_lang = "Language changed to: ",
         ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
         ntf_target_invalid = "❌ Invalid Server ID",
@@ -160,7 +160,7 @@ local Strings = {
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
         ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ідеальна Версія · AC Bypass · Fly Fixed",
+        ntf_startup = "✅ Ідеальна Версія · AC Bypass · Spider",
         ntf_lang = "Мову змінено на: ",
         ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
         ntf_target_invalid = "❌ Невірний ID сервера",
@@ -1286,7 +1286,7 @@ local function Toggle(nm)
                 if R then
                     R.Anchored = false
                     local v = R.AssemblyLinearVelocity
-                    R.AssemblyLinearVelocity = Vector3.new(v.X * 0.3, 0, v.Z * 0.3)
+                    R.AssemblyLinearVelocity = Vector3.new(v.X * 0.3, v.Y, v.Z * 0.3)
                 end
                 if H then H.PlatformStand = false end
             end)
@@ -3270,39 +3270,30 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    -- [ FIX: ПЛАВНИЙ І БЕЗПЕЧНИЙ ПОЛІТ ]
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
             local mx, mz = GetDir()
             local camCF = Camera.CFrame
-            
-            -- Вираховуємо напрямок польоту відносно камери
-            local dir = (camCF.LookVector * -mz) + (camCF.RightVector * mx)
-            
-            -- Обробка підйому/спуску (Space/Ctrl або мобільні кнопки)
+            local dir = camCF.LookVector * -mz + camCF.RightVector * mx
             local upD = 0
             if UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then upD = 1 end
             if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then upD = -1 end
             dir = dir + Vector3.new(0, upD, 0)
 
             if dir.Magnitude > 0.05 then
-                -- Нормалізуємо та застосовуємо швидкість
-                dir = dir.Unit * Config.FlySpeed
-                
-                -- Плавно повертаємо персонажа за камерою (як при справжньому польоті)
-                if not State.Spin then
-                    local targetCF = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
-                    HRP.CFrame = HRP.CFrame:Lerp(targetCF, 0.15)
-                end
+                dir = dir.Unit
+                HRP.CFrame = HRP.CFrame + (dir * Config.FlySpeed * dt)
             else
-                -- Якщо не рухаємось — зависаємо у повітрі
-                dir = Vector3.zero
+                HRP.AssemblyLinearVelocity = Vector3.zero
             end
-            
-            -- Використовуємо Velocity замість CFrame для уникнення конфліктів з фізикою
-            HRP.AssemblyLinearVelocity = dir
+
             HRP.AssemblyAngularVelocity = Vector3.zero
+
+            if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
+                HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
+            end
+            if not State.Spin then HRP.AssemblyAngularVelocity = Vector3.zero end
         end)
     end
 
@@ -3453,16 +3444,13 @@ RunService.Heartbeat:Connect(function(dt)
         end)
     end
 
-    -- [ FIX: БЕЗПЕЧНЕ ЗАПОБІГАННЯ ПАДІННЮ БЕЗ КОВЗАННЯ ]
     if State.NoFallDamage then
         pcall(function()
             local state = Hum:GetState()
-            if state == Enum.HumanoidStateType.Freefall and HRP.AssemblyLinearVelocity.Y < -25 then
-                -- Замість зміни стану на RunningNoPhysics (який викликає ковзання), 
-                -- ми просто обмежуємо швидкість падіння до безпечної
+            if state == Enum.HumanoidStateType.Freefall and HRP.AssemblyLinearVelocity.Y < -28 then
+                Hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
                 HRP.AssemblyLinearVelocity = Vector3.new(
-                    HRP.AssemblyLinearVelocity.X, -5, HRP.AssemblyLinearVelocity.Z
-                )
+                    HRP.AssemblyLinearVelocity.X, -4, HRP.AssemblyLinearVelocity.Z)
             end
         end)
     end
