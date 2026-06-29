@@ -1,5 +1,7 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V312 — PERFECT EDITION (EN/UA) [AC BYPASS + JOIN] ██
+-- ██  OMNI V305 — PERFECT EDITION (EN/UA) [FIXED]         ██
+-- ██  Fixes: FullBright, SilentAim, FakeLag slider,       ██
+-- ██  Speed instant stop, velocity zero on disable        ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -13,6 +15,7 @@ local TweenService      = game:GetService("TweenService")
 local StarterGui        = game:GetService("StarterGui")
 local HttpService       = game:GetService("HttpService")
 local TeleportService   = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LP     = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
@@ -21,22 +24,20 @@ local CurrentLang = "EN"
 
 local Strings = {
     EN = {
-        title = "OMNI V312",
+        title = "OMNI V305",
         subtitle_mobile = "MOBILE · PERFECT EDITION",
         subtitle_pc = "UNIVERSAL · PERFECT EDITION",
         tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
         hdr_effects = "EFFECTS", hdr_protection = "PROTECTION", hdr_server_hop = "SERVER HOP",
-        hdr_target_join = "JOIN BY SERVER ID",
         hdr_save_config = "SAVE CONFIG", hdr_speed_vals = "SPEED VALUES", hdr_jump_vals = "JUMP VALUES",
         hdr_hitbox_cfg = "HITBOX", hdr_aim_settings = "AIM SETTINGS", hdr_anti_void = "ANTI-VOID",
-        hdr_anti_ban = "ANTI-BAN", hdr_language = "LANGUAGE", hdr_mouse_fix = "MOUSE FIX",
+        hdr_anti_ban = "ANTI-BAN", hdr_language = "LANGUAGE",
         lbl_auto_aim = "Auto Aim", lbl_silent_aim = "Silent Aim", lbl_shadow_lock = "Magnet (ShadowLock)",
         lbl_hitbox = "Hitbox Expand", lbl_esp = "ESP", lbl_fly = "Fly", lbl_freecam = "Freecam",
         lbl_speed = "Speed", lbl_bhop = "Bhop", lbl_high_jump = "High Jump",
-        lbl_infinite_jump = "Infinite Jump", lbl_noclip = "Noclip", lbl_spider = "Spider",
-        lbl_no_fall = "No Fall Damage",
+        lbl_infinite_jump = "Infinite Jump", lbl_noclip = "Noclip", lbl_no_fall = "No Fall Damage",
         lbl_anti_void = "Anti-Void", lbl_safe_speed = "Safe Speed (Anti Rubber-Band)", lbl_spin = "Spin",
         lbl_potato = "Potato Mode", lbl_fake_lag = "Fake Lag", lbl_anti_afk = "Anti-AFK",
         lbl_speed_jitter = "Speed Jitter", lbl_hitbox_rand = "Hitbox Randomize", lbl_aim_anti = "Aim Anti-Detect",
@@ -49,16 +50,15 @@ local Strings = {
         desc_freecam = "Detaches camera from character for free spectating.",
         desc_speed = "Increases your walk speed beyond the game default.",
         desc_bhop = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
-        desc_high_jump = "Increases your jump height/power significantly. Bypasses AC.",
-        desc_infinite_jump = "Allows jumping in mid-air infinitely. Bypasses AC.",
+        desc_high_jump = "Increases your jump height/power significantly.",
+        desc_infinite_jump = "Allows jumping in mid-air infinitely.",
         desc_noclip = "Universal noclip: bypasses all anti-collision systems across all places.",
-        desc_spider = "Allows you to climb any wall automatically by walking into it.",
         desc_no_fall = "Prevents fall damage by resetting state before landing.",
         desc_anti_void = "Teleports you back to safety if you fall below the void threshold.",
         desc_safe_speed = "Caps your speed relative to the game's base speed to avoid rubber-banding.",
         desc_spin = "Spins your character rapidly around the Y axis.",
-        desc_potato = "Disables shadows, particles, textures, fire and lowers quality for better FPS.",
-        desc_fake_lag = "Simulates lag by briefly freezing your character's velocity while moving.",
+        desc_potato = "Disables shadows, particles, and lowers quality for better FPS.",
+        desc_fake_lag = "Simulates lag by briefly anchoring your character while moving.",
         desc_anti_afk = "Prevents the game from kicking you for being idle.",
         desc_speed_jitter = "Adds small random variation to speed to avoid anti-cheat detection.",
         desc_hitbox_rand = "Adds small random variation to hitbox size to avoid detection.",
@@ -70,8 +70,6 @@ local Strings = {
         btn_save = "💾 Save", btn_load = "📂 Load", btn_reset = "🔄 Reset",
         btn_rejoin = "Rejoin (same server)", btn_random = "Random server",
         btn_biggest = "Biggest server", btn_smallest = "Smallest server",
-        btn_unlock_mouse = "🔓 Unlock Mouse (Press RightAlt)",
-        btn_join_target = "➡️ Join Server",
         ntf_saved = "💾 Saved", ntf_loaded = "📂 Config loaded ✓", ntf_reset = "🔄 Reset",
         ntf_no_write = "❌ writefile unavailable", ntf_no_read = "❌ readfile unavailable",
         ntf_no_file = "📂 File not found", ntf_json_err = "❌ JSON error", ntf_error = "❌ Error: ",
@@ -80,12 +78,9 @@ local Strings = {
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
         ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Perfect Edition · AC Bypass · Spider",
+        ntf_startup = "✅ Perfect Edition · Noclip Universal · ESP Clean",
         ntf_lang = "Language changed to: ",
-        ntf_mouse_unlocked = "🖱️ Mouse Unlocked!",
-        ntf_target_invalid = "❌ Invalid Server ID",
-        ntf_target_join = "➡️ Teleporting to Server...",
-        stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV312_Config.json",
+        stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Config.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
         btn_lang_toggle = "🌐 Language: English → Українська",
         lbl_fullbright = "FullBright",
@@ -99,21 +94,19 @@ local Strings = {
         ntf_sa_hook_fail = "❌ Silent Aim: hook failed (try different exploit)",
     },
     UA = {
-        title = "OMNI V312", subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
+        title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
         subtitle_pc = "УНІВЕРСАЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
         tab_combat = "Бій", tab_move = "Рух", tab_misc = "Інше", tab_config = "Налашт.",
         hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
         hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
         hdr_effects = "ЕФЕКТИ", hdr_protection = "ЗАХИСТ", hdr_server_hop = "ЗМІНА СЕРВЕРА",
-        hdr_target_join = "ЗАХІД ЗА ID СЕРВЕРА",
         hdr_save_config = "ЗБЕРЕЖЕННЯ КОНФІГУ", hdr_speed_vals = "ЗНАЧЕННЯ ШВИДКОСТІ",
         hdr_jump_vals = "ЗНАЧЕННЯ СТРИБКА", hdr_hitbox_cfg = "ХІТБОКС", hdr_aim_settings = "НАЛАШТУВАННЯ ПРИЦІЛУ",
-        hdr_anti_void = "АНТИ-ВОЙД", hdr_anti_ban = "АНТИ-БАН", hdr_language = "МОВА", hdr_mouse_fix = "ФІКС МИШІ",
+        hdr_anti_void = "АНТИ-ВОЙД", hdr_anti_ban = "АНТИ-БАН", hdr_language = "МОВА",
         lbl_auto_aim = "Авто Прицілювання", lbl_silent_aim = "Тихий Прицілювання",
         lbl_shadow_lock = "Магніт (ShadowLock)", lbl_hitbox = "Розширення хітбокса", lbl_esp = "ESP",
         lbl_fly = "Літання", lbl_freecam = "Вільна камера", lbl_speed = "Швидкість", lbl_bhop = "Bhop",
         lbl_high_jump = "Високий стрибок", lbl_infinite_jump = "Нескінченний стрибок", lbl_noclip = "Нокліп",
-        lbl_spider = "Павук",
         lbl_no_fall = "Без пошкодження від падіння", lbl_anti_void = "Анти-Войд",
         lbl_safe_speed = "Безпечна швидкість (Анти Rubber-Band)", lbl_spin = "Обертання",
         lbl_potato = "Картопляний режим", lbl_fake_lag = "Фейк лаг", lbl_anti_afk = "Анти-АФК",
@@ -128,16 +121,15 @@ local Strings = {
         desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду.",
         desc_speed = "Збільшує швидкість ходьби понад стандартну гри.",
         desc_bhop = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
-        desc_high_jump = "Значно збільшує висоту/силу стрибка. Обходить античіт.",
-        desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно. Обходить античіт.",
+        desc_high_jump = "Значно збільшує висоту/силу стрибка.",
+        desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно.",
         desc_noclip = "Універсальний нокліп: обходить усі антиколізійні системи у всіх плейсах.",
-        desc_spider = "Дозволяє автоматично лазити по будь-яких стінах, просто йдучи в них.",
         desc_no_fall = "Запобігає пошкодженню від падіння скидаючи стан перед приземленням.",
         desc_anti_void = "Телепортує назад у безпечне місце при падінні нижче порога войду.",
         desc_safe_speed = "Обмежує швидкість відносно базової швидкості гри для уникнення відкиду.",
         desc_spin = "Швидко обертає персонажа навколо осі Y.",
-        desc_potato = "Вимикає тіні, частинки, текстури, вогонь та знижує якість для кращого FPS.",
-        desc_fake_lag = "Імітує лаг, короткочасно заморожуючи швидкість персонажа під час руху.",
+        desc_potato = "Вимикає тіні, частинки та знижує якість для кращого FPS.",
+        desc_fake_lag = "Імітує лаг, короткочасно закріплюючи персонажа під час руху.",
         desc_anti_afk = "Запобігає кіку за бездіяльність.",
         desc_speed_jitter = "Додає невелику випадкову варіацію швидкості для уникнення античіту.",
         desc_hitbox_rand = "Додає невелику випадкову варіацію розміру хітбокса для уникнення детекту.",
@@ -150,8 +142,6 @@ local Strings = {
         btn_save = "💾 Зберегти", btn_load = "📂 Завантажити", btn_reset = "🔄 Скинути",
         btn_rejoin = "Повторний вхід (той самий сервер)", btn_random = "Рандомний сервер",
         btn_biggest = "Найбільший сервер", btn_smallest = "Найменший сервер",
-        btn_unlock_mouse = "🔓 Розблокувати мишу (Натисни RightAlt)",
-        btn_join_target = "➡️ Зайти на сервер",
         ntf_saved = "💾 Збережено", ntf_loaded = "📂 Конфіг завантажено ✓", ntf_reset = "🔄 Скинуто",
         ntf_no_write = "❌ writefile недоступний", ntf_no_read = "❌ readfile недоступний",
         ntf_no_file = "📂 Файл не знайдено", ntf_json_err = "❌ Помилка JSON", ntf_error = "❌ Помилка: ",
@@ -160,12 +150,9 @@ local Strings = {
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
         ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ідеальна Версія · AC Bypass · Spider",
+        ntf_startup = "✅ Ідеальна Версія · Нокліп Унів. · ESP Чистий",
         ntf_lang = "Мову змінено на: ",
-        ntf_mouse_unlocked = "🖱️ Мишу розблоковано!",
-        ntf_target_invalid = "❌ Невірний ID сервера",
-        ntf_target_join = "➡️ Телепорт на сервер...",
-        stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV312_Config.json",
+        stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Config.json",
         stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
         btn_lang_toggle = "🌐 Мова: Українська → English",
         lbl_fullbright = "FullBright",
@@ -199,39 +186,8 @@ ENV.hasNewCClosure   = _envCheck(function() return newcclosure ~= nil end)
 ENV.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
 ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
 ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
-
-local _ncChain = nil
-local acBypassInstalled = false
-
-local function SetupACBypass()
-    if acBypassInstalled then return end
-    if not (ENV.hasHookMeta and hookmetamethod and getnamecallmethod) then return end
-
-    _ncChain = hookmetamethod(game, "__namecall", function(...)
-        local method = getnamecallmethod()
-        local args = {...}
-        local self = args[1]
-
-        if method == "FireServer" or method == "InvokeServer" then
-            if typeof(self) == "Instance" and (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
-                local name = string.lower(self.Name)
-                local blocked = {"kick","ban","anticheat","anti_cheat","exploit","hack","speed","noclip","fly","teleport","detect","report","logs","_ac","ac_","byfron","hyperion"}
-                for _, b in ipairs(blocked) do
-                    if string.find(name, b) then return end
-                end
-                if method == "FireServer" and #args > 8 then
-                    return
-                end
-            end
-        elseif method == "Kick" then
-            if self == LP then return end
-        end
-
-        return _ncChain(...)
-    end)
-    acBypassInstalled = true
-end
-task.spawn(function() task.wait(1); SetupACBypass() end)
+ENV.hasSynapse       = _envCheck(function() return syn ~= nil end)
+                    or _envCheck(function() return SENTINEL_V2 ~= nil end)
 
 pcall(function()
     for _, sg in pairs({game:GetService("CoreGui"), LP:WaitForChild("PlayerGui", 5)}) do
@@ -261,16 +217,6 @@ pcall(function()
             end
         end
     end)
-end)
-
-local _ncGroupWorks = false
-pcall(function()
-    local testPart = Instance.new("Part")
-    testPart.Size = Vector3.new(1, 1, 1)
-    testPart.CollisionGroup = SafeGroup
-    testPart.Parent = Workspace
-    _ncGroupWorks = (testPart.CollisionGroup == SafeGroup)
-    testPart:Destroy()
 end)
 
 local function RndStr(n)
@@ -328,6 +274,7 @@ local Config = {
     ESPMaxDist        = 1000,
     AimPredictMult    = 1.0,
     FullBright        = false,
+    -- FIX: FakeLag power slider (1-100, default 50)
     FakeLagPower      = 50,
 }
 
@@ -338,7 +285,6 @@ local Binds = {
     SilentAim  = Enum.KeyCode.B,
     ToggleMenu = Enum.KeyCode.M,
     FakeLag    = Enum.KeyCode.J,
-    UnlockMouse= Enum.KeyCode.RightAlt,
 }
 
 local State = {
@@ -349,10 +295,10 @@ local State = {
     AntiAFK = false, InfiniteJump = false, AntiVoid = false,
     SpeedAntiBan = true, HitboxRandomize = true,
     AimAntiDetect = true, SafeSpeedMode = false,
-    FullBright = false, Spider = false,
+    FullBright = false,
 }
 
-local CFG_FILE = "OmniV312_Config.json"
+local CFG_FILE = "OmniV305_Config.json"
 local SAVE_STATE_KEYS = {
     "AntiAFK", "ESP", "Hitbox", "Speed", "HighJump",
     "Bhop", "NoFallDamage", "InfiniteJump", "Potato", "AntiVoid",
@@ -384,7 +330,7 @@ local SliderRefs = {}
 
 local function SaveConfig()
     if not HasFileSystem() then Notify("Config", L("ntf_no_write"), 3); return false end
-    local data = { version = "v312", config = {}, binds = SerializeBinds(), state = {}, lang = CurrentLang }
+    local data = { version = "v305", config = {}, binds = SerializeBinds(), state = {}, lang = CurrentLang }
     for k, v in pairs(Config) do data.config[k] = v end
     for _, k in pairs(SAVE_STATE_KEYS) do data.state[k] = State[k] or false end
     for _, k in pairs(SAVE_CFG_KEYS) do data.state[k] = State[k] or false end
@@ -450,6 +396,18 @@ task.spawn(function()
     end
 end)
 
+local _pSeed = math.random(1, 99999)
+local function PseudoNoise(x)
+    local xi = math.floor(x) % 256
+    local xf = x - math.floor(x)
+    local u  = xf * xf * (3 - 2 * xf)
+    local a  = (xi * 1664525 + 1013904223 + _pSeed) % 2 ^ 32
+    local b  = ((xi + 1) * 1664525 + 1013904223 + _pSeed) % 2 ^ 32
+    local na = (a / 2 ^ 32) * 2 - 1
+    local nb = (b / 2 ^ 32) * 2 - 1
+    return na + u * (nb - na)
+end
+
 local _speedNoiseT = 0
 local _flyNoiseT   = 100
 
@@ -486,9 +444,10 @@ local function GetSafeSpeed()
     end
     if not Config.SpeedAntiBan then return base end
     _speedNoiseT = _speedNoiseT + 0.008
-    local n = math.noise(_speedNoiseT, 0, 0) * 2
+    local n   = PseudoNoise(_speedNoiseT)
     local jit = Config.SpeedJitter
-    return math.clamp(base + n * jit, base * 0.92, base * 1.08)
+    if math.random(1, 220) == 1 then return math.max(base * 0.82, 14) end
+    return math.clamp(base + n * jit, base * 0.9, base * 1.12)
 end
 
 local function IsAlive(c)
@@ -631,6 +590,9 @@ local function GetBestAimTarget()
     return nil
 end
 
+-- ============================================================
+-- ESP SYSTEM
+-- ============================================================
 local ESPCache = {}
 local ESP_UPDATE_INTERVAL = 0.1
 local _espLastUpdate = 0
@@ -646,16 +608,19 @@ local function UpdateESP()
     local now = tick()
     if now - _espLastUpdate < ESP_UPDATE_INTERVAL then return end
     _espLastUpdate = now
+
     if not State.ESP then return end
+
     local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 
     for _, p in pairs(Players:GetPlayers()) do
         if p == LP then continue end
+
         local char = p.Character
         local head = char and FindHead(char)
         local hum  = char and char:FindFirstChildOfClass("Humanoid")
 
-        if not char or not head or not head.Parent or not hum or hum.Health <= 0 then
+        if not char or not head or not hum or hum.Health <= 0 then
             if ESPCache[p] then
                 pcall(function()
                     if ESPCache[p].bb and ESPCache[p].bb.Parent then
@@ -736,6 +701,7 @@ local function UpdateESP()
         end
 
         ca.bb.MaxDistance = Config.ESPMaxDist
+
         local hp     = math.max(0, math.floor(hum.Health))
         local rawMax = hum.MaxHealth
         local isInf  = rawMax ~= rawMax or rawMax == math.huge or rawMax > 1e9
@@ -807,13 +773,13 @@ for _, p in pairs(Players:GetPlayers()) do
     end
 end
 
+-- ============================================================
+-- HITBOX SYSTEM
+-- ============================================================
 local hbParts = {}
 
 local function ApplyHB(part)
     if not part or not part:IsA("BasePart") then return end
-    if part.Name == "HumanoidRootPart" then return end
-    if part.Parent and (part.Parent:IsA("Accessory") or part.Parent:IsA("Hat")) then return end
-
     if not hbParts[part] then
         hbParts[part] = {
             S = part.Size, T = part.Transparency,
@@ -848,7 +814,6 @@ task.spawn(function()
             if p == LP or not IsAlive(p.Character) then continue end
             for _, v in pairs(p.Character:GetDescendants()) do
                 if v:IsA("BasePart")
-                    and v.Name ~= "HumanoidRootPart"
                     and not (v.Parent and (v.Parent:IsA("Accessory") or v.Parent:IsA("Hat")))
                     and v.Size.Magnitude > 0.3
                     and v.Size.X < s - 0.2 then
@@ -866,6 +831,9 @@ end)
 
 local savedShd, savedQ = true, Enum.QualityLevel.Automatic
 
+-- ================================================================
+-- FPS BOOST
+-- ================================================================
 local _potatoToken  = 0
 local _potatoOrig   = {}
 local POTATO_CHUNK  = 40
@@ -893,8 +861,6 @@ local function DoPotato()
         Lighting.GlobalShadows = false
         Lighting.FogEnd = 500
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-        _potatoOrig.Tech = Lighting.Technology
-        Lighting.Technology = Enum.Technology.Compatibility
     end)
 
     local all = Workspace:GetDescendants()
@@ -903,9 +869,7 @@ local function DoPotato()
         if v:IsA("ParticleEmitter") or v:IsA("Trail")
             or v:IsA("Beam") or v:IsA("BillboardGui")
             or v:IsA("SurfaceGui") or v:IsA("PointLight")
-            or v:IsA("SpotLight") or v:IsA("SelectionBox")
-            or v:IsA("Decal") or v:IsA("Texture")
-            or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Explosion") then
+            or v:IsA("SpotLight") or v:IsA("SelectionBox") then
             table.insert(effects, v)
         elseif v:IsA("BasePart") then
             table.insert(parts, v)
@@ -925,12 +889,6 @@ local function DoPotato()
         elseif v:IsA("SelectionBox") then
             _potatoOrig[v] = { visible = v.LineThickness }
             v.LineThickness = 0
-        elseif v:IsA("Decal") or v:IsA("Texture") then
-            _potatoOrig[v] = { transparency = v.Transparency }
-            v.Transparency = 1
-        elseif v:IsA("Fire") or v:IsA("Smoke") then
-            _potatoOrig[v] = { enabled = v.Enabled }
-            v.Enabled = false
         end
     end)
 
@@ -955,16 +913,11 @@ local function UndoPotato()
         Lighting.GlobalShadows = savedShd
         Lighting.FogEnd = 100000
         settings().Rendering.QualityLevel = savedQ
-        if _potatoOrig.Tech then
-            Lighting.Technology = _potatoOrig.Tech
-        end
     end)
 
     local saved = {}
     for inst, orig in pairs(_potatoOrig) do
-        if typeof(inst) == "Instance" then
-            table.insert(saved, { inst = inst, orig = orig })
-        end
+        table.insert(saved, { inst = inst, orig = orig })
     end
     _potatoOrig = {}
 
@@ -990,18 +943,22 @@ local function UndoPotato()
         _chunkedApply(tok, effects, function(e)
             local v, o = e.inst, e.orig
             if v and v.Parent then
-                if o.enabled  ~= nil then v.Enabled      = o.enabled  end
+                if o.enabled  ~= nil then v.Enabled       = o.enabled  end
                 if o.visible  ~= nil then v.LineThickness = o.visible  end
-                if o.transparency ~= nil then v.Transparency = o.transparency end
             end
         end)
     end)
 end
 
+-- ============================================================
+-- FULLBRIGHT — FIXED
+-- Зберігає оригінальні значення Lighting та вимикає Atmosphere/ефекти
+-- ============================================================
 local _fbOrigLighting = nil
 local _fbDisabledEffects = {}
 
 local function ApplyFullBright()
+    -- Зберігаємо оригінальні значення
     _fbOrigLighting = {
         Brightness          = Lighting.Brightness,
         ClockTime           = Lighting.ClockTime,
@@ -1016,6 +973,7 @@ local function ApplyFullBright()
     pcall(function() _fbOrigLighting.ExposureCompensation     = Lighting.ExposureCompensation     end)
     pcall(function() _fbOrigLighting.ShadowSoftness           = Lighting.ShadowSoftness           end)
 
+    -- Максимальний свет
     pcall(function()
         Lighting.Brightness          = 8
         Lighting.ClockTime           = 14
@@ -1030,6 +988,7 @@ local function ApplyFullBright()
     pcall(function() Lighting.ExposureCompensation     = 0 end)
     pcall(function() Lighting.ShadowSoftness           = 0 end)
 
+    -- Вимикаємо Atmosphere і всі ефекти що затемнюють
     _fbDisabledEffects = {}
     for _, v in pairs(Lighting:GetChildren()) do
         local shouldDisable = false
@@ -1049,6 +1008,7 @@ local function ApplyFullBright()
 end
 
 local function RemoveFullBright()
+    -- Відновлюємо Lighting
     if _fbOrigLighting then
         pcall(function()
             Lighting.Brightness     = _fbOrigLighting.Brightness
@@ -1066,6 +1026,7 @@ local function RemoveFullBright()
         _fbOrigLighting = nil
     end
 
+    -- Відновлюємо ефекти
     for v, orig in pairs(_fbDisabledEffects) do
         pcall(function()
             if v and v.Parent then v.Enabled = orig end
@@ -1074,11 +1035,26 @@ local function RemoveFullBright()
     _fbDisabledEffects = {}
 end
 
+-- ============================================================
+-- NOCLIP
+-- ============================================================
 local ncOrigCanCollide = {}
 local ncStuck = 0
 local lastNcPos = Vector3.zero
 local ncRay = RaycastParams.new()
 ncRay.FilterType = Enum.RaycastFilterType.Exclude
+
+local _ncGroupWorks = false
+task.spawn(function()
+    task.wait(1)
+    pcall(function()
+        local testPart = Instance.new("Part")
+        testPart.CollisionGroup = SafeGroup
+        testPart.Parent = Workspace
+        _ncGroupWorks = (testPart.CollisionGroup == SafeGroup)
+        testPart:Destroy()
+    end)
+end)
 
 local function NoclipApply(char)
     if not char then return end
@@ -1110,8 +1086,6 @@ local function ForceRestore()
     local H = C:FindFirstChildOfClass("Humanoid")
     local R = C:FindFirstChild("HumanoidRootPart")
 
-    local wasNoclip = State.Noclip
-
     if H then
         pcall(function()
             H.PlatformStand = false
@@ -1129,17 +1103,15 @@ local function ForceRestore()
         end
     end
 
-    task.defer(function()
-        for v, orig in pairs(ncOrigCanCollide) do
-            pcall(function()
-                if v and v.Parent then
-                    v.CollisionGroup = "Default"
-                    v.CanCollide = orig
-                end
-            end)
-        end
-        ncOrigCanCollide = {}
-    end)
+    for v, orig in pairs(ncOrigCanCollide) do
+        pcall(function()
+            if v and v.Parent then
+                v.CollisionGroup = "Default"
+                v.CanCollide = orig
+            end
+        end)
+    end
+    ncOrigCanCollide = {}
 
     if R then
         task.spawn(function()
@@ -1166,6 +1138,7 @@ local function ForceRestore()
 
     ncStuck = 0
     lastNcPos = Vector3.zero
+    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
 end
 
 local _fakeLagToken = 0
@@ -1179,35 +1152,8 @@ local CurTab   = "Combat"
 local LocalizableElements = {}
 
 local QuickBtnActive    = {}
+local fcZ               = nil
 local UpdateQuickBtnColor
-
-local function UnlockMouse()
-    pcall(function()
-        UIS.MouseBehavior = Enum.MouseBehavior.Default
-        local char = LP.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hum then
-                Camera.CameraType = Enum.CameraType.Custom
-                Camera.CameraSubject = hum
-            end
-            if hrp then
-                hrp.Anchored = false
-            end
-        end
-        if State.Freecam then
-            State.Freecam = false
-            UpdVis("Freecam")
-        end
-        if State.FakeLag then
-            _fakeLagToken += 1
-            State.FakeLag = false
-            UpdVis("FakeLag")
-        end
-    end)
-    Notify("OMNI", L("ntf_mouse_unlocked"), 2)
-end
 
 local function UpdVis(nm)
     local d = AllRows[nm]
@@ -1232,6 +1178,12 @@ local function UpdVis(nm)
     if QuickBtnActive and QuickBtnActive[nm] then
         pcall(function() UpdateQuickBtnColor(nm) end)
     end
+end
+
+local function RestoreMouse()
+    -- Тільки скидаємо MouseBehavior. НЕ чіпаємо CameraType/CameraSubject —
+    -- вони відновлюються безпосередньо в Toggle("Freecam") OFF з затримкою.
+    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
 end
 
 local UpdFly
@@ -1261,6 +1213,9 @@ local function Toggle(nm)
         return
     end
 
+    -- ============================================================
+    -- FULLBRIGHT FIXED — зберігає та відновлює оригінальні значення
+    -- ============================================================
     if nm == "FullBright" then
         Config.FullBright = not Config.FullBright
         State.FullBright = Config.FullBright
@@ -1283,22 +1238,34 @@ local function Toggle(nm)
     if not State[nm] then
         if nm == "Fly" then
             pcall(function()
-                if R then
-                    R.Anchored = false
-                    local v = R.AssemblyLinearVelocity
-                    R.AssemblyLinearVelocity = Vector3.new(v.X * 0.3, v.Y, v.Z * 0.3)
-                end
+                if R then R.Anchored = false; R.AssemblyLinearVelocity = Vector3.zero end
                 if H then H.PlatformStand = false end
             end)
+        -- ============================================================
+        -- SPEED OFF FIXED — миттєва зупинка: WalkSpeed=0 + нульова velocity
+        -- ============================================================
         elseif nm == "Speed" then
             pcall(function()
-                if H then H.WalkSpeed = gameBaseSpeed end
+                -- Миттєвий гальм: зупиняємо WalkSpeed і обнуляємо горизонтальну швидкість
+                if H then H.WalkSpeed = 0 end
                 if R then
-                    local v = R.AssemblyLinearVelocity
-                    local flat = Vector3.new(v.X, 0, v.Z)
-                    if flat.Magnitude > gameBaseSpeed * 1.5 then
-                        local clamped = flat.Unit * gameBaseSpeed
-                        R.AssemblyLinearVelocity = Vector3.new(clamped.X, v.Y, clamped.Z)
+                    R.AssemblyLinearVelocity = Vector3.new(0, R.AssemblyLinearVelocity.Y, 0)
+                end
+            end)
+            -- Через 100мс відновлюємо стандартну WalkSpeed гри
+            task.delay(0.1, function()
+                local cc = LP.Character
+                local hh = cc and cc:FindFirstChildOfClass("Humanoid")
+                local rr = cc and cc:FindFirstChild("HumanoidRootPart")
+                if hh and not State.Speed then
+                    hh.WalkSpeed = gameBaseSpeed
+                end
+                -- Додатковий скид залишкової швидкості
+                if rr and not State.Speed then
+                    local v = rr.AssemblyLinearVelocity
+                    if Vector2.new(v.X, v.Z).Magnitude > 4 then
+                        rr.AssemblyLinearVelocity = Vector3.new(
+                            v.X * 0.08, v.Y, v.Z * 0.08)
                     end
                 end
             end)
@@ -1320,7 +1287,10 @@ local function Toggle(nm)
                     Camera.CameraType = Enum.CameraType.Custom
                     local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
                     if H2 then Camera.CameraSubject = H2 end
+                    UIS.MouseBehavior = Enum.MouseBehavior.Default
                 end)
+                task.wait(0.05)
+                pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
             end)
         elseif nm == "Spin" and R then
             for _, v in pairs(R:GetChildren()) do
@@ -1342,7 +1312,7 @@ local function Toggle(nm)
         elseif nm == "Fly" and H then
             pcall(function() H.PlatformStand = false end)
         elseif nm == "Speed" and H then
-            pcall(function() H.WalkSpeed = gameBaseSpeed end)
+            pcall(function() H.WalkSpeed = GetSafeSpeed() end)
         elseif nm == "HighJump" and H then
             pcall(function()
                 H.UseJumpPower = true
@@ -1362,6 +1332,11 @@ local function Toggle(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
+            -- ============================================================
+            -- FAKELAG FIXED — використовує Config.FakeLagPower (1-100)
+            -- Power 1 = мінімальний лаг (~10-30мс)
+            -- Power 100 = максимальний лаг (~100-300мс)
+            -- ============================================================
             _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
@@ -1371,52 +1346,36 @@ local function Toggle(nm)
                     local hm = cr and cr:FindFirstChildOfClass("Humanoid")
 
                     if rp and hm and not State.Fly and not State.Freecam then
+                        local savedVel = rp.AssemblyLinearVelocity
                         local pwr = math.clamp(Config.FakeLagPower, 1, 100)
 
-                        local lagMin = math.floor(5 + pwr * 0.9)
-                        local lagMax = math.floor(15 + pwr * 2.5)
+                        -- Час зависання залежить від сили лагу
+                        local lagMin = math.floor(5  + pwr * 0.9)   -- 6ms - 95ms
+                        local lagMax = math.floor(15 + pwr * 2.5)   -- 18ms - 265ms
                         local lagTime = math.random(lagMin, lagMax) / 1000
 
-                        local normalMin = math.floor(150 - pwr * 0.8)
-                        local normalMax = math.floor(350 - pwr * 1.5)
+                        -- Час нормального руху між лагами (менша сила = рідший лаг)
+                        local normalMin = math.floor(150 - pwr * 0.8)  -- 70ms - 149ms
+                        local normalMax = math.floor(350 - pwr * 1.5)  -- 200ms - 348ms
                         normalMin = math.max(normalMin, 50)
                         normalMax = math.max(normalMax, normalMin + 30)
                         local normalTime = math.random(normalMin, normalMax) / 1000
 
-                        local savedVel = rp.AssemblyLinearVelocity
-                        local savedCF = rp.CFrame
-
+                        pcall(function() rp.Anchored = true end)
+                        task.wait(lagTime)
                         pcall(function()
-                            rp.AssemblyLinearVelocity = Vector3.zero
-                            rp.AssemblyAngularVelocity = Vector3.zero
+                            rp.Anchored = false
+                            if hm.FloorMaterial == Enum.Material.Air then
+                                local flat = Vector3.new(savedVel.X, 0, savedVel.Z)
+                                if flat.Magnitude > hm.WalkSpeed then
+                                    flat = flat.Unit * hm.WalkSpeed
+                                end
+                                rp.AssemblyLinearVelocity = Vector3.new(flat.X, savedVel.Y, flat.Z)
+                            else
+                                rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0)
+                            end
                         end)
-
-                        local lagStart = tick()
-                        while tick() - lagStart < lagTime do
-                            if not State.FakeLag or _fakeLagToken ~= myToken then break end
-                            pcall(function()
-                                rp.AssemblyLinearVelocity = Vector3.zero
-                                if (rp.CFrame.Position - savedCF.Position).Magnitude > 0.5 then
-                                    rp.CFrame = rp.CFrame:Lerp(savedCF, 0.5)
-                                end
-                            end)
-                            task.wait()
-                        end
-
-                        if State.FakeLag and _fakeLagToken == myToken then
-                            pcall(function()
-                                if hm.FloorMaterial == Enum.Material.Air then
-                                    local flat = Vector3.new(savedVel.X, 0, savedVel.Z)
-                                    if flat.Magnitude > hm.WalkSpeed then
-                                        flat = flat.Unit * hm.WalkSpeed
-                                    end
-                                    rp.AssemblyLinearVelocity = Vector3.new(flat.X, savedVel.Y, flat.Z)
-                                else
-                                    rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0)
-                                end
-                            end)
-                            task.wait(normalTime)
-                        end
+                        task.wait(normalTime)
                     else
                         if rp then pcall(function() rp.Anchored = false end) end
                         task.wait(0.1)
@@ -1532,6 +1491,7 @@ LP.CharacterAdded:Connect(function(char)
     if hum then
         Camera.CameraType = Enum.CameraType.Custom
         Camera.CameraSubject = hum
+        pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
         task.spawn(function()
             task.wait(1.2)
             pcall(function()
@@ -1542,7 +1502,7 @@ LP.CharacterAdded:Connect(function(char)
             end)
         end)
         task.wait(0.5)
-        if State.Speed then pcall(function() hum.WalkSpeed = gameBaseSpeed end) end
+        if State.Speed then pcall(function() hum.WalkSpeed = GetSafeSpeed() end) end
         if State.HighJump then
             pcall(function()
                 hum.UseJumpPower = true
@@ -1554,103 +1514,177 @@ LP.CharacterAdded:Connect(function(char)
     end
 end)
 
+-- ============================================================
+-- SILENT AIM HOOK — FIXED
+-- Використовує hookmetamethod якщо доступний (кращий метод)
+-- Fallback до getrawmetatable + setreadonly
+-- Показує чітке повідомлення якщо хуки недоступні
+-- ============================================================
 local silentAimHooked = false
 
 local function SetupSilentAimHook()
     if silentAimHooked then return end
-    if not (ENV.hasHookMeta and hookmetamethod and getnamecallmethod) then
-        Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
-        return
-    end
 
-    local ok = pcall(function()
-        _ncChain = hookmetamethod(game, "__namecall", function(self, ...)
-            local method = getnamecallmethod() or ""
-            if not State.SilentAim then
-                return _ncChain(self, ...)
-            end
-
-            if method == "Raycast" and self == Workspace then
-                local target = GetBestAimTarget()
-                local part = target and FindAimPart(target)
-                if part then
-                    local args = {...}
-                    local origin = args[1]
-                    if typeof(origin) == "Vector3" then
-                        local vel = part.AssemblyLinearVelocity
-                        local predPos = part.Position + vel * 0.05
-                        local dir = (predPos - origin)
-                        if Config.AimAntiDetect then
-                            dir = dir + Vector3.new(
-                                (math.random() - 0.5) * 0.15,
-                                (math.random() - 0.5) * 0.10,
-                                (math.random() - 0.5) * 0.15
-                            )
-                        end
-                        args[2] = dir.Unit * dir.Magnitude
-                        return _ncChain(self, unpack(args))
-                    end
-                end
-            end
-
-            if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
-                and self == Workspace then
-                local target = GetBestAimTarget()
-                local part = target and FindAimPart(target)
-                if part then
-                    local args = {...}
-                    local ray = args[1]
-                    if typeof(ray) == "Ray" then
-                        local origin = ray.Origin
-                        local dir = (part.Position - origin)
-                        if Config.AimAntiDetect then
-                            dir = dir + Vector3.new(
-                                (math.random() - 0.5) * 0.15,
-                                (math.random() - 0.5) * 0.10,
-                                (math.random() - 0.5) * 0.15
-                            )
-                        end
-                        args[1] = Ray.new(origin, dir.Unit * 5000)
-                        return _ncChain(self, unpack(args))
-                    end
-                end
-            end
-
-            return _ncChain(self, ...)
-        end)
-    end)
-
-    if ok then
-        silentAimHooked = true
-        Notify("Silent Aim", L("ntf_hook_ok") .. " [chained]", 3)
-    else
-        if ENV.hasHookFunction and hookfunction then
-            pcall(function()
-                local origRaycast = Workspace.Raycast
-                local hookedFn = newcclosure and newcclosure(function(self, origin, dir, params)
-                    if not State.SilentAim then return origRaycast(self, origin, dir, params) end
+    -- Метод 1: hookmetamethod (найнадійніший, підтримується більшістю сучасних exploit'ів)
+    if ENV.hasHookMeta and hookmetamethod then
+        local ok = pcall(function()
+            hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
+                local method = getnamecallmethod and getnamecallmethod() or ""
+                if not State.SilentAim then return self[method](self, ...) end
+                if (method == "Raycast") and self == Workspace then
                     local target = GetBestAimTarget()
                     local part = target and FindAimPart(target)
-                    if part and typeof(origin) == "Vector3" then
-                        local vel = part.AssemblyLinearVelocity
-                        local predPos = part.Position + vel * 0.05
-                        local newDir = (predPos - origin)
-                        return origRaycast(self, origin, newDir.Unit * newDir.Magnitude, params)
+                    if part then
+                        local args = {...}
+                        local origin = args[1]
+                        if typeof(origin) == "Vector3" then
+                            local vel = part.AssemblyLinearVelocity
+                            local predPos = part.Position + vel * 0.05
+                            local dir = (predPos - origin)
+                            if Config.AimAntiDetect then
+                                dir = dir + Vector3.new(
+                                    (math.random() - 0.5) * 0.15,
+                                    (math.random() - 0.5) * 0.10,
+                                    (math.random() - 0.5) * 0.15
+                                )
+                            end
+                            args[2] = dir.Unit * dir.Magnitude
+                            return self[method](self, unpack(args))
+                        end
                     end
-                    return origRaycast(self, origin, dir, params)
-                end) or function(self, origin, dir, params)
-                    return origRaycast(self, origin, dir, params)
                 end
-                hookfunction(origRaycast, hookedFn)
-                silentAimHooked = true
-                Notify("Silent Aim", L("ntf_hook_ok") .. " [hookfunction]", 3)
+                return self[method](self, ...)
+            end) or function(self, ...)
+                local method = getnamecallmethod and getnamecallmethod() or ""
+                if not State.SilentAim then return self[method](self, ...) end
+                if method == "Raycast" and self == Workspace then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part then
+                        local args = {...}
+                        local origin = args[1]
+                        if typeof(origin) == "Vector3" then
+                            local dir = (part.Position - origin)
+                            args[2] = dir.Unit * dir.Magnitude
+                            return self[method](self, unpack(args))
+                        end
+                    end
+                end
+                return self[method](self, ...)
             end)
+        end)
+        if ok then
+            silentAimHooked = true
+            Notify("Silent Aim", L("ntf_hook_ok") .. " [hookmetamethod]", 3)
+            return
         end
     end
 
-    if not silentAimHooked then
-        Notify("Silent Aim", L("ntf_sa_hook_fail"), 5)
+    -- Метод 2: getrawmetatable + setreadonly (Synapse/Fluxus/тощо)
+    if ENV.hasGetRawMeta and ENV.hasGetNameCall then
+        local ok = pcall(function()
+            local mt = getrawmetatable(game)
+            if not mt then error("no mt") end
+            local oldNC = rawget(mt, "__namecall")
+            if not oldNC then error("no __namecall") end
+
+            -- Зробити таблицю записуваною
+            if setreadonly then pcall(function() setreadonly(mt, false) end) end
+            if make_writeable then pcall(function() make_writeable(mt) end) end
+
+            local function hookBody(self, ...)
+                local method = getnamecallmethod()
+                if not State.SilentAim then return oldNC(self, ...) end
+                if method == "Raycast" and self == Workspace then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part then
+                        local args = {...}
+                        local origin = args[1]
+                        if typeof(origin) == "Vector3" then
+                            local vel = part.AssemblyLinearVelocity
+                            local predPos = part.Position + vel * 0.05
+                            local dir = (predPos - origin)
+                            if Config.AimAntiDetect then
+                                dir = dir + Vector3.new(
+                                    (math.random() - 0.5) * 0.15,
+                                    (math.random() - 0.5) * 0.10,
+                                    (math.random() - 0.5) * 0.15
+                                )
+                            end
+                            args[2] = dir.Unit * dir.Magnitude
+                            return oldNC(self, unpack(args))
+                        end
+                    end
+                end
+                if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
+                    and self == Workspace then
+                    local target = GetBestAimTarget()
+                    local part = target and FindAimPart(target)
+                    if part then
+                        local args = {...}
+                        local ray = args[1]
+                        if typeof(ray) == "Ray" then
+                            local origin = ray.Origin
+                            local dir = (part.Position - origin)
+                            if Config.AimAntiDetect then
+                                dir = dir + Vector3.new(
+                                    (math.random() - 0.5) * 0.15,
+                                    (math.random() - 0.5) * 0.10,
+                                    (math.random() - 0.5) * 0.15
+                                )
+                            end
+                            args[1] = Ray.new(origin, dir.Unit * 5000)
+                            return oldNC(self, unpack(args))
+                        end
+                    end
+                end
+                return oldNC(self, ...)
+            end
+
+            local newNC = newcclosure and newcclosure(hookBody) or hookBody
+            -- Спроба записати в метатаблицю
+            rawset(mt, "__namecall", newNC)
+
+            -- Назад read-only
+            if setreadonly then pcall(function() setreadonly(mt, true) end) end
+            if make_readonly then pcall(function() make_readonly(mt) end) end
+            silentAimHooked = true
+        end)
+        if silentAimHooked then
+            Notify("Silent Aim", L("ntf_hook_ok") .. " [rawmeta]", 3)
+            return
+        end
     end
+
+    -- Метод 3: hookfunction на Workspace.Raycast напряму
+    if ENV.hasHookFunction and hookfunction then
+        local ok = pcall(function()
+            local origRaycast = Workspace.Raycast
+            hookfunction(origRaycast, newcclosure and newcclosure(function(self, origin, dir, params)
+                if not State.SilentAim then return origRaycast(self, origin, dir, params) end
+                local target = GetBestAimTarget()
+                local part = target and FindAimPart(target)
+                if part and typeof(origin) == "Vector3" then
+                    local vel = part.AssemblyLinearVelocity
+                    local predPos = part.Position + vel * 0.05
+                    local newDir = (predPos - origin)
+                    return origRaycast(self, origin, newDir.Unit * newDir.Magnitude, params)
+                end
+                return origRaycast(self, origin, dir, params)
+            end) or function(self, origin, dir, params)
+                return Workspace:Raycast(origin, dir, params)
+            end)
+            silentAimHooked = true
+        end)
+        if silentAimHooked then
+            Notify("Silent Aim", L("ntf_hook_ok") .. " [hookfunction]", 3)
+            return
+        end
+    end
+
+    -- Хуки недоступні
+    Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
 end
 
 task.spawn(function() task.wait(2); SetupSilentAimHook() end)
@@ -1659,7 +1693,7 @@ task.spawn(function()
     task.wait(4)
     if IsMob and not silentAimHooked then
         if not ENV.hasGetRawMeta and not ENV.hasGetNameCall and not ENV.hasHookMeta then
-            Notify("Silent Aim", "⚠️ Exploit doesn't support hooks. Use Auto Aim.", 6)
+            Notify("Silent Aim", "⚠️ Exploit не підтримує хуки. Використай Auto Aim.", 6)
         else
             SetupSilentAimHook()
         end
@@ -1670,9 +1704,7 @@ local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
     ok, result = pcall(function()
-        if syn and syn.request then
-            return syn.request({Url = url, Method = "GET"}).Body
-        end
+        if syn then return syn.request({Url = url, Method = "GET"}).Body end
     end)
     if ok and result then return result end
     ok, result = pcall(function()
@@ -1684,7 +1716,7 @@ end
 
 local function GetServerList()
     local url = "https://games.roblox.com/v1/games/" .. game.PlaceId
-        .. "/servers/Public?sortOrder=Asc&excludeFullGames=true&limit=100"
+        .. "/servers/Public?sortOrder=Asc&excludeFullGames=false&limit=100"
     local data = GetHTTP(url)
     if not data then return nil end
     local ok, parsed = pcall(function() return HttpService:JSONDecode(data) end)
@@ -1715,8 +1747,8 @@ local function JoinRandomServer()
         local servers = GetServerList()
         if servers and #servers > 0 then
             local filtered = {}
-            for _, s in ipairs(servers) do
-                if s.id ~= game.JobId and s.playing and s.playing > 1 then
+            for _, s in pairs(servers) do
+                if s.id ~= game.JobId and s.playing and s.playing > 0 then
                     table.insert(filtered, s)
                 end
             end
@@ -1739,7 +1771,7 @@ local function JoinBiggestServer()
         local servers = GetServerList()
         if servers and #servers > 0 then
             local best, bestCount = nil, -1
-            for _, s in ipairs(servers) do
+            for _, s in pairs(servers) do
                 if s.id ~= game.JobId and s.playing and s.playing > bestCount then
                     bestCount = s.playing; best = s
                 end
@@ -1761,22 +1793,16 @@ local function JoinSmallestServer()
     task.spawn(function()
         local servers = GetServerList()
         if servers and #servers > 0 then
-            local valid = {}
-            for _, s in ipairs(servers) do
-                if s.id ~= game.JobId and s.playing and s.playing > 1 then
-                    table.insert(valid, s)
+            local best, bestCount = nil, math.huge
+            for _, s in pairs(servers) do
+                if s.id ~= game.JobId and s.playing and s.playing < bestCount then
+                    bestCount = s.playing; best = s
                 end
             end
-            
-            if #valid > 0 then
-                table.sort(valid, function(a, b) return a.playing < b.playing end)
-                
-                local maxRange = math.max(1, math.floor(#valid * 0.3))
-                local chosen = valid[math.random(1, maxRange)]
-                
-                Notify("Server Hop", "🕵️ " .. chosen.playing .. L("ntf_players"), 2)
+            if best then
+                Notify("Server Hop", "🕵️ " .. bestCount .. L("ntf_players"), 2)
                 task.wait(1)
-                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP) end)
+                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
                 return
             end
         end
@@ -1784,17 +1810,7 @@ local function JoinSmallestServer()
     end)
 end
 
-local function JoinTargetServer(jobId)
-    if not jobId or #jobId < 5 then
-        Notify("Target Join", L("ntf_target_invalid"), 3)
-        return
-    end
-    Notify("Target Join", L("ntf_target_join"), 3)
-    task.delay(1, function()
-        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, jobId, LP) end)
-    end)
-end
-
+-- GUI
 local GuiP = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui") or LP:WaitForChild("PlayerGui")
 pcall(function() local c = game:GetService("CoreGui"); local _ = c.Name; GuiP = c end)
 
@@ -2102,7 +2118,10 @@ do
     end)
 end
 
-local MOB_LAYOUT_FILE   = "OmniV312_MobLayout.json"
+-- ================================================================
+-- MOBILE BUTTON EDITOR + QUICK BUTTONS
+-- ================================================================
+local MOB_LAYOUT_FILE   = "OmniV305_MobLayout.json"
 local MobEditorActive   = false
 local MobEditorOverlays = {}
 local MobMovableBtns    = {}
@@ -2254,7 +2273,7 @@ local function EnterMobEditor()
     for _, entry in pairs(MobMovableBtns) do
         MakeDraggableMob(entry)
     end
-    Notify("Editor", "📐 Drag ✱ Resize ⤡ · press 📐 to save", 4)
+    Notify("Editor", "📐 Тягни ✱ Змінюй розмір ⤡ · натисни 📐 щоб зберегти", 4)
 end
 
 local function ExitMobEditor()
@@ -2273,13 +2292,15 @@ local function ExitMobEditor()
     Notify("Editor", "✅ Layout saved!", 2)
 end
 
+-- ================================================================
+-- QUICK BUTTONS
+-- ================================================================
 QuickBtnActive = {}
 
 local QuickBtnDefs = {
     {nm="Fly",          icon="✈️", lbl="Fly"},
     {nm="Speed",        icon="👟", lbl="Speed"},
     {nm="Noclip",       icon="👻", lbl="Noclip"},
-    {nm="Spider",       icon="🕷️", lbl="Spider"},
     {nm="ESP",          icon="👁",  lbl="ESP"},
     {nm="Hitbox",       icon="📦", lbl="Hitbox"},
     {nm="Aim",          icon="🎯", lbl="AutoAim"},
@@ -2363,6 +2384,9 @@ local function CreateQuickBtn(def)
         if MobEditorActive then return end
         Toggle(def.nm)
         if def.nm == "Fly" then UpdFly() end
+        if def.nm == "Freecam" then
+            pcall(function() fcZ.Visible = State.Freecam and IsTab end)
+        end
         UpdateQuickBtnColor(def.nm)
     end)
 
@@ -2537,11 +2561,33 @@ if IsTab then
     end)
 end
 
+fcZ = Instance.new("TextButton", Scr)
+fcZ.Size = UDim2.new(0.5, 0, 1, -100); fcZ.Position = UDim2.new(0.5, 0, 0, 0)
+fcZ.BackgroundTransparency = 1; fcZ.Text = ""; fcZ.ZIndex = 5; fcZ.Visible = false
+do
+    local fcL = nil
+    fcZ.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then fcL = i.Position end
+    end)
+    fcZ.InputChanged:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch and fcL then
+            local d = i.Position - fcL
+            FC_Y = FC_Y - math.rad(d.X * 0.4)
+            FC_P = math.clamp(FC_P - math.rad(d.Y * 0.4), -math.rad(89), math.rad(89))
+            fcL = i.Position
+        end
+    end)
+    fcZ.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.Touch then fcL = nil end
+    end)
+end
+
 local RefreshLanguage
 local ShowDesc, HideDesc, AddHdr
 local langBtnRef, autoSaveLblRef = nil, nil
 local waitingBind = nil
 
+;(function()
 do
 local descPopup = Instance.new("Frame", Scr)
 descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
@@ -2659,6 +2705,7 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
         if waitingBind then return end
         Toggle(logicName)
         if logicName == "Fly" then UpdFly() end
+        if logicName == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
     end)
 
     AllRows[logicName] = {swBG = swBG, swDot = swDot, accent = accent, row = row, lbl = lbl}
@@ -2720,38 +2767,6 @@ local function MkButton(tab, icon, lblKey, color, onClick)
     end)
     table.insert(LocalizableElements, {type = "button", obj = lbl, langKey = lblKey})
     return row
-end
-
-local function MkInput(tab, icon, placeholder, onEnter)
-    local pg = TabPages[tab]; if not pg then return end
-    local h = IsMob and 40 or 34
-    local row = Instance.new("Frame", pg)
-    row.Size = UDim2.new(0.95, 0, 0, h)
-    row.BackgroundColor3 = P.btn; row.BorderSizePixel = 0
-    Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
-    Instance.new("UIStroke", row).Color = P.brd
-
-    local ic = Instance.new("TextLabel", row)
-    ic.Size = UDim2.new(0, 24, 1, 0); ic.Position = UDim2.new(0, 6, 0, 0)
-    ic.BackgroundTransparency = 1; ic.Text = icon
-    ic.TextSize = IsMob and 14 or 12; ic.Font = Enum.Font.Gotham; ic.TextColor3 = P.dim
-
-    local box = Instance.new("TextBox", row)
-    box.Size = UDim2.new(1, -40, 1, 0); box.Position = UDim2.new(0, 30, 0, 0)
-    box.BackgroundTransparency = 1
-    box.PlaceholderText = placeholder
-    box.Text = ""
-    box.Font = Enum.Font.GothamBold; box.TextSize = FS
-    box.TextColor3 = P.txt
-    box.TextXAlignment = Enum.TextXAlignment.Left
-    box.ClearTextOnFocus = false
-
-    if onEnter then
-        box.FocusLost:Connect(function(enter)
-            if enter then onEnter(box.Text) end
-        end)
-    end
-    return row, box
 end
 
 local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
@@ -2853,6 +2868,7 @@ RefreshLanguage = function()
     if autoSaveLblRef then pcall(function() autoSaveLblRef.Text = L("stat_auto_save") end) end
 end
 
+-- POPULATE TABS
 AddHdr("Combat", "🎯", "hdr_aiming")
 MkToggleBind("Combat", "🎯", "lbl_auto_aim", "Aim", "desc_auto_aim")
 MkToggleBind("Combat", "🔇", "lbl_silent_aim", "SilentAim", "desc_silent_aim")
@@ -2874,7 +2890,6 @@ MkToggle("Move", "⬆️", "lbl_high_jump", "HighJump", "desc_high_jump")
 MkToggle("Move", "♾️", "lbl_infinite_jump", "InfiniteJump", "desc_infinite_jump")
 AddHdr("Move", "👻", "hdr_physics")
 MkToggleBind("Move", "👻", "lbl_noclip", "Noclip", "desc_noclip")
-MkToggle("Move", "🕷️", "lbl_spider", "Spider", "desc_spider")
 MkToggle("Move", "🛡", "lbl_no_fall", "NoFallDamage", "desc_no_fall")
 MkToggle("Move", "🌊", "lbl_anti_void", "AntiVoid", "desc_anti_void")
 AddHdr("Move", "🛡", "hdr_safe_speed")
@@ -2915,6 +2930,7 @@ AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
+-- FIX: FakeLag Power slider (безпосередньо під тоглом)
 MkSlider("Misc", "📡", "sl_fakelag_power", 1, 100, Config.FakeLagPower, "FakeLagPower", function(v)
     Config.FakeLagPower = v
 end)
@@ -2922,30 +2938,11 @@ AddHdr("Misc", "💡", "hdr_effects")
 MkToggle("Misc", "💡", "lbl_fullbright", "FullBright", "desc_fullbright")
 AddHdr("Misc", "🛡", "hdr_protection")
 MkToggle("Misc", "💤", "lbl_anti_afk", "AntiAFK", "desc_anti_afk")
-
-AddHdr("Misc", "🖱️", "hdr_mouse_fix")
-MkButton("Misc", "🔓", "btn_unlock_mouse", Color3.fromRGB(40, 40, 55), UnlockMouse)
-
 AddHdr("Misc", "🌐", "hdr_server_hop")
 MkButton("Misc", "🔄", "btn_rejoin", Color3.fromRGB(22, 28, 38), RejoinSameServer)
 MkButton("Misc", "🎲", "btn_random", Color3.fromRGB(22, 28, 38), JoinRandomServer)
 MkButton("Misc", "👥", "btn_biggest", Color3.fromRGB(22, 28, 38), JoinBiggestServer)
 MkButton("Misc", "🕵️", "btn_smallest", Color3.fromRGB(22, 28, 38), JoinSmallestServer)
-
-AddHdr("Misc", "🔗", "hdr_target_join")
-local _, targetInput = MkInput("Misc", "🔗", "Enter Server ID (JobId)...", function(text)
-    if text and #text > 5 then
-        JoinTargetServer(text)
-    end
-end)
-MkButton("Misc", "➡️", "btn_join_target", Color3.fromRGB(22, 28, 38), function()
-    local txt = targetInput and targetInput.Text or ""
-    if txt == "" then
-        Notify("Target Join", L("ntf_target_invalid"), 3)
-        return
-    end
-    JoinTargetServer(txt)
-end)
 
 do
     local pg = TabPages["Config"]
@@ -3045,7 +3042,7 @@ MkSlider("Config", "✈️", "sl_fly_speed", 0, 300, Config.FlySpeed, "FlySpeed"
 MkSlider("Config", "👟", "sl_walk_speed", 16, 200, Config.WalkSpeed, "WalkSpeed", function(v)
     Config.WalkSpeed = v
     local h = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-    if State.Speed and h then pcall(function() h.WalkSpeed = gameBaseSpeed end) end
+    if State.Speed and h then pcall(function() h.WalkSpeed = GetSafeSpeed() end) end
 end)
 
 AddHdr("Config", "⬆️", "hdr_jump_vals")
@@ -3135,6 +3132,9 @@ if IsTab then task.spawn(function()
     end
 end) end
 
+end)()
+
+-- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
     if waitingBind then
         if inp.UserInputType == Enum.UserInputType.Keyboard then
@@ -3155,28 +3155,20 @@ UIS.InputBegan:Connect(function(inp, gpe)
         if inp.KeyCode == key then
             if act == "ToggleMenu" then
                 if Main.Visible then CloseMenu() else OpenMenu() end
-            elseif act == "UnlockMouse" then
-                UnlockMouse()
             else
                 Toggle(act)
                 if act == "Fly" then UpdFly() end
+                if act == "Freecam" then fcZ.Visible = State.Freecam and IsTab end
             end
         end
     end
 end)
 
 UIS.InputChanged:Connect(function(inp, gpe)
-    if not State.Freecam then return end
+    if gpe or not State.Freecam then return end
     if inp.UserInputType == Enum.UserInputType.MouseMovement then
-        if not Main.Visible then
-            FC_Y = FC_Y - math.rad(inp.Delta.X * 0.35)
-            FC_P = math.clamp(FC_P - math.rad(inp.Delta.Y * 0.35), -math.rad(89), math.rad(89))
-        end
-    elseif inp.UserInputType == Enum.UserInputType.Touch then
-        if not gpe then
-            FC_Y = FC_Y - math.rad(inp.Delta.X * 0.4)
-            FC_P = math.clamp(FC_P - math.rad(inp.Delta.Y * 0.4), -math.rad(89), math.rad(89))
-        end
+        FC_Y = FC_Y - math.rad(inp.Delta.X * 0.35)
+        FC_P = math.clamp(FC_P - math.rad(inp.Delta.Y * 0.35), -math.rad(89), math.rad(89))
     end
 end)
 
@@ -3199,38 +3191,39 @@ UIS.JumpRequest:Connect(function()
     end)
 end)
 
+-- ANIMATION LOOP
 task.spawn(function()
     local t = 0
     while true do
-        task.wait(0.1)
-        t += 0.1
+        task.wait(0.033)
+        t += 0.02
         local pulse = (math.sin(t * 2) + 1) / 2
         local aR = math.floor(0 + pulse * 15)
         local aG = math.floor(180 + pulse * 30)
         local aB = math.floor(95 + pulse * 20)
         local acol = Color3.fromRGB(aR, aG, aB)
         pcall(function()
-            mSt.Color = acol
-            mB.TextColor3 = acol
+            mSt.Color = acol; mB.TextColor3 = acol
             tGrad.Rotation = (t * 15) % 360
-            tAcc.BackgroundColor3 = acol
-            tIco.TextColor3 = acol
+            tAcc.BackgroundColor3 = acol; tIco.TextColor3 = acol
             exStroke.Color = acol
             mainS.Color = Color3.fromRGB(
-                math.floor(38 + pulse * 20),
-                math.floor(38 + pulse * 20),
-                math.floor(48 + pulse * 20)
-            )
+                math.floor(38 + pulse * 20), math.floor(38 + pulse * 20), math.floor(48 + pulse * 20))
             for nm, d in pairs(AllRows) do
-                if State[nm] and d.accent then
-                    d.accent.BackgroundColor3 = acol
-                end
+                if State[nm] and d.accent then d.accent.BackgroundColor3 = acol end
+            end
+            for _qbnm, _ in pairs(QuickBtnActive) do
+                pcall(function() UpdateQuickBtnColor(_qbnm) end)
+            end
+            if (State.Aim or State.Aim) and not (aimLocked and aimTarget) then
+                fovStroke.Color = Color3.fromRGB(180, 180, 200)
             end
         end)
     end
 end)
 
-do
+-- RENDER STEPPED
+;(function()
 local FrameLog   = {}
 local lastPing   = 0
 local pingTk     = 0
@@ -3250,18 +3243,6 @@ RunService.RenderStepped:Connect(function(dt)
     eF.Text = tostring(fps); eF.TextColor3 = fc
     eP.Text = pm .. " ms"; eP.TextColor3 = pc
 
-    if State.Freecam then
-        if Main.Visible then
-            if UIS.MouseBehavior ~= Enum.MouseBehavior.Default then
-                UIS.MouseBehavior = Enum.MouseBehavior.Default
-            end
-        else
-            if UIS.MouseBehavior ~= Enum.MouseBehavior.LockCenter then
-                UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-            end
-        end
-    end
-
     UpdateESP()
 
     local Char = LP.Character
@@ -3270,6 +3251,7 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
+    -- FLY
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -3281,14 +3263,28 @@ RunService.RenderStepped:Connect(function(dt)
             if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then upD = -1 end
             dir = dir + Vector3.new(0, upD, 0)
 
+            local target_vel
             if dir.Magnitude > 0.05 then
                 dir = dir.Unit
-                HRP.CFrame = HRP.CFrame + (dir * Config.FlySpeed * dt)
+                if Config.FlyAntiBan then
+                    _flyNoiseT = _flyNoiseT + 0.005
+                    local nx = PseudoNoise(_flyNoiseT) * 0.12
+                    local ny = PseudoNoise(_flyNoiseT + 100) * 0.06
+                    local nz = PseudoNoise(_flyNoiseT + 200) * 0.12
+                    target_vel = dir * Config.FlySpeed + Vector3.new(nx, ny, nz)
+                else
+                    target_vel = dir * Config.FlySpeed
+                end
+                if HRP.Position.Y > Config.FlyHeightMax then
+                    target_vel = Vector3.new(target_vel.X, math.min(target_vel.Y, -0.1), target_vel.Z)
+                end
             else
-                HRP.AssemblyLinearVelocity = Vector3.zero
+                target_vel = Vector3.new(0, -1.8, 0)
             end
 
-            HRP.AssemblyAngularVelocity = Vector3.zero
+            local cur_vel = HRP.AssemblyLinearVelocity
+            local lerp_vel = cur_vel:Lerp(target_vel, math.clamp(dt * 18, 0, 1))
+            HRP.AssemblyLinearVelocity = lerp_vel
 
             if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
                 HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
@@ -3297,6 +3293,7 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
+    -- FREECAM
     if State.Freecam then
         pcall(function()
             local mx, mz = GetDir()
@@ -3313,6 +3310,7 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
+    -- AUTO AIM
     if State.Aim and not State.Freecam and Char and HRP then
         pcall(function()
             local target = GetBestAimTarget()
@@ -3351,6 +3349,7 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
+    -- SILENT AIM INDICATOR
     if State.SilentAim and not State.Aim and not State.Freecam then
         pcall(function()
             local tgt = GetBestAimTarget()
@@ -3370,8 +3369,9 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 end)
-end
+end)()
 
+-- HEARTBEAT
 RunService.Heartbeat:Connect(function(dt)
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3398,24 +3398,31 @@ RunService.Heartbeat:Connect(function(dt)
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
             local targetSpd = GetSafeSpeed()
-            Hum.WalkSpeed = gameBaseSpeed
-
+            Hum.WalkSpeed = targetSpd
             if Hum.MoveDirection.Magnitude > 0.1 then
-                local extraSpd = targetSpd - gameBaseSpeed
-                if extraSpd > 0 then
-                    HRP.CFrame = HRP.CFrame + (Hum.MoveDirection * extraSpd * dt)
+                local md = Hum.MoveDirection.Unit
+                local vel = HRP.AssemblyLinearVelocity
+                local flatVel = Vector3.new(vel.X, 0, vel.Z)
+                if State.SafeSpeedMode then
+                    local cycle = tick() % 0.60
+                    local onTime = 0.60 * 0.82
+                    if cycle > onTime then
+                        local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
+                        local want = md * targetSpd * math.max(brake, 0.15)
+                        HRP.AssemblyLinearVelocity = Vector3.new(
+                            vel.X + (want.X - vel.X) * 0.30, vel.Y, vel.Z + (want.Z - vel.Z) * 0.30)
+                    else
+                        if flatVel.Magnitude < targetSpd * 0.9 then
+                            local want = md * targetSpd
+                            HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
+                        end
+                    end
+                else
+                    if flatVel.Magnitude < targetSpd * 0.9 then
+                        local want = md * targetSpd
+                        HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
+                    end
                 end
-            end
-
-            local flatVel = Vector3.new(HRP.AssemblyLinearVelocity.X, 0, HRP.AssemblyLinearVelocity.Z)
-            local maxAllowed = targetSpd * 1.3
-            if flatVel.Magnitude > maxAllowed then
-                local clamped = flatVel.Unit * maxAllowed
-                HRP.AssemblyLinearVelocity = Vector3.new(
-                    clamped.X,
-                    HRP.AssemblyLinearVelocity.Y,
-                    clamped.Z
-                )
             end
         end)
     end
@@ -3454,26 +3461,9 @@ RunService.Heartbeat:Connect(function(dt)
             end
         end)
     end
-
-    if State.Spider and not State.Fly and not State.Freecam and HRP and Hum then
-        pcall(function()
-            local md = Hum.MoveDirection
-            if md.Magnitude > 0.1 then
-                local ray = RaycastParams.new()
-                ray.FilterDescendantsInstances = {Char}
-                ray.FilterType = Enum.RaycastFilterType.Exclude
-                local result = Workspace:Raycast(HRP.Position, md * 2.5, ray)
-                if result and result.Normal.Y > -0.1 and result.Normal.Y < 0.1 then
-                    local vel = HRP.AssemblyLinearVelocity
-                    if vel.Y < 20 then
-                        HRP.AssemblyLinearVelocity = Vector3.new(vel.X, 25, vel.Z)
-                    end
-                end
-            end
-        end)
-    end
 end)
 
+-- STEPPED — NOCLIP
 RunService.Stepped:Connect(function()
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
@@ -3524,6 +3514,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- INITIAL CONFIG LOAD
 task.spawn(function()
     task.wait(0.6)
     if not HasFileSystem() then return end
@@ -3542,4 +3533,4 @@ task.spawn(function()
     Notify("OMNI", L("ntf_loaded"), 3)
 end)
 
-Notify("OMNI V312", L("ntf_startup"), 5)
+Notify("OMNI V305", L("ntf_startup"), 5)
