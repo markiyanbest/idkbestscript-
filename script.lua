@@ -1400,7 +1400,6 @@ RefreshLanguage = function()
     if autoSaveLblRef then pcall(function() autoSaveLblRef.Text = L("stat_auto_save") end) end
 end
 
--- POPULATE TABS
 AddHdr("Combat", "🎯", "hdr_aiming")
 MkToggleBind("Combat", "🎯", "lbl_auto_aim", "Aim", "desc_auto_aim")
 MkToggleBind("Combat", "🔇", "lbl_silent_aim", "SilentAim", "desc_silent_aim")
@@ -1408,9 +1407,7 @@ MkToggle("Combat", "🧲", "lbl_shadow_lock", "ShadowLock", "desc_shadow_lock")
 AddHdr("Combat", "💥", "hdr_hitbox_esp")
 MkToggle("Combat", "📦", "lbl_hitbox", "Hitbox", "desc_hitbox")
 MkToggle("Combat", "👁", "lbl_esp", "ESP", "desc_esp")
-MkSlider("Combat", "📡", "sl_esp_dist", 50, 3000, Config.ESPMaxDist, "ESPMaxDist", function(v)
-    Config.ESPMaxDist = v
-end)
+MkSlider("Combat", "📡", "sl_esp_dist", 50, 3000, Config.ESPMaxDist, "ESPMaxDist", function(v) Config.ESPMaxDist = v end)
 
 AddHdr("Move", "✈️", "hdr_flight")
 MkToggleBind("Move", "✈️", "lbl_fly", "Fly", "desc_fly")
@@ -1426,17 +1423,13 @@ MkToggle("Move", "🛡", "lbl_no_fall", "NoFallDamage", "desc_no_fall")
 MkToggle("Move", "🌊", "lbl_anti_void", "AntiVoid", "desc_anti_void")
 AddHdr("Move", "🛡", "hdr_safe_speed")
 MkToggle("Move", "🛡", "lbl_safe_speed", "SafeSpeedMode", "desc_safe_speed")
-MkSlider("Move", "✖", "sl_safe_mult", 10, 40, math.floor(Config.SafeSpeedMult * 10), "SafeSpeedMult_slider", function(v)
-    Config.SafeSpeedMult = v / 10
-end)
+MkSlider("Move", "✖", "sl_safe_mult", 10, 40, math.floor(Config.SafeSpeedMult * 10), "SafeSpeedMult_slider", function(v) Config.SafeSpeedMult = v / 10 end)
 
 AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
-MkSlider("Misc", "📡", "sl_fakelag_power", 1, 100, Config.FakeLagPower, "FakeLagPower", function(v)
-    Config.FakeLagPower = v
-end)
+MkSlider("Misc", "📡", "sl_fakelag_power", 1, 100, Config.FakeLagPower, "FakeLagPower", function(v) Config.FakeLagPower = v end)
 AddHdr("Misc", "💡", "hdr_effects")
 MkToggle("Misc", "💡", "lbl_fullbright", "FullBright", "desc_fullbright")
 AddHdr("Misc", "🛡", "hdr_protection")
@@ -1541,9 +1534,7 @@ end
 
 AddHdr("Config", "🚀", "hdr_speed_vals")
 MkSlider("Config", "✈️", "sl_fly_speed", 0, 300, Config.FlySpeed, "FlySpeed", function(v) Config.FlySpeed = v end)
-MkSlider("Config", "👟", "sl_walk_speed", 16, 200, Config.WalkSpeed, "WalkSpeed", function(v)
-    Config.WalkSpeed = v
-end)
+MkSlider("Config", "👟", "sl_walk_speed", 16, 200, Config.WalkSpeed, "WalkSpeed", function(v) Config.WalkSpeed = v end)
 
 AddHdr("Config", "⬆️", "hdr_jump_vals")
 MkSlider("Config", "⬆️", "sl_jump_power", 50, 500, Config.JumpPower, "JumpPower", function(v)
