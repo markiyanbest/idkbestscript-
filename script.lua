@@ -13,11 +13,9 @@ local TweenService = game:GetService("TweenService")
 local StarterGui = game:GetService("StarterGui")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
-
 local LP = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local CurrentLang = "EN"
-
 local Strings = {
     EN = {
         title = "OMNI V305", subtitle_mobile = "MOBILE · SOLARA/DELTA", subtitle_pc = "UNIVERSAL · SOLARA/DELTA",
