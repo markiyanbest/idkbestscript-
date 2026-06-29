@@ -1,30 +1,26 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — BLOXSTRIKE BYPASS (XENO/DELTA) PART 1    ██
+-- ██  OMNI V305 — SOLARA/DELTA EDITION (PART 1)            ██
 -- ██████████████████████████████████████████████████████████
 
-local Players           = game:GetService("Players")
-local RunService        = game:GetService("RunService")
-local UIS               = game:GetService("UserInputService")
-local Lighting          = game:GetService("Lighting")
-local Workspace         = game:GetService("Workspace")
-local VirtualUser       = game:GetService("VirtualUser")
-local PhysicsService    = game:GetService("PhysicsService")
-local TweenService      = game:GetService("TweenService")
-local StarterGui        = game:GetService("StarterGui")
-local HttpService       = game:GetService("HttpService")
-local TeleportService   = game:GetService("TeleportService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local VirtualUser = game:GetService("VirtualUser")
+local PhysicsService = game:GetService("PhysicsService")
+local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
-local LP     = Players.LocalPlayer
+local LP = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
-
 local CurrentLang = "EN"
 
 local Strings = {
     EN = {
-        title = "OMNI V305",
-        subtitle_mobile = "MOBILE · BLOXSTRIKE BYPASS",
-        subtitle_pc = "UNIVERSAL · BLOXSTRIKE BYPASS",
+        title = "OMNI V305", subtitle_mobile = "MOBILE · SOLARA/DELTA", subtitle_pc = "UNIVERSAL · SOLARA/DELTA",
         tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
@@ -39,129 +35,41 @@ local Strings = {
         lbl_anti_void = "Anti-Void", lbl_safe_speed = "Safe Speed (Anti Rubber-Band)", lbl_spin = "Spin",
         lbl_potato = "Potato Mode", lbl_fake_lag = "Fake Lag", lbl_anti_afk = "Anti-AFK",
         lbl_speed_jitter = "Speed Jitter", lbl_hitbox_rand = "Hitbox Randomize", lbl_aim_anti = "Aim Anti-Detect",
-        desc_auto_aim = "Automatically aims your camera at the nearest visible enemy within FOV radius.",
-        desc_silent_aim = "Redirects raycasts to enemies without moving your camera. Requires exploit hooks.",
-        desc_shadow_lock = "Teleports you behind the closest enemy, following their movement.",
-        desc_hitbox = "Expands enemy hitbox parts so they are easier to hit.",
-        desc_esp = "Shows player name, HP and distance as clean text. No boxes.",
-        desc_fly = "Free flight using CFrame bypass. Undetected by velocity anti-cheats.",
-        desc_freecam = "Detaches camera from character for free spectating.",
-        desc_speed = "Increases speed using CFrame bypass. Undetected by WalkSpeed anti-cheats.",
-        desc_bhop = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
-        desc_high_jump = "Increases your jump height/power significantly.",
-        desc_infinite_jump = "Allows jumping in mid-air infinitely.",
-        desc_noclip = "Universal noclip: bypasses all anti-collision systems across all places.",
-        desc_no_fall = "Prevents fall damage by resetting state before landing.",
-        desc_anti_void = "Teleports you back to safety if you fall below the void threshold.",
-        desc_safe_speed = "Caps your speed relative to the game's base speed to avoid rubber-banding.",
-        desc_spin = "Spins your character rapidly around the Y axis.",
-        desc_potato = "Disables shadows, particles, and lowers quality for better FPS.",
-        desc_fake_lag = "Simulates lag by briefly anchoring your character while moving.",
-        desc_anti_afk = "Prevents the game from kicking you for being idle.",
-        desc_speed_jitter = "Adds small random variation to speed to avoid anti-cheat detection.",
-        desc_hitbox_rand = "Adds small random variation to hitbox size to avoid detection.",
-        desc_aim_anti = "Adds micro-jitter to aim direction to avoid pattern detection.",
+        desc_fly = "Free flight using CFrame bypass.", desc_speed = "Increases speed using CFrame bypass.",
         sl_fly_speed = "Fly Speed", sl_walk_speed = "Walk Speed", sl_jump_power = "Jump Power",
         sl_bhop_power = "Bhop Power", sl_hitbox_size = "Hitbox Size", sl_aim_fov = "Aim FOV (px)",
-        sl_aim_smooth = "Aim Smooth %", sl_anti_void_h = "Anti-Void Height", sl_safe_mult = "Multiplier (×base)",
-        sl_fakelag_power = "FakeLag Power %",
-        btn_save = "💾 Save", btn_load = "📂 Load", btn_reset = "🔄 Reset",
-        btn_rejoin = "Rejoin (same server)", btn_random = "Random server",
-        btn_biggest = "Biggest server", btn_smallest = "Smallest server",
-        ntf_saved = "💾 Saved", ntf_loaded = "📂 Config loaded ✓", ntf_reset = "🔄 Reset",
-        ntf_no_write = "❌ writefile unavailable", ntf_no_read = "❌ readfile unavailable",
-        ntf_no_file = "📂 File not found", ntf_json_err = "❌ JSON error", ntf_error = "❌ Error: ",
-        ntf_rejoin = "🔄 Rejoining...", ntf_search_rnd = "🎲 Searching random...",
-        ntf_search_big = "👥 Searching biggest...", ntf_search_sml = "🕵️ Searching smallest...",
-        ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
-        ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
-        ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Bloxstrike Bypass · Press RShift to Hide UI",
-        ntf_lang = "Language changed to: ",
-        stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV305_BStrike.json",
-        stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
-        btn_lang_toggle = "🌐 Language: English → Українська",
-        lbl_fullbright = "FullBright",
-        desc_fullbright = "Maximizes lighting so the whole map is fully visible.",
-        sl_esp_dist = "ESP Radius (studs)",
-        sl_aim_predict = "Aim Predict ×",
-        btn_mob_editor = "📐 Edit Button Layout",
-        hdr_quick_btns = "⚡ QUICK BUTTONS",
-        lbl_fakelaginput = "FakeLag Bind (PC)",
-        ntf_sa_no_hooks = "❌ Silent Aim: exploit has no hooks support",
-        ntf_sa_hook_fail = "❌ Silent Aim: hook failed (try different exploit)",
+        sl_aim_smooth = "Aim Smooth %", sl_anti_void_h = "Anti-Void Height", sl_safe_mult = "Multiplier",
+        sl_fakelag_power = "FakeLag Power %", btn_save = "Save", btn_load = "Load", btn_reset = "Reset",
+        ntf_startup = "✅ Edition Loaded · Press RShift to Hide UI",
+        ntf_lang = "Language changed to: ", stat_no_target = "No target", stat_auto_save = "Auto-save every 60s",
+        btn_lang_toggle = "Language: English -> UA", lbl_fullbright = "FullBright", sl_esp_dist = "ESP Radius",
+        sl_aim_predict = "Aim Predict", hdr_quick_btns = "QUICK BUTTONS",
     },
     UA = {
-        title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · BLOXSTRIKE ОБХОД",
-        subtitle_pc = "УНІВЕРСАЛЬНА · BLOXSTRIKE ОБХОД",
+        title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · SOLARA/DELTA", subtitle_pc = "УНІВЕРСАЛЬНА · SOLARA/DELTA",
         tab_combat = "Бій", tab_move = "Рух", tab_misc = "Інше", tab_config = "Налашт.",
-        hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
+        hdr_aiming = "ПРИЦІЛ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
         hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
         hdr_effects = "ЕФЕКТИ", hdr_protection = "ЗАХИСТ", hdr_server_hop = "ЗМІНА СЕРВЕРА",
-        hdr_save_config = "ЗБЕРЕЖЕННЯ КОНФІГУ", hdr_speed_vals = "ЗНАЧЕННЯ ШВИДКОСТІ",
-        hdr_jump_vals = "ЗНАЧЕННЯ СТРИБКА", hdr_hitbox_cfg = "ХІТБОКС", hdr_aim_settings = "НАЛАШТУВАННЯ ПРИЦІЛУ",
-        hdr_anti_void = "АНТИ-ВОЙД", hdr_anti_ban = "АНТИ-БАН", hdr_language = "МОВА",
-        lbl_auto_aim = "Авто Прицілювання", lbl_silent_aim = "Тихий Прицілювання",
-        lbl_shadow_lock = "Магніт (ShadowLock)", lbl_hitbox = "Розширення хітбокса", lbl_esp = "ESP",
-        lbl_fly = "Літання (CFrame)", lbl_freecam = "Вільна камера", lbl_speed = "Швидкість (CFrame)", lbl_bhop = "Bhop",
-        lbl_high_jump = "Високий стрибок", lbl_infinite_jump = "Нескінченний стрибок", lbl_noclip = "Нокліп",
-        lbl_no_fall = "Без пошкодження від падіння", lbl_anti_void = "Анти-Войд",
-        lbl_safe_speed = "Безпечна швидкість (Анти Rubber-Band)", lbl_spin = "Обертання",
-        lbl_potato = "Картопляний режим", lbl_fake_lag = "Фейк лаг", lbl_anti_afk = "Анти-АФК",
-        lbl_speed_jitter = "Джиттер швидкості", lbl_hitbox_rand = "Рандомізація хітбокса",
-        lbl_aim_anti = "Анти-детект прицілу",
-        desc_auto_aim = "Автоматично наводить камеру на найближчого видимого ворога в радіусі FOV.",
-        desc_silent_aim = "Перенаправляє рейкасти на ворогів без руху камери. Потрібні хуки експлойту.",
-        desc_shadow_lock = "Телепортує вас за найближчого ворога, слідуючи за його рухом.",
-        desc_hitbox = "Збільшує хітбокс частини ворогів, щоб в них було легше попасти.",
-        desc_esp = "Показує нік гравця, HP та дистанцію чистим текстом. Без квадратів.",
-        desc_fly = "Політ через CFrame обход. Не детектиться античитами швидкості.",
-        desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду.",
-        desc_speed = "Швидкість через CFrame обход. Не детектиться античитами WalkSpeed.",
-        desc_bhop = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
-        desc_high_jump = "Значно збільшує висоту/силу стрибка.",
-        desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно.",
-        desc_noclip = "Універсальний нокліп: обходить усі антиколізійні системи у всіх плейсах.",
-        desc_no_fall = "Запобігає пошкодженню від падіння скидаючи стан перед приземленням.",
-        desc_anti_void = "Телепортує назад у безпечне місце при падінні нижче порога войду.",
-        desc_safe_speed = "Обмежує швидкість відносно базової швидкості гри для уникнення відкиду.",
-        desc_spin = "Швидко обертає персонажа навколо осі Y.",
-        desc_potato = "Вимикає тіні, частинки та знижує якість для кращого FPS.",
-        desc_fake_lag = "Імітує лаг, короткочасно закріплюючи персонажа під час руху.",
-        desc_anti_afk = "Запобігає кіку за бездіяльність.",
-        desc_speed_jitter = "Додає невелику випадкову варіацію швидкості для уникнення античіту.",
-        desc_hitbox_rand = "Додає невелику випадкову варіацію розміру хітбокса для уникнення детекту.",
-        desc_aim_anti = "Додає мікро-тремтіння напрямку прицілу для уникнення детекту паттернів.",
-        sl_fly_speed = "Швидкість польоту", sl_walk_speed = "Швидкість ходьби",
-        sl_jump_power = "Сила стрибка", sl_bhop_power = "Сила Bhop", sl_hitbox_size = "Розмір хітбокса",
-        sl_aim_fov = "FOV прицілу (пкс)", sl_aim_smooth = "Плавність прицілу %",
-        sl_anti_void_h = "Висота Анти-Войд", sl_safe_mult = "Множник (×база)",
-        sl_fakelag_power = "Сила FakeLag %",
-        btn_save = "💾 Зберегти", btn_load = "📂 Завантажити", btn_reset = "🔄 Скинути",
-        btn_rejoin = "Повторний вхід (той самий сервер)", btn_random = "Рандомний сервер",
-        btn_biggest = "Найбільший сервер", btn_smallest = "Найменший сервер",
-        ntf_saved = "💾 Збережено", ntf_loaded = "📂 Конфіг завантажено ✓", ntf_reset = "🔄 Скинуто",
-        ntf_no_write = "❌ writefile недоступний", ntf_no_read = "❌ readfile недоступний",
-        ntf_no_file = "📂 Файл не знайдено", ntf_json_err = "❌ Помилка JSON", ntf_error = "❌ Помилка: ",
-        ntf_rejoin = "🔄 Перезаходжу...", ntf_search_rnd = "🎲 Шукаю рандомний...",
-        ntf_search_big = "👥 Шукаю найбільший...", ntf_search_sml = "🕵️ Шукаю найменший...",
-        ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
-        ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
-        ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Bloxstrike Bypass · Натисни RShift щоб приховати UI",
-        ntf_lang = "Мову змінено на: ",
-        stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_BStrike.json",
-        stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
-        btn_lang_toggle = "🌐 Мова: Українська → English",
-        lbl_fullbright = "FullBright",
-        desc_fullbright = "Максимальне освітлення — вся карта повністю видима.",
-        sl_esp_dist = "Радіус ESP (стадів)",
-        sl_aim_predict = "Предікт прицілу ×",
-        btn_mob_editor = "📐 Редактор кнопок",
-        hdr_quick_btns = "⚡ ШВИДКІ КНОПКИ",
-        lbl_fakelaginput = "Бінд FakeLag (ПК)",
-        ntf_sa_no_hooks = "❌ Silent Aim: хуки недоступні в цьому експлойті",
-        ntf_sa_hook_fail = "❌ Silent Aim: хук не встановлено (спробуй інший експлойт)",
+        hdr_save_config = "ЗБЕРЕЖЕННЯ", hdr_speed_vals = "ШВИДКІСТЬ", hdr_jump_vals = "СТРИБОК",
+        hdr_hitbox_cfg = "ХІТБОКС", hdr_aim_settings = "ПРИЦІЛ", hdr_anti_void = "АНТИ-ВОЙД",
+        hdr_anti_ban = "АНТИ-БАН", hdr_language = "МОВА",
+        lbl_auto_aim = "Авто Приціл", lbl_silent_aim = "Тихий Приціл", lbl_shadow_lock = "Магніт",
+        lbl_hitbox = "Хітбокс", lbl_esp = "ESP", lbl_fly = "Літання (CFrame)", lbl_freecam = "Вільна камера",
+        lbl_speed = "Швидкість (CFrame)", lbl_bhop = "Bhop", lbl_high_jump = "Високий стрибок",
+        lbl_infinite_jump = "Безкін. стрибок", lbl_noclip = "Нокліп", lbl_no_fall = "Без падіння",
+        lbl_anti_void = "Анти-Войд", lbl_safe_speed = "Безпечна швидкість", lbl_spin = "Обертання",
+        lbl_potato = "Картопля", lbl_fake_lag = "Фейк лаг", lbl_anti_afk = "Анти-АФК",
+        lbl_speed_jitter = "Джиттер", lbl_hitbox_rand = "Рандом хітбокса", lbl_aim_anti = "Анти-детект",
+        desc_fly = "Політ через CFrame обход.", desc_speed = "Швидкість через CFrame обход.",
+        sl_fly_speed = "Швидкість польоту", sl_walk_speed = "Швидкість ходьби", sl_jump_power = "Сила стрибка",
+        sl_bhop_power = "Сила Bhop", sl_hitbox_size = "Розмір хітбокса", sl_aim_fov = "FOV (пкс)",
+        sl_aim_smooth = "Плавність %", sl_anti_void_h = "Висота Анти-Войд", sl_safe_mult = "Множник",
+        sl_fakelag_power = "Сила FakeLag %", btn_save = "Зберегти", btn_load = "Завантажити", btn_reset = "Скинути",
+        ntf_startup = "✅ Завантажено · Натисни RShift щоб приховати UI",
+        ntf_lang = "Мову змінено на: ", stat_no_target = "Ціль відсутня", stat_auto_save = "Авто-зберігання кожні 60 сек",
+        btn_lang_toggle = "Мова: UA -> EN", lbl_fullbright = "FullBright", sl_esp_dist = "Радіус ESP",
+        sl_aim_predict = "Предікт", hdr_quick_btns = "ШВИДКІ КНОПКИ",
     },
 }
 
@@ -174,18 +82,13 @@ local function L(key)
 end
 
 local ENV = {}
-local function _envCheck(fn)
-    local ok, v = pcall(fn)
-    return ok and v == true
-end
-ENV.hasGetRawMeta    = _envCheck(function() return getrawmetatable ~= nil end)
-ENV.hasSetReadOnly   = _envCheck(function() return setreadonly ~= nil end)
-ENV.hasNewCClosure   = _envCheck(function() return newcclosure ~= nil end)
-ENV.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
-ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
-ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
-ENV.hasSynapse       = _envCheck(function() return syn ~= nil end)
-                    or _envCheck(function() return SENTINEL_V2 ~= nil end)
+local function _envCheck(fn) local ok, v = pcall(fn) return ok and v == true end
+ENV.hasGetRawMeta = _envCheck(function() return getrawmetatable ~= nil end)
+ENV.hasSetReadOnly = _envCheck(function() return setreadonly ~= nil end)
+ENV.hasNewCClosure = _envCheck(function() return newcclosure ~= nil end)
+ENV.hasGetNameCall = _envCheck(function() return getnamecallmethod ~= nil end)
+ENV.hasHookFunction = _envCheck(function() return hookfunction ~= nil end)
+ENV.hasHookMeta = _envCheck(function() return hookmetamethod ~= nil end)
 
 pcall(function()
     for _, sg in pairs({game:GetService("CoreGui"), LP:WaitForChild("PlayerGui", 5)}) do
@@ -198,326 +101,109 @@ end)
 
 local SafeGroup = "OmniNC_" .. math.random(1000, 9999)
 pcall(function()
-    if PhysicsService.RegisterCollisionGroup then
-        PhysicsService:RegisterCollisionGroup(SafeGroup)
-    elseif PhysicsService.CreateCollisionGroup then
-        pcall(function() PhysicsService:CreateCollisionGroup(SafeGroup) end)
-    end
+    if PhysicsService.RegisterCollisionGroup then PhysicsService:RegisterCollisionGroup(SafeGroup)
+    elseif PhysicsService.CreateCollisionGroup then pcall(function() PhysicsService:CreateCollisionGroup(SafeGroup) end) end
     pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, "Default", false) end)
     pcall(function() PhysicsService:CollisionGroupSetCollidable(SafeGroup, SafeGroup, false) end)
-    pcall(function()
-        for _, groupName in ipairs(PhysicsService:GetRegisteredCollisionGroups()) do
-            local name = groupName.name or groupName
-            if name ~= SafeGroup then
-                pcall(function()
-                    PhysicsService:CollisionGroupSetCollidable(SafeGroup, name, false)
-                end)
-            end
-        end
-    end)
 end)
 
-local function RndStr(n)
-    local c = {}
-    for i = 1, n do c[i] = string.char(math.random(97, 122)) end
-    return table.concat(c)
-end
-
-local function Notify(title, text, dur)
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = dur or 2})
-    end)
-end
-
-local function SafeDel(o)
-    pcall(function() if o and o.Parent then o:Destroy() end end)
-end
+local function RndStr(n) local c = {} for i = 1, n do c[i] = string.char(math.random(97, 122)) end return table.concat(c) end
+local function Notify(title, text, dur) pcall(function() StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = dur or 2}) end) end
+local function SafeDel(o) pcall(function() if o and o.Parent then o:Destroy() end end) end
 
 local IsMob = UIS.TouchEnabled and not UIS.KeyboardEnabled
 local IsTab = UIS.TouchEnabled
 
-local Blur = Instance.new("BlurEffect")
-Blur.Size   = 0
-Blur.Parent = Camera
+local Blur = Instance.new("BlurEffect") Blur.Size = 0 Blur.Parent = Camera
 
 local Controls, ControlsOK = nil, false
 task.spawn(function()
-    if not game:IsLoaded() then game.Loaded:Wait() end
-    task.wait(2)
-    pcall(function()
-        local pm = require(LP.PlayerScripts:WaitForChild("PlayerModule", 10))
-        Controls   = pm:GetControls()
-        ControlsOK = true
-    end)
+    if not game:IsLoaded() then game.Loaded:Wait() end task.wait(2)
+    pcall(function() local pm = require(LP.PlayerScripts:WaitForChild("PlayerModule", 10)) Controls = pm:GetControls() ControlsOK = true end)
 end)
 
 local Config = {
-    FlySpeed          = 55,
-    WalkSpeed         = 30,
-    JumpPower         = 125,
-    BhopPower         = 62,
-    HitboxSize        = 5,
-    AimFOV            = 200,
-    AimSmooth         = 0.18,
-    AimPart           = "Head",
-    SpeedAntiBan      = true,
-    FlyAntiBan        = true,
-    HitboxRandomize   = true,
-    AimAntiDetect     = true,
-    SpeedJitter       = 1.5,
-    FlyHeightMax      = 1800,
-    SafeSpeedMode     = false,
-    SafeSpeedMult     = 1.8,
-    AntiVoidHeight    = -180,
-    ESPMaxDist        = 1000,
-    AimPredictMult    = 1.0,
-    FullBright        = false,
-    FakeLagPower      = 50,
+    FlySpeed=55, WalkSpeed=30, JumpPower=125, BhopPower=62, HitboxSize=5, AimFOV=200, AimSmooth=0.18, AimPart="Head",
+    SpeedAntiBan=true, FlyAntiBan=true, HitboxRandomize=true, AimAntiDetect=true, SpeedJitter=1.5, FlyHeightMax=1800,
+    SafeSpeedMode=false, SafeSpeedMult=1.8, AntiVoidHeight=-180, ESPMaxDist=1000, AimPredictMult=1.0, FullBright=false, FakeLagPower=50,
 }
-
-local Binds = {
-    Fly        = Enum.KeyCode.F,
-    Aim        = Enum.KeyCode.G,
-    Noclip     = Enum.KeyCode.V,
-    SilentAim  = Enum.KeyCode.B,
-    ToggleMenu = Enum.KeyCode.M,
-    FakeLag    = Enum.KeyCode.J,
-}
-
+local Binds = { Fly=Enum.KeyCode.F, Aim=Enum.KeyCode.G, Noclip=Enum.KeyCode.V, SilentAim=Enum.KeyCode.B, ToggleMenu=Enum.KeyCode.M, FakeLag=Enum.KeyCode.J }
 local State = {
-    Fly = false, Aim = false, SilentAim = false, ShadowLock = false,
-    Noclip = false, Hitbox = false, Speed = false, Bhop = false,
-    ESP = false, Spin = false, HighJump = false, Potato = false,
-    FakeLag = false, Freecam = false, NoFallDamage = false,
-    AntiAFK = false, InfiniteJump = false, AntiVoid = false,
-    SpeedAntiBan = true, HitboxRandomize = true,
-    AimAntiDetect = true, SafeSpeedMode = false,
-    FullBright = false,
+    Fly=false, Aim=false, SilentAim=false, ShadowLock=false, Noclip=false, Hitbox=false, Speed=false, Bhop=false,
+    ESP=false, Spin=false, HighJump=false, Potato=false, FakeLag=false, Freecam=false, NoFallDamage=false,
+    AntiAFK=false, InfiniteJump=false, AntiVoid=false, SpeedAntiBan=true, HitboxRandomize=true, AimAntiDetect=true, SafeSpeedMode=false, FullBright=false,
 }
+local CFG_FILE = "OmniV305_Solara.json"
+local SAVE_STATE_KEYS = {"AntiAFK","ESP","Hitbox","Speed","HighJump","Bhop","NoFallDamage","InfiniteJump","Potato","AntiVoid"}
+local SAVE_CFG_KEYS = {"SpeedAntiBan","HitboxRandomize","AimAntiDetect","SafeSpeedMode"}
 
-local CFG_FILE = "OmniV305_BStrike.json"
-local SAVE_STATE_KEYS = {
-    "AntiAFK", "ESP", "Hitbox", "Speed", "HighJump",
-    "Bhop", "NoFallDamage", "InfiniteJump", "Potato", "AntiVoid",
-}
-local SAVE_CFG_KEYS = {
-    "SpeedAntiBan", "HitboxRandomize", "AimAntiDetect", "SafeSpeedMode",
-}
-
-local function HasFileSystem()
-    return (writefile ~= nil and readfile ~= nil)
-end
-
-local function SerializeBinds()
-    local t = {}
-    for k, v in pairs(Binds) do
-        t[k] = tostring(v):gsub("Enum%.KeyCode%.", "")
-    end
-    return t
-end
-
-local function DeserializeBinds(t)
-    for k, v in pairs(t) do
-        local ok, kc = pcall(function() return Enum.KeyCode[v] end)
-        if ok and kc then Binds[k] = kc end
-    end
-end
-
+local function HasFileSystem() return (writefile ~= nil and readfile ~= nil) end
+local function SerializeBinds() local t = {} for k, v in pairs(Binds) do t[k] = tostring(v):gsub("Enum%.KeyCode%.", "") end return t end
+local function DeserializeBinds(t) for k, v in pairs(t) do local ok, kc = pcall(function() return Enum.KeyCode[v] end) if ok and kc then Binds[k] = kc end end end
 local SliderRefs = {}
 
 local function SaveConfig()
-    if not HasFileSystem() then Notify("Config", L("ntf_no_write"), 3); return false end
-    local data = { version = "v305", config = {}, binds = SerializeBinds(), state = {}, lang = CurrentLang }
+    if not HasFileSystem() then Notify("Config", "No writefile", 3) return false end
+    local data = { version="v305", config={}, binds=SerializeBinds(), state={}, lang=CurrentLang }
     for k, v in pairs(Config) do data.config[k] = v end
     for _, k in pairs(SAVE_STATE_KEYS) do data.state[k] = State[k] or false end
     for _, k in pairs(SAVE_CFG_KEYS) do data.state[k] = State[k] or false end
     local ok, err = pcall(function() writefile(CFG_FILE, HttpService:JSONEncode(data)) end)
-    if ok then Notify("Config", L("ntf_saved"), 2); return true
-    else Notify("Config", L("ntf_error") .. (err or "?"), 3); return false end
+    if ok then Notify("Config", "Saved", 2) return true else Notify("Config", "Error: "..(err or "?"), 3) return false end
 end
-
 local function ApplyLoadedConfig(data)
-    if data.config then
-        for k, v in pairs(data.config) do
-            if Config[k] ~= nil then Config[k] = v end
-        end
-    end
+    if data.config then for k, v in pairs(data.config) do if Config[k] ~= nil then Config[k] = v end end end
     if data.binds then DeserializeBinds(data.binds) end
-    for _, k in pairs(SAVE_CFG_KEYS) do
-        if data.state and data.state[k] ~= nil then
-            State[k] = data.state[k]; Config[k] = data.state[k]
-        end
-    end
-    if data.lang and (data.lang == "EN" or data.lang == "UA") then
-        CurrentLang = data.lang
-    end
+    for _, k in pairs(SAVE_CFG_KEYS) do if data.state and data.state[k] ~= nil then State[k] = data.state[k] Config[k] = data.state[k] end end
+    if data.lang and (data.lang == "EN" or data.lang == "UA") then CurrentLang = data.lang end
 end
-
-local function UpdateAllSliders()
-    for key, ref in pairs(SliderRefs) do
-        if ref and ref.update then
-            pcall(ref.update, Config[key] or ref.default)
-        end
-    end
-end
-
+local function UpdateAllSliders() for key, ref in pairs(SliderRefs) do if ref and ref.update then pcall(ref.update, Config[key] or ref.default) end end end
 local function LoadConfig()
-    if not HasFileSystem() then Notify("Config", L("ntf_no_read"), 3); return false end
+    if not HasFileSystem() then Notify("Config", "No readfile", 3) return false end
     local ok, content = pcall(readfile, CFG_FILE)
-    if not ok or not content or content == "" then Notify("Config", L("ntf_no_file"), 2); return false end
+    if not ok or not content or content == "" then Notify("Config", "File not found", 2) return false end
     local ok2, data = pcall(function() return HttpService:JSONDecode(content) end)
-    if not ok2 or not data then Notify("Config", L("ntf_json_err"), 3); return false end
-    ApplyLoadedConfig(data); UpdateAllSliders()
-    Notify("Config", L("ntf_loaded"), 2); return true
+    if not ok2 or not data then Notify("Config", "JSON error", 3) return false end
+    ApplyLoadedConfig(data) UpdateAllSliders() Notify("Config", "Loaded", 2) return true
 end
-
 local function ResetConfig()
-    Config.FlySpeed = 55; Config.WalkSpeed = 30; Config.JumpPower = 125
-    Config.BhopPower = 62; Config.HitboxSize = 5; Config.AimFOV = 200
-    Config.AimSmooth = 0.18; Config.SpeedAntiBan = true; Config.FlyAntiBan = true
-    Config.HitboxRandomize = true; Config.AimAntiDetect = true
-    Config.SpeedJitter = 1.5; Config.FlyHeightMax = 1800
-    Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8; Config.AntiVoidHeight = -180
-    Config.ESPMaxDist = 1000; Config.AimPredictMult = 1.0; Config.FullBright = false
-    Config.FakeLagPower = 50
-    Binds.Fly = Enum.KeyCode.F; Binds.Aim = Enum.KeyCode.G
-    Binds.Noclip = Enum.KeyCode.V; Binds.SilentAim = Enum.KeyCode.B; Binds.ToggleMenu = Enum.KeyCode.M
-    State.SpeedAntiBan = true; State.HitboxRandomize = true
-    State.AimAntiDetect = true; State.SafeSpeedMode = false
-    UpdateAllSliders(); Notify("Config", L("ntf_reset"), 2)
+    Config.FlySpeed=55 Config.WalkSpeed=30 Config.JumpPower=125 Config.BhopPower=62 Config.HitboxSize=5 Config.AimFOV=200 Config.AimSmooth=0.18 Config.SpeedAntiBan=true Config.FlyAntiBan=true Config.HitboxRandomize=true Config.AimAntiDetect=true Config.SpeedJitter=1.5 Config.FlyHeightMax=1800 Config.SafeSpeedMode=false Config.SafeSpeedMult=1.8 Config.AntiVoidHeight=-180 Config.ESPMaxDist=1000 Config.AimPredictMult=1.0 Config.FullBright=false Config.FakeLagPower=50
+    Binds.Fly=Enum.KeyCode.F Binds.Aim=Enum.KeyCode.G Binds.Noclip=Enum.KeyCode.V Binds.SilentAim=Enum.KeyCode.B Binds.ToggleMenu=Enum.KeyCode.M
+    State.SpeedAntiBan=true State.HitboxRandomize=true State.AimAntiDetect=true State.SafeSpeedMode=false
+    UpdateAllSliders() Notify("Config", "Reset", 2)
 end
-
-task.spawn(function()
-    while task.wait(60) do
-        if HasFileSystem() then pcall(SaveConfig) end
-    end
-end)
+task.spawn(function() while task.wait(60) do if HasFileSystem() then pcall(SaveConfig) end end end)
 
 local _pSeed = math.random(1, 99999)
-local function PseudoNoise(x)
-    local xi = math.floor(x) % 256
-    local xf = x - math.floor(x)
-    local u  = xf * xf * (3 - 2 * xf)
-    local a  = (xi * 1664525 + 1013904223 + _pSeed) % 2 ^ 32
-    local b  = ((xi + 1) * 1664525 + 1013904223 + _pSeed) % 2 ^ 32
-    local na = (a / 2 ^ 32) * 2 - 1
-    local nb = (b / 2 ^ 32) * 2 - 1
-    return na + u * (nb - na)
-end
-
-local _speedNoiseT = 0
-local gameBaseSpeed = 16
+local function PseudoNoise(x) local xi = math.floor(x) % 256 local xf = x - math.floor(x) local u = xf * xf * (3 - 2 * xf) local a = (xi * 1664525 + 1013904223 + _pSeed) % 2 ^ 32 local b = ((xi + 1) * 1664525 + 1013904223 + _pSeed) % 2 ^ 32 local na = (a / 2 ^ 32) * 2 - 1 local nb = (b / 2 ^ 32) * 2 - 1 return na + u * (nb - na) end
+local _speedNoiseT = 0 local gameBaseSpeed = 16
 
 task.spawn(function()
-    if not game:IsLoaded() then game.Loaded:Wait() end
-    task.wait(1.5)
+    if not game:IsLoaded() then game.Loaded:Wait() end task.wait(1.5)
     pcall(function()
-        local C = LP.Character or LP.CharacterAdded:Wait()
-        local H = C:WaitForChild("Humanoid", 5)
-        if H then
-            local samples = {}
-            for i = 1, 5 do
-                task.wait(0.3)
-                if H and H.Parent and not State.Speed then
-                    table.insert(samples, H.WalkSpeed)
-                end
-            end
-            if #samples > 0 then
-                local maxSpd = 0
-                for _, v in pairs(samples) do if v > maxSpd then maxSpd = v end end
-                if maxSpd >= 4 and maxSpd <= 100 then gameBaseSpeed = maxSpd end
-            end
-        end
+        local C = LP.Character or LP.CharacterAdded:Wait() local H = C:WaitForChild("Humanoid", 5)
+        if H then local samples = {} for i = 1, 5 do task.wait(0.3) if H and H.Parent and not State.Speed then table.insert(samples, H.WalkSpeed) end end
+        if #samples > 0 then local maxSpd = 0 for _, v in pairs(samples) do if v > maxSpd then maxSpd = v end end if maxSpd >= 4 and maxSpd <= 100 then gameBaseSpeed = maxSpd end end end
     end)
 end)
 
 local function GetSafeSpeed()
     local base = Config.WalkSpeed
-    if State.SafeSpeedMode then
-        local cap = gameBaseSpeed * Config.SafeSpeedMult
-        base = math.min(base, cap)
-    end
+    if State.SafeSpeedMode then local cap = gameBaseSpeed * Config.SafeSpeedMult base = math.min(base, cap) end
     if not Config.SpeedAntiBan then return base end
-    _speedNoiseT = _speedNoiseT + 0.008
-    local n   = PseudoNoise(_speedNoiseT)
-    local jit = Config.SpeedJitter
+    _speedNoiseT = _speedNoiseT + 0.008 local n = PseudoNoise(_speedNoiseT) local jit = Config.SpeedJitter
     if math.random(1, 220) == 1 then return math.max(base * 0.82, 14) end
     return math.clamp(base + n * jit, base * 0.9, base * 1.12)
 end
 
-local function IsAlive(c)
-    if not c or not c.Parent then return false end
-    local h = c:FindFirstChildOfClass("Humanoid")
-    return h and h.Health > 0
-end
+local function IsAlive(c) if not c or not c.Parent then return false end local h = c:FindFirstChildOfClass("Humanoid") return h and h.Health > 0 end
+local function FindHead(char) if not char then return nil end local h = char:FindFirstChild("Head") if h and h:IsA("BasePart") then return h end for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") and v.Name == "Head" then return v end end return nil end
+local function FindAimPart(char) if not char then return nil end local name = Config.AimPart or "Head" local p = char:FindFirstChild(name) if p and p:IsA("BasePart") then return p end p = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart") if p and p:IsA("BasePart") then return p end for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") and v.Name == name then return v end end return nil end
 
-local function FindHead(char)
-    if not char then return nil end
-    local h = char:FindFirstChild("Head")
-    if h and h:IsA("BasePart") then return h end
-    for _, v in pairs(char:GetDescendants()) do
-        if v:IsA("BasePart") and v.Name == "Head" then return v end
-    end
-    return nil
-end
-
-local function FindAimPart(char)
-    if not char then return nil end
-    local name = Config.AimPart or "Head"
-    local p = char:FindFirstChild(name)
-    if p and p:IsA("BasePart") then return p end
-    p = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-    if p and p:IsA("BasePart") then return p end
-    for _, v in pairs(char:GetDescendants()) do
-        if v:IsA("BasePart") and v.Name == name then return v end
-    end
-    return nil
-end
-
-local aimRay = RaycastParams.new()
-aimRay.FilterType = Enum.RaycastFilterType.Exclude
-
-local function IsVisible(char)
-    if not char then return false end
-    local myChar = LP.Character
-    if not myChar then return false end
-    local part = FindAimPart(char)
-    if not part then return false end
-    local origin = Camera.CFrame.Position
-    local target = part.Position
-    local dir    = target - origin
-    local dist   = dir.Magnitude
-    if dist < 1 then return true end
-    aimRay.FilterDescendantsInstances = {myChar, Camera}
-    local result = Workspace:Raycast(origin, dir.Unit * (dist - 0.5), aimRay)
-    if not result then return true end
-    if result.Instance:IsDescendantOf(char) then return true end
-    if result.Instance.Transparency >= 0.8 then return true end
-    return false
-end
-
-local function ScreenDist(part)
-    if not part then return math.huge end
-    local pos, on = Camera:WorldToViewportPoint(part.Position)
-    if not on then return math.huge end
-    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    return (Vector2.new(pos.X, pos.Y) - center).Magnitude
-end
-
-local function GetClosestEnemy()
-    local my = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not my then return nil end
-    local best, bd = nil, math.huge
-    for _, p in pairs(Players:GetPlayers()) do
-        if p == LP then continue end
-        local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-        if hrp and IsAlive(p.Character) then
-            local d = (my.Position - hrp.Position).Magnitude
-            if d < bd then bd = d; best = p.Character end
-        end
-    end
-    return best
-end
+local aimRay = RaycastParams.new() aimRay.FilterType = Enum.RaycastFilterType.Exclude
+local function IsVisible(char) if not char then return false end local myChar = LP.Character if not myChar then return false end local part = FindAimPart(char) if not part then return false end local origin = Camera.CFrame.Position local target = part.Position local dir = target - origin local dist = dir.Magnitude if dist < 1 then return true end aimRay.FilterDescendantsInstances = {myChar, Camera} local result = Workspace:Raycast(origin, dir.Unit * (dist - 0.5), aimRay) if not result then return true end if result.Instance:IsDescendantOf(char) then return true end if result.Instance.Transparency >= 0.8 then return true end return false end
+local function ScreenDist(part) if not part then return math.huge end local pos, on = Camera:WorldToViewportPoint(part.Position) if not on then return math.huge end local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) return (Vector2.new(pos.X, pos.Y) - center).Magnitude end
+local function GetClosestEnemy() local my = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") if not my then return nil end local best, bd = nil, math.huge for _, p in pairs(Players:GetPlayers()) do if p == LP then continue end local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart") if hrp and IsAlive(p.Character) then local d = (my.Position - hrp.Position).Magnitude if d < bd then bd = d best = p.Character end end end return best end
 
 local function GetDir()
     local mx, mz = 0, 0
@@ -528,955 +214,131 @@ local function GetDir()
         if UIS:IsKeyDown(Enum.KeyCode.D) then mx = 1 end
     elseif ControlsOK and Controls then
         local ok, mv = pcall(function() return Controls:GetMoveVector() end)
-        if ok and mv then mx = mv.X; mz = mv.Z end
+        if ok and mv then mx = mv.X mz = mv.Z end
     end
     return mx, mz
 end
 
-local aimTarget      = nil
-local aimLastSwitch  = 0
-local aimLocked      = false
-local aimLostFrames  = 0
-local aimSwitchCD    = 0.35
+local aimTarget, aimLastSwitch, aimLocked, aimLostFrames, aimSwitchCD = nil, 0, false, 0, 0.35
+local function FindNewTarget() local fov = Config.AimFOV local best, bestDist = nil, math.huge for _, p in pairs(Players:GetPlayers()) do if p == LP then continue end local char = p.Character if not IsAlive(char) then continue end local part = FindAimPart(char) if not part then continue end local sd = ScreenDist(part) if sd > fov then continue end if not IsVisible(char) then continue end if sd < bestDist then bestDist = sd best = p end end return best end
+local function GetBestAimTarget() local now = tick() local fov = Config.AimFOV if aimTarget and aimLocked then local char = aimTarget.Character if IsAlive(char) then local part = FindAimPart(char) if part then local sd = ScreenDist(part) local vis = IsVisible(char) if sd <= fov * 1.8 and vis then aimLostFrames = 0 return char end aimLostFrames += 1 if aimLostFrames < (vis and 8 or 15) then return char end end end aimTarget = nil aimLocked = false aimLostFrames = 0 end if now - aimLastSwitch < aimSwitchCD then return nil end local best = FindNewTarget() if best then aimTarget = best aimLocked = true aimLostFrames = 0 aimLastSwitch = now return best.Character end return nil end
 
-local function FindNewTarget()
-    local fov = Config.AimFOV
-    local best, bestDist = nil, math.huge
-    for _, p in pairs(Players:GetPlayers()) do
-        if p == LP then continue end
-        local char = p.Character
-        if not IsAlive(char) then continue end
-        local part = FindAimPart(char)
-        if not part then continue end
-        local sd = ScreenDist(part)
-        if sd > fov then continue end
-        if not IsVisible(char) then continue end
-        if sd < bestDist then bestDist = sd; best = p end
-    end
-    return best
-end
-
-local function GetBestAimTarget()
-    local now = tick()
-    local fov = Config.AimFOV
-    if aimTarget and aimLocked then
-        local char = aimTarget.Character
-        if IsAlive(char) then
-            local part = FindAimPart(char)
-            if part then
-                local sd  = ScreenDist(part)
-                local vis = IsVisible(char)
-                if sd <= fov * 1.8 and vis then
-                    aimLostFrames = 0; return char
-                end
-                aimLostFrames += 1
-                if aimLostFrames < (vis and 8 or 15) then return char end
-            end
-        end
-        aimTarget = nil; aimLocked = false; aimLostFrames = 0
-    end
-    if now - aimLastSwitch < aimSwitchCD then return nil end
-    local best = FindNewTarget()
-    if best then
-        aimTarget = best; aimLocked = true
-        aimLostFrames = 0; aimLastSwitch = now
-        return best.Character
-    end
-    return nil
-end
-
--- ============================================================
--- ESP SYSTEM
--- ============================================================
-local ESPCache = {}
-local ESP_UPDATE_INTERVAL = 0.1
-local _espLastUpdate = 0
-
-local function ClearESP()
-    for _, d in pairs(ESPCache) do
-        pcall(function() if d.bb and d.bb.Parent then d.bb:Destroy() end end)
-    end
-    ESPCache = {}
-end
-
+local ESPCache = {} local _espLastUpdate = 0
+local function ClearESP() for _, d in pairs(ESPCache) do pcall(function() if d.bb and d.bb.Parent then d.bb:Destroy() end end) end ESPCache = {} end
 local function UpdateESP()
-    local now = tick()
-    if now - _espLastUpdate < ESP_UPDATE_INTERVAL then return end
-    _espLastUpdate = now
-    if not State.ESP then return end
+    local now = tick() if now - _espLastUpdate < 0.1 then return end _espLastUpdate = now if not State.ESP then return end
     local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-
     for _, p in pairs(Players:GetPlayers()) do
-        if p == LP then continue end
-        local char = p.Character
-        local head = char and FindHead(char)
-        local hum  = char and char:FindFirstChildOfClass("Humanoid")
-
-        if not char or not head or not hum or hum.Health <= 0 then
-            if ESPCache[p] then
-                pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end)
-                ESPCache[p] = nil
-            end
-            continue
-        end
-
+        if p == LP then continue end local char = p.Character local head = char and FindHead(char) local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if not char or not head or not hum or hum.Health <= 0 then if ESPCache[p] then pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end) ESPCache[p] = nil end continue end
         local ca = ESPCache[p]
         if not ca or not ca.bb or not ca.bb.Parent then
             if ca then pcall(function() if ca.bb and ca.bb.Parent then ca.bb:Destroy() end end) end
-
-            local bb = Instance.new("BillboardGui")
-            bb.Name = RndStr(8)
-            bb.Size = UDim2.new(0, 120, 0, 44)
-            bb.StudsOffset = Vector3.new(0, 2.8, 0)
-            bb.AlwaysOnTop = true
-            bb.MaxDistance = Config.ESPMaxDist
-            bb.LightInfluence = 0
-            bb.ResetOnSpawn = false
-            bb.Parent = head
-
-            local nameLbl = Instance.new("TextLabel", bb)
-            nameLbl.Size = UDim2.new(1, 0, 0, 18)
-            nameLbl.BackgroundTransparency = 1
-            nameLbl.Text = p.Name
-            nameLbl.Font = Enum.Font.GothamBold
-            nameLbl.TextSize = 13
-            nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-            nameLbl.TextStrokeTransparency = 0.3
-
-            local infoLbl = Instance.new("TextLabel", bb)
-            infoLbl.Size = UDim2.new(1, 0, 0, 14)
-            infoLbl.Position = UDim2.new(0, 0, 0, 20)
-            infoLbl.BackgroundTransparency = 1
-            infoLbl.Text = "HP: ? | ?m"
-            infoLbl.Font = Enum.Font.Gotham
-            infoLbl.TextSize = 11
-            infoLbl.TextColor3 = Color3.fromRGB(130, 255, 170)
-            infoLbl.TextStrokeTransparency = 0.3
-
-            local barBg = Instance.new("Frame", bb)
-            barBg.Size = UDim2.new(1, 0, 0, 3)
-            barBg.Position = UDim2.new(0, 0, 0, 36)
-            barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            barBg.BorderSizePixel = 0
-            Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
-
-            local barFill = Instance.new("Frame", barBg)
-            barFill.Size = UDim2.new(1, 0, 1, 0)
-            barFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100)
-            barFill.BorderSizePixel = 0
-            Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
-
-            ESPCache[p] = { bb = bb, nameLbl = nameLbl, infoLbl = infoLbl, barFill = barFill }
-            ca = ESPCache[p]
+            local bb = Instance.new("BillboardGui") bb.Name = RndStr(8) bb.Size = UDim2.new(0, 120, 0, 44) bb.StudsOffset = Vector3.new(0, 2.8, 0) bb.AlwaysOnTop = true bb.MaxDistance = Config.ESPMaxDist bb.LightInfluence = 0 bb.ResetOnSpawn = false bb.Parent = head
+            local nameLbl = Instance.new("TextLabel", bb) nameLbl.Size = UDim2.new(1, 0, 0, 18) nameLbl.BackgroundTransparency = 1 nameLbl.Text = p.Name nameLbl.Font = Enum.Font.GothamBold nameLbl.TextSize = 13 nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255) nameLbl.TextStrokeTransparency = 0.3
+            local infoLbl = Instance.new("TextLabel", bb) infoLbl.Size = UDim2.new(1, 0, 0, 14) infoLbl.Position = UDim2.new(0, 0, 0, 20) infoLbl.BackgroundTransparency = 1 infoLbl.Text = "HP: ? | ?m" infoLbl.Font = Enum.Font.Gotham infoLbl.TextSize = 11 infoLbl.TextColor3 = Color3.fromRGB(130, 255, 170) infoLbl.TextStrokeTransparency = 0.3
+            local barBg = Instance.new("Frame", bb) barBg.Size = UDim2.new(1, 0, 0, 3) barBg.Position = UDim2.new(0, 0, 0, 36) barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40) barBg.BorderSizePixel = 0 Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+            local barFill = Instance.new("Frame", barBg) barFill.Size = UDim2.new(1, 0, 1, 0) barFill.BackgroundColor3 = Color3.fromRGB(0, 220, 100) barFill.BorderSizePixel = 0 Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
+            ESPCache[p] = {bb=bb, nameLbl=nameLbl, infoLbl=infoLbl, barFill=barFill} ca = ESPCache[p]
         end
-
-        ca.bb.MaxDistance = Config.ESPMaxDist
-
-        local hp     = math.max(0, math.floor(hum.Health))
-        local rawMax = hum.MaxHealth
-        local isInf  = rawMax ~= rawMax or rawMax == math.huge or rawMax > 1e9
-        local mxh    = isInf and math.max(1, hp) or math.max(1, math.floor(rawMax))
-        local ds     = myHRP and math.floor((myHRP.Position - head.Position).Magnitude) or 0
-        local ratio  = math.clamp(hp / mxh, 0, 1)
-
-        local nameColor = ds <= 30 and Color3.fromRGB(255, 100, 100) or ds <= 80 and Color3.fromRGB(255, 220, 50) or Color3.fromRGB(255, 255, 255)
-        ca.nameLbl.TextColor3 = nameColor
-        ca.nameLbl.Text = p.Name
-
-        local hpColor = ratio >= 0.6 and Color3.fromRGB(80, 255, 120) or ratio >= 0.3 and Color3.fromRGB(255, 220, 40) or Color3.fromRGB(255, 60, 60)
-        ca.infoLbl.TextColor3 = hpColor
-        local hpText = isInf and tostring(hp) or (hp .. "/" .. mxh)
-        ca.infoLbl.Text = "HP: " .. hpText .. " | " .. ds .. "m"
-
-        ca.barFill.Size = UDim2.new(ratio, 0, 1, 0)
-        ca.barFill.BackgroundColor3 = hpColor
+        ca.bb.MaxDistance = Config.ESPMaxDist local hp = math.max(0, math.floor(hum.Health)) local rawMax = hum.MaxHealth local isInf = rawMax ~= rawMax or rawMax == math.huge or rawMax > 1e9 local mxh = isInf and math.max(1, hp) or math.max(1, math.floor(rawMax)) local ds = myHRP and math.floor((myHRP.Position - head.Position).Magnitude) or 0 local ratio = math.clamp(hp / mxh, 0, 1)
+        local nameColor = ds <= 30 and Color3.fromRGB(255, 100, 100) or ds <= 80 and Color3.fromRGB(255, 220, 50) or Color3.fromRGB(255, 255, 255) ca.nameLbl.TextColor3 = nameColor ca.nameLbl.Text = p.Name
+        local hpColor = ratio >= 0.6 and Color3.fromRGB(80, 255, 120) or ratio >= 0.3 and Color3.fromRGB(255, 220, 40) or Color3.fromRGB(255, 60, 60) ca.infoLbl.TextColor3 = hpColor local hpText = isInf and tostring(hp) or (hp .. "/" .. mxh) ca.infoLbl.Text = "HP: " .. hpText .. " | " .. ds .. "m" ca.barFill.Size = UDim2.new(ratio, 0, 1, 0) ca.barFill.BackgroundColor3 = hpColor
     end
 end
+Players.PlayerRemoving:Connect(function(p) if ESPCache[p] then pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end) ESPCache[p] = nil end end)
+Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() if ESPCache[p] then pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end) ESPCache[p] = nil end end) end)
 
-Players.PlayerRemoving:Connect(function(p)
-    if ESPCache[p] then pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end) ESPCache[p] = nil end
-end)
-
-Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function()
-        if ESPCache[p] then pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end) ESPCache[p] = nil end
-    end)
-end)
-for _, p in pairs(Players:GetPlayers()) do
-    if p ~= LP then
-        p.CharacterAdded:Connect(function()
-            if ESPCache[p] then pcall(function() if ESPCache[p].bb and ESPCache[p].bb.Parent then ESPCache[p].bb:Destroy() end end) ESPCache[p] = nil end
-        end)
-    end
-end
-
--- ============================================================
--- HITBOX SYSTEM
--- ============================================================
 local hbParts = {}
+local function ApplyHB(part) if not part or not part:IsA("BasePart") then return end if not hbParts[part] then hbParts[part] = {S=part.Size, T=part.Transparency, C=part.CanCollide, M=part.Massless} end local s = Config.HitboxSize if Config.HitboxRandomize then s = s + (math.random() * 0.4 - 0.2) end part.Size = Vector3.new(s, s, s) part.Transparency = 0.7 part.CanCollide = false part.Massless = true end
+local function RestoreHB() for p, o in pairs(hbParts) do pcall(function() if p and p.Parent then p.Size = o.S p.Transparency = o.T p.CanCollide = o.C p.Massless = o.M end end) end hbParts = {} end
+task.spawn(function() while task.wait(0.5) do if not State.Hitbox then continue end local s = Config.HitboxSize for _, p in pairs(Players:GetPlayers()) do if p == LP or not IsAlive(p.Character) then continue end for _, v in pairs(p.Character:GetDescendants()) do if v:IsA("BasePart") and not (v.Parent and (v.Parent:IsA("Accessory") or v.Parent:IsA("Hat"))) and v.Size.Magnitude > 0.3 and v.Size.X < s - 0.2 then pcall(ApplyHB, v) end end end for part in pairs(hbParts) do if part and part.Parent and math.abs(part.Size.X - s) > 0.5 then pcall(function() part.Size = Vector3.new(s, s, s) end) end end end end)
 
-local function ApplyHB(part)
-    if not part or not part:IsA("BasePart") then return end
-    if not hbParts[part] then
-        hbParts[part] = { S = part.Size, T = part.Transparency, C = part.CanCollide, M = part.Massless }
-    end
-    local s = Config.HitboxSize
-    if Config.HitboxRandomize then s = s + (math.random() * 0.4 - 0.2) end
-    part.Size = Vector3.new(s, s, s)
-    part.Transparency = 0.7
-    part.CanCollide = false
-    part.Massless = true
-end
+local _potatoToken, _potatoOrig, POTATO_CHUNK = 0, {}, 40
+local function _chunkedApply(token, list, fn) return task.spawn(function() for i = 1, #list, POTATO_CHUNK do if _potatoToken ~= token then return end for j = i, math.min(i + POTATO_CHUNK - 1, #list) do pcall(fn, list[j]) end task.wait() end end) end
+local function DoPotato() _potatoToken += 1 local tok = _potatoToken _potatoOrig = {} pcall(function() Lighting.GlobalShadows = false Lighting.FogEnd = 500 settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end) local all = Workspace:GetDescendants() local effects, parts = {}, {} for _, v in ipairs(all) do if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("BillboardGui") or v:IsA("SurfaceGui") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SelectionBox") then table.insert(effects, v) elseif v:IsA("BasePart") then table.insert(parts, v) end end _chunkedApply(tok, effects, function(v) if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("BillboardGui") or v:IsA("SurfaceGui") or v:IsA("PointLight") or v:IsA("SpotLight") then _potatoOrig[v] = {enabled = v.Enabled} v.Enabled = false elseif v:IsA("SelectionBox") then _potatoOrig[v] = {visible = v.LineThickness} v.LineThickness = 0 end end) task.spawn(function() task.wait(0.3) _chunkedApply(tok, parts, function(v) _potatoOrig[v] = {castShadow = v.CastShadow, reflectance = v.Reflectance} v.CastShadow = false v.Reflectance = 0 end) end) end
+local function UndoPotato() _potatoToken += 1 local tok = _potatoToken pcall(function() Lighting.FogEnd = 100000 settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic end) local saved = {} for inst, orig in pairs(_potatoOrig) do table.insert(saved, {inst = inst, orig = orig}) end _potatoOrig = {} local parts, effects = {}, {} for _, e in ipairs(saved) do if e.inst:IsA("BasePart") then table.insert(parts, e) else table.insert(effects, e) end end _chunkedApply(tok, parts, function(e) local v, o = e.inst, e.orig if v and v.Parent then if o.castShadow ~= nil then v.CastShadow = o.castShadow end if o.reflectance ~= nil then v.Reflectance = o.reflectance end end end) task.spawn(function() task.wait(0.3) _chunkedApply(tok, effects, function(e) local v, o = e.inst, e.orig if v and v.Parent then if o.enabled ~= nil then v.Enabled = o.enabled end if o.visible ~= nil then v.LineThickness = o.visible end end end) end) end
 
-local function RestoreHB()
-    for p, o in pairs(hbParts) do
-        pcall(function()
-            if p and p.Parent then
-                p.Size = o.S; p.Transparency = o.T
-                p.CanCollide = o.C; p.Massless = o.M
-            end
-        end)
-    end
-    hbParts = {}
-end
+local _fbOrigLighting, _fbDisabledEffects = nil, {}
+local function ApplyFullBright() _fbOrigLighting = {Brightness=Lighting.Brightness, ClockTime=Lighting.ClockTime, FogEnd=Lighting.FogEnd, FogStart=Lighting.FogStart, GlobalShadows=Lighting.GlobalShadows, Ambient=Lighting.Ambient, OutdoorAmbient=Lighting.OutdoorAmbient} pcall(function() Lighting.Brightness=8 Lighting.ClockTime=14 Lighting.FogEnd=100000 Lighting.FogStart=0 Lighting.GlobalShadows=false Lighting.Ambient=Color3.fromRGB(178, 178, 178) Lighting.OutdoorAmbient=Color3.fromRGB(178, 178, 178) end) _fbDisabledEffects = {} for _, v in pairs(Lighting:GetChildren()) do if v:IsA("Atmosphere") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or (v:IsA("BlurEffect") and v ~= Blur) or v:IsA("SunRaysEffect") or v:IsA("DepthOfFieldEffect") then pcall(function() _fbDisabledEffects[v] = v.Enabled v.Enabled = false end) end end end
+local function RemoveFullBright() if _fbOrigLighting then pcall(function() Lighting.Brightness=_fbOrigLighting.Brightness Lighting.ClockTime=_fbOrigLighting.ClockTime Lighting.FogEnd=_fbOrigLighting.FogEnd Lighting.FogStart=_fbOrigLighting.FogStart Lighting.GlobalShadows=_fbOrigLighting.GlobalShadows Lighting.Ambient=_fbOrigLighting.Ambient Lighting.OutdoorAmbient=_fbOrigLighting.OutdoorAmbient end) _fbOrigLighting = nil end for v, orig in pairs(_fbDisabledEffects) do pcall(function() if v and v.Parent then v.Enabled = orig end end) end _fbDisabledEffects = {} end
 
-task.spawn(function()
-    while task.wait(0.5) do
-        if not State.Hitbox then continue end
-        local s = Config.HitboxSize
-        for _, p in pairs(Players:GetPlayers()) do
-            if p == LP or not IsAlive(p.Character) then continue end
-            for _, v in pairs(p.Character:GetDescendants()) do
-                if v:IsA("BasePart") and not (v.Parent and (v.Parent:IsA("Accessory") or v.Parent:IsA("Hat"))) and v.Size.Magnitude > 0.3 and v.Size.X < s - 0.2 then
-                    pcall(ApplyHB, v)
-                end
-            end
-        end
-        for part in pairs(hbParts) do
-            if part and part.Parent and math.abs(part.Size.X - s) > 0.5 then
-                pcall(function() part.Size = Vector3.new(s, s, s) end)
-            end
-        end
-    end
-end)
+local ncOrigCanCollide = {} local ncStuck = 0 local lastNcPos = Vector3.zero local ncRay = RaycastParams.new() ncRay.FilterType = Enum.RaycastFilterType.Exclude
+local _ncGroupWorks = false task.spawn(function() task.wait(1) pcall(function() local testPart = Instance.new("Part") testPart.CollisionGroup = SafeGroup testPart.Parent = Workspace _ncGroupWorks = (testPart.CollisionGroup == SafeGroup) testPart:Destroy() end) end)
+local function NoclipApply(char) if not char then return end for _, v in pairs(char:GetDescendants()) do if v:IsA("BasePart") then pcall(function() if ncOrigCanCollide[v] == nil then ncOrigCanCollide[v] = v.CanCollide end if _ncGroupWorks then v.CollisionGroup = SafeGroup end v.CanCollide = false end) end local hrp = char:FindFirstChild("HumanoidRootPart") if hrp then pcall(function() if _ncGroupWorks then hrp.CollisionGroup = SafeGroup end hrp.CanCollide = false end) end end
+local function ForceRestore() local C = LP.Character if not C then return end local H = C:FindFirstChildOfClass("Humanoid") local R = C:FindFirstChild("HumanoidRootPart") if H then pcall(function() H.PlatformStand = false if not State.Speed then H.WalkSpeed = gameBaseSpeed end if not State.HighJump then H.UseJumpPower = true H.JumpPower = 50 end end) end if R then pcall(function() R.Anchored = false end) for _, v in pairs(R:GetChildren()) do if v:IsA("BodyMover") then SafeDel(v) end end end for v, orig in pairs(ncOrigCanCollide) do pcall(function() if v and v.Parent then v.CollisionGroup = "Default" v.CanCollide = orig end end) end ncOrigCanCollide = {} if R then task.spawn(function() task.wait(0.05) pcall(function() if R and R.Parent then local vel = R.AssemblyLinearVelocity local hSpd = Vector2.new(vel.X, vel.Z).Magnitude if hSpd > 30 then R.AssemblyLinearVelocity = Vector3.new(vel.X * 0.05, vel.Y, vel.Z * 0.05) end if math.abs(vel.Y) < 1 then R.CFrame = R.CFrame + Vector3.new(0, 2.5, 0) R.AssemblyLinearVelocity = Vector3.new(R.AssemblyLinearVelocity.X, -1, R.AssemblyLinearVelocity.Z) end end end) end) end ncStuck = 0 lastNcPos = Vector3.zero pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end) end
 
-local savedShd, savedQ = true, Enum.QualityLevel.Automatic
+local _fakeLagToken = 0 local MobUp, MobDn = false, false local FC_P, FC_Y = 0, 0
+local AllRows, TabPages, TabBtns, CurTab, LocalizableElements = {}, {}, {}, "Combat", {}
+local QuickBtnActive, fcZ, UpdateQuickBtnColor = {}, nil, nil
 
--- ================================================================
--- FPS BOOST
--- ================================================================
-local _potatoToken  = 0
-local _potatoOrig   = {}
-local POTATO_CHUNK  = 40
-
-local function _chunkedApply(token, list, fn)
-    return task.spawn(function()
-        for i = 1, #list, POTATO_CHUNK do
-            if _potatoToken ~= token then return end
-            for j = i, math.min(i + POTATO_CHUNK - 1, #list) do
-                pcall(fn, list[j])
-            end
-            task.wait()
-        end
-    end)
-end
-
-local function DoPotato()
-    _potatoToken += 1
-    local tok = _potatoToken
-    _potatoOrig = {}
-
-    pcall(function()
-        savedShd = Lighting.GlobalShadows
-        savedQ   = settings().Rendering.QualityLevel
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 500
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    end)
-
-    local all = Workspace:GetDescendants()
-    local effects, parts = {}, {}
-    for _, v in ipairs(all) do
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("BillboardGui") or v:IsA("SurfaceGui") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SelectionBox") then
-            table.insert(effects, v)
-        elseif v:IsA("BasePart") then
-            table.insert(parts, v)
-        end
-    end
-
-    _chunkedApply(tok, effects, function(v)
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
-            _potatoOrig[v] = { enabled = v.Enabled }
-            v.Enabled = false
-        elseif v:IsA("BillboardGui") or v:IsA("SurfaceGui") then
-            _potatoOrig[v] = { enabled = v.Enabled }
-            v.Enabled = false
-        elseif v:IsA("PointLight") or v:IsA("SpotLight") then
-            _potatoOrig[v] = { enabled = v.Enabled }
-            v.Enabled = false
-        elseif v:IsA("SelectionBox") then
-            _potatoOrig[v] = { visible = v.LineThickness }
-            v.LineThickness = 0
-        end
-    end)
-
-    task.spawn(function()
-        task.wait(0.3)
-        _chunkedApply(tok, parts, function(v)
-            _potatoOrig[v] = { castShadow = v.CastShadow, reflectance = v.Reflectance }
-            v.CastShadow  = false
-            v.Reflectance = 0
-        end)
-    end)
-end
-
-local function UndoPotato()
-    _potatoToken += 1
-    local tok = _potatoToken
-
-    pcall(function()
-        Lighting.GlobalShadows = savedShd
-        Lighting.FogEnd = 100000
-        settings().Rendering.QualityLevel = savedQ
-    end)
-
-    local saved = {}
-    for inst, orig in pairs(_potatoOrig) do
-        table.insert(saved, { inst = inst, orig = orig })
-    end
-    _potatoOrig = {}
-
-    local parts, effects = {}, {}
-    for _, e in ipairs(saved) do
-        if e.inst:IsA("BasePart") then
-            table.insert(parts, e)
-        else
-            table.insert(effects, e)
-        end
-    end
-
-    _chunkedApply(tok, parts, function(e)
-        local v, o = e.inst, e.orig
-        if v and v.Parent then
-            if o.castShadow  ~= nil then v.CastShadow  = o.castShadow  end
-            if o.reflectance ~= nil then v.Reflectance = o.reflectance end
-        end
-    end)
-
-    task.spawn(function()
-        task.wait(0.3)
-        _chunkedApply(tok, effects, function(e)
-            local v, o = e.inst, e.orig
-            if v and v.Parent then
-                if o.enabled  ~= nil then v.Enabled       = o.enabled  end
-                if o.visible  ~= nil then v.LineThickness = o.visible  end
-            end
-        end)
-    end)
-end
-
--- ============================================================
--- FULLBRIGHT
--- ============================================================
-local _fbOrigLighting = nil
-local _fbDisabledEffects = {}
-
-local function ApplyFullBright()
-    _fbOrigLighting = {
-        Brightness          = Lighting.Brightness,
-        ClockTime           = Lighting.ClockTime,
-        FogEnd              = Lighting.FogEnd,
-        FogStart            = Lighting.FogStart,
-        GlobalShadows       = Lighting.GlobalShadows,
-        Ambient             = Lighting.Ambient,
-        OutdoorAmbient      = Lighting.OutdoorAmbient,
-    }
-    pcall(function() _fbOrigLighting.EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale end)
-    pcall(function() _fbOrigLighting.EnvironmentDiffuseScale  = Lighting.EnvironmentDiffuseScale  end)
-    pcall(function() _fbOrigLighting.ExposureCompensation     = Lighting.ExposureCompensation     end)
-    pcall(function() _fbOrigLighting.ShadowSoftness           = Lighting.ShadowSoftness           end)
-
-    pcall(function()
-        Lighting.Brightness          = 8
-        Lighting.ClockTime           = 14
-        Lighting.FogEnd              = 100000
-        Lighting.FogStart            = 0
-        Lighting.GlobalShadows       = false
-        Lighting.Ambient             = Color3.fromRGB(178, 178, 178)
-        Lighting.OutdoorAmbient      = Color3.fromRGB(178, 178, 178)
-    end)
-    pcall(function() Lighting.EnvironmentSpecularScale = 1 end)
-    pcall(function() Lighting.EnvironmentDiffuseScale  = 1 end)
-    pcall(function() Lighting.ExposureCompensation     = 0 end)
-    pcall(function() Lighting.ShadowSoftness           = 0 end)
-
-    _fbDisabledEffects = {}
-    for _, v in pairs(Lighting:GetChildren()) do
-        local shouldDisable = false
-        if v:IsA("Atmosphere") then shouldDisable = true end
-        if v:IsA("ColorCorrectionEffect") then shouldDisable = true end
-        if v:IsA("BloomEffect") then shouldDisable = true end
-        if v:IsA("BlurEffect") and v ~= Blur then shouldDisable = true end
-        if v:IsA("SunRaysEffect") then shouldDisable = true end
-        if v:IsA("DepthOfFieldEffect") then shouldDisable = true end
-        if shouldDisable then
-            pcall(function()
-                _fbDisabledEffects[v] = v.Enabled
-                v.Enabled = false
-            end)
-        end
-    end
-end
-
-local function RemoveFullBright()
-    if _fbOrigLighting then
-        pcall(function()
-            Lighting.Brightness     = _fbOrigLighting.Brightness
-            Lighting.ClockTime      = _fbOrigLighting.ClockTime
-            Lighting.FogEnd         = _fbOrigLighting.FogEnd
-            Lighting.FogStart       = _fbOrigLighting.FogStart
-            Lighting.GlobalShadows  = _fbOrigLighting.GlobalShadows
-            Lighting.Ambient        = _fbOrigLighting.Ambient
-            Lighting.OutdoorAmbient = _fbOrigLighting.OutdoorAmbient
-        end)
-        pcall(function() if _fbOrigLighting.EnvironmentSpecularScale ~= nil then Lighting.EnvironmentSpecularScale = _fbOrigLighting.EnvironmentSpecularScale end end)
-        pcall(function() if _fbOrigLighting.EnvironmentDiffuseScale  ~= nil then Lighting.EnvironmentDiffuseScale  = _fbOrigLighting.EnvironmentDiffuseScale  end end)
-        pcall(function() if _fbOrigLighting.ExposureCompensation     ~= nil then Lighting.ExposureCompensation     = _fbOrigLighting.ExposureCompensation     end end)
-        pcall(function() if _fbOrigLighting.ShadowSoftness           ~= nil then Lighting.ShadowSoftness           = _fbOrigLighting.ShadowSoftness           end end)
-        _fbOrigLighting = nil
-    end
-
-    for v, orig in pairs(_fbDisabledEffects) do
-        pcall(function()
-            if v and v.Parent then v.Enabled = orig end
-        end)
-    end
-    _fbDisabledEffects = {}
-end
-
--- ============================================================
--- NOCLIP
--- ============================================================
-local ncOrigCanCollide = {}
-local ncStuck = 0
-local lastNcPos = Vector3.zero
-local ncRay = RaycastParams.new()
-ncRay.FilterType = Enum.RaycastFilterType.Exclude
-
-local _ncGroupWorks = false
-task.spawn(function()
-    task.wait(1)
-    pcall(function()
-        local testPart = Instance.new("Part")
-        testPart.CollisionGroup = SafeGroup
-        testPart.Parent = Workspace
-        _ncGroupWorks = (testPart.CollisionGroup == SafeGroup)
-        testPart:Destroy()
-    end)
-end)
-
-local function NoclipApply(char)
-    if not char then return end
-    for _, v in pairs(char:GetDescendants()) do
-        if v:IsA("BasePart") then
-            pcall(function()
-                if ncOrigCanCollide[v] == nil then
-                    ncOrigCanCollide[v] = v.CanCollide
-                end
-                if _ncGroupWorks then
-                    v.CollisionGroup = SafeGroup
-                end
-                v.CanCollide = false
-            end)
-        end
-    end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        pcall(function()
-            if _ncGroupWorks then hrp.CollisionGroup = SafeGroup end
-            hrp.CanCollide = false
-        end)
-    end
-end
-
-local function ForceRestore()
-    local C = LP.Character
-    if not C then return end
-    local H = C:FindFirstChildOfClass("Humanoid")
-    local R = C:FindFirstChild("HumanoidRootPart")
-
-    if H then
-        pcall(function()
-            H.PlatformStand = false
-            if not State.Speed then H.WalkSpeed = gameBaseSpeed end
-            if not State.HighJump then
-                H.UseJumpPower = true; H.JumpPower = 50
-            end
-        end)
-    end
-
-    if R then
-        pcall(function() R.Anchored = false end)
-        for _, v in pairs(R:GetChildren()) do
-            if v:IsA("BodyMover") then SafeDel(v) end
-        end
-    end
-
-    for v, orig in pairs(ncOrigCanCollide) do
-        pcall(function()
-            if v and v.Parent then
-                v.CollisionGroup = "Default"
-                v.CanCollide = orig
-            end
-        end)
-    end
-    ncOrigCanCollide = {}
-
-    if R then
-        task.spawn(function()
-            task.wait(0.05)
-            pcall(function()
-                if R and R.Parent then
-                    local vel = R.AssemblyLinearVelocity
-                    local hSpd = Vector2.new(vel.X, vel.Z).Magnitude
-                    if hSpd > 30 then
-                        R.AssemblyLinearVelocity = Vector3.new(
-                            vel.X * 0.05, vel.Y, vel.Z * 0.05
-                        )
-                    end
-                    if math.abs(vel.Y) < 1 then
-                        R.CFrame = R.CFrame + Vector3.new(0, 2.5, 0)
-                        R.AssemblyLinearVelocity = Vector3.new(
-                            R.AssemblyLinearVelocity.X, -1, R.AssemblyLinearVelocity.Z
-                        )
-                    end
-                end
-            end)
-        end)
-    end
-
-    ncStuck = 0
-    lastNcPos = Vector3.zero
-    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
-end
-
-local _fakeLagToken = 0
-local MobUp, MobDn = false, false
-local FC_P, FC_Y = 0, 0
-
-local AllRows  = {}
-local TabPages = {}
-local TabBtns  = {}
-local CurTab   = "Combat"
-local LocalizableElements = {}
-
-local QuickBtnActive    = {}
-local fcZ               = nil
-local UpdateQuickBtnColor
-
-local function UpdVis(nm)
-    local d = AllRows[nm]
-    if not d then return end
-    local on = State[nm]
-    if d.swBG then
-        TweenService:Create(d.swBG, TweenInfo.new(0.15), {
-            BackgroundColor3 = on and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 65),
-        }):Play()
-    end
-    if d.swDot then
-        TweenService:Create(d.swDot, TweenInfo.new(0.15), {
-            Position = on and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
-        }):Play()
-    end
-    if d.accent then
-        d.accent.BackgroundColor3 = on and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 75)
-    end
-    if d.row then
-        d.row.BackgroundColor3 = on and Color3.fromRGB(30, 38, 34) or Color3.fromRGB(24, 24, 36)
-    end
-    if QuickBtnActive and QuickBtnActive[nm] then
-        pcall(function() UpdateQuickBtnColor(nm) end)
-    end
-end
-
-local UpdFly
-local LockedTarget = nil
-local lastBhop     = 0
+local function UpdVis(nm) local d = AllRows[nm] if not d then return end local on = State[nm] if d.swBG then TweenService:Create(d.swBG, TweenInfo.new(0.15), {BackgroundColor3 = on and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 65)}):Play() end if d.swDot then TweenService:Create(d.swDot, TweenInfo.new(0.15), {Position = on and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)}):Play() end if d.accent then d.accent.BackgroundColor3 = on and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(60, 60, 75) end if d.row then d.row.BackgroundColor3 = on and Color3.fromRGB(30, 38, 34) or Color3.fromRGB(24, 24, 36) end if QuickBtnActive and QuickBtnActive[nm] then pcall(function() UpdateQuickBtnColor(nm) end) end end
+local UpdFly, LockedTarget, lastBhop = nil, nil, 0
 
 local function Toggle(nm)
-    if nm == "SpeedAntiBan" then
-        Config.SpeedAntiBan = not Config.SpeedAntiBan; State.SpeedAntiBan = Config.SpeedAntiBan
-        UpdVis(nm); Notify(nm, Config.SpeedAntiBan and "ON ✓" or "OFF ✗", 1); return
-    end
-    if nm == "HitboxRandomize" then
-        Config.HitboxRandomize = not Config.HitboxRandomize; State.HitboxRandomize = Config.HitboxRandomize
-        UpdVis(nm); Notify(nm, Config.HitboxRandomize and "ON ✓" or "OFF ✗", 1); return
-    end
-    if nm == "AimAntiDetect" then
-        Config.AimAntiDetect = not Config.AimAntiDetect; State.AimAntiDetect = Config.AimAntiDetect
-        UpdVis(nm); Notify(nm, Config.AimAntiDetect and "ON ✓" or "OFF ✗", 1); return
-    end
-    if nm == "SafeSpeedMode" then
-        Config.SafeSpeedMode = not Config.SafeSpeedMode; State.SafeSpeedMode = Config.SafeSpeedMode
-        UpdVis(nm)
-        if Config.SafeSpeedMode then
-            local cap = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
-            Notify("Safe Speed", L("ntf_safe_on") .. cap, 3)
-        else Notify("Safe Speed", L("ntf_safe_off"), 2) end
-        return
-    end
+    if nm == "SpeedAntiBan" then Config.SpeedAntiBan = not Config.SpeedAntiBan State.SpeedAntiBan = Config.SpeedAntiBan UpdVis(nm) Notify(nm, Config.SpeedAntiBan and "ON" or "OFF", 1) return end
+    if nm == "HitboxRandomize" then Config.HitboxRandomize = not Config.HitboxRandomize State.HitboxRandomize = Config.HitboxRandomize UpdVis(nm) Notify(nm, Config.HitboxRandomize and "ON" or "OFF", 1) return end
+    if nm == "AimAntiDetect" then Config.AimAntiDetect = not Config.AimAntiDetect State.AimAntiDetect = Config.AimAntiDetect UpdVis(nm) Notify(nm, Config.AimAntiDetect and "ON" or "OFF", 1) return end
+    if nm == "SafeSpeedMode" then Config.SafeSpeedMode = not Config.SafeSpeedMode State.SafeSpeedMode = Config.SafeSpeedMode UpdVis(nm) if Config.SafeSpeedMode then Notify("Safe Speed", "ON Cap: " .. math.floor(gameBaseSpeed * Config.SafeSpeedMult), 3) else Notify("Safe Speed", "OFF", 2) end return end
+    if nm == "FullBright" then Config.FullBright = not Config.FullBright State.FullBright = Config.FullBright UpdVis(nm) if Config.FullBright then ApplyFullBright() Notify("FullBright", "ON", 1) else RemoveFullBright() Notify("FullBright", "OFF", 1) end return end
 
-    if nm == "FullBright" then
-        Config.FullBright = not Config.FullBright
-        State.FullBright = Config.FullBright
-        UpdVis(nm)
-        if Config.FullBright then
-            ApplyFullBright()
-            Notify("FullBright", "ON ✓", 1)
-        else
-            RemoveFullBright()
-            Notify("FullBright", "OFF ✗", 1)
-        end
-        return
-    end
-
-    State[nm] = not State[nm]
-    local C = LP.Character
-    local R = C and C:FindFirstChild("HumanoidRootPart")
-    local H = C and C:FindFirstChildOfClass("Humanoid")
+    State[nm] = not State[nm] local C = LP.Character local R = C and C:FindFirstChild("HumanoidRootPart") local H = C and C:FindFirstChildOfClass("Humanoid")
 
     if not State[nm] then
-        if nm == "Fly" then
-            pcall(function()
-                if R then R.Anchored = false; R.AssemblyLinearVelocity = Vector3.zero end
-                if H then H.PlatformStand = false end
-            end)
-        elseif nm == "Speed" then
-            pcall(function()
-                if H then H.WalkSpeed = 0 end
-                if R then
-                    R.AssemblyLinearVelocity = Vector3.new(0, R.AssemblyLinearVelocity.Y, 0)
-                end
-            end)
-            task.delay(0.1, function()
-                local cc = LP.Character
-                local hh = cc and cc:FindFirstChildOfClass("Humanoid")
-                local rr = cc and cc:FindFirstChild("HumanoidRootPart")
-                if hh and not State.Speed then
-                    hh.WalkSpeed = gameBaseSpeed
-                end
-                if rr and not State.Speed then
-                    local v = rr.AssemblyLinearVelocity
-                    if Vector2.new(v.X, v.Z).Magnitude > 4 then
-                        rr.AssemblyLinearVelocity = Vector3.new(
-                            v.X * 0.08, v.Y, v.Z * 0.08)
-                    end
-                end
-            end)
-        elseif nm == "HighJump" and H then
-            pcall(function() H.UseJumpPower = true; H.JumpPower = 50; H.JumpHeight = 7.2 end)
-        elseif nm == "Noclip" or nm == "ShadowLock" then
-            ForceRestore()
-        elseif nm == "ESP" then
-            ClearESP()
-        elseif nm == "Hitbox" then
-            RestoreHB()
-        elseif nm == "Potato" then
-            UndoPotato()
-        elseif nm == "Freecam" then
-            pcall(function() if R then R.Anchored = false end end)
-            task.spawn(function()
-                task.wait(0.05)
-                pcall(function()
-                    Camera.CameraType = Enum.CameraType.Custom
-                    local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-                    if H2 then Camera.CameraSubject = H2 end
-                    UIS.MouseBehavior = Enum.MouseBehavior.Default
-                end)
-                task.wait(0.05)
-                pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
-            end)
-        elseif nm == "Spin" and R then
-            for _, v in pairs(R:GetChildren()) do
-                if v.Name == "OmniSpin" then SafeDel(v) end
-            end
-        elseif nm == "FakeLag" then
-            _fakeLagToken += 1
-            if R then pcall(function() R.Anchored = false end) end
-        elseif nm == "InfiniteJump" and H then
-            pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
-        elseif nm == "Aim" then
-            aimTarget = nil; aimLocked = false; aimLostFrames = 0
-        end
+        if nm == "Fly" then pcall(function() if R then R.Anchored = false R.AssemblyLinearVelocity = Vector3.zero end if H then H.PlatformStand = false end end)
+        elseif nm == "Speed" then pcall(function() if H then H.WalkSpeed = gameBaseSpeed end if R then R.AssemblyLinearVelocity = Vector3.new(0, R.AssemblyLinearVelocity.Y, 0) end end)
+        elseif nm == "HighJump" and H then pcall(function() H.UseJumpPower = true H.JumpPower = 50 H.JumpHeight = 7.2 end)
+        elseif nm == "Noclip" or nm == "ShadowLock" then ForceRestore()
+        elseif nm == "ESP" then ClearESP()
+        elseif nm == "Hitbox" then RestoreHB()
+        elseif nm == "Potato" then UndoPotato()
+        elseif nm == "Freecam" then pcall(function() if R then R.Anchored = false end end) task.spawn(function() task.wait(0.05) pcall(function() Camera.CameraType = Enum.CameraType.Custom local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") if H2 then Camera.CameraSubject = H2 end UIS.MouseBehavior = Enum.MouseBehavior.Default end) end)
+        elseif nm == "Spin" and R then for _, v in pairs(R:GetChildren()) do if v.Name == "OmniSpin" then SafeDel(v) end end
+        elseif nm == "FakeLag" then _fakeLagToken += 1 if R then pcall(function() R.Anchored = false end) end
+        elseif nm == "InfiniteJump" and H then pcall(function() H:SetStateEnabled(Enum.HumanoidStateType.Jumping, true) end)
+        elseif nm == "Aim" then aimTarget = nil aimLocked = false aimLostFrames = 0 end
     else
-        if nm == "Potato" then
-            DoPotato()
-        elseif nm == "ShadowLock" then
-            LockedTarget = GetClosestEnemy()
-        elseif nm == "Fly" and H then
-            pcall(function() H.PlatformStand = false end)
-        elseif nm == "Speed" and H then
-            pcall(function() H.WalkSpeed = gameBaseSpeed end)
-        elseif nm == "HighJump" and H then
-            pcall(function()
-                H.UseJumpPower = true
-                H.JumpPower = Config.JumpPower
-                H.JumpHeight = Config.JumpPower * 0.35
-            end)
-        elseif nm == "Spin" and R then
-            local att = R:FindFirstChild("OmniSpinAtt")
-            if not att then att = Instance.new("Attachment", R); att.Name = "OmniSpinAtt" end
-            local av = Instance.new("AngularVelocity", R)
-            av.Name = "OmniSpin"; av.Attachment0 = att
-            av.MaxTorque = math.huge; av.AngularVelocity = Vector3.new(0, 22, 0)
-        elseif nm == "Freecam" then
-            Camera.CameraSubject = nil
-            Camera.CameraType = Enum.CameraType.Scriptable
-            local x, y = Camera.CFrame:ToEulerAnglesYXZ()
-            FC_P = x; FC_Y = y
-            pcall(function() if R then R.Anchored = true end end)
-        elseif nm == "FakeLag" then
-            _fakeLagToken += 1
-            local myToken = _fakeLagToken
-            task.spawn(function()
-                while State.FakeLag and _fakeLagToken == myToken do
-                    local cr = LP.Character
-                    local rp = cr and cr:FindFirstChild("HumanoidRootPart")
-                    local hm = cr and cr:FindFirstChildOfClass("Humanoid")
-
-                    if rp and hm and not State.Fly and not State.Freecam then
-                        local savedVel = rp.AssemblyLinearVelocity
-                        local pwr = math.clamp(Config.FakeLagPower, 1, 100)
-
-                        local lagMin = math.floor(5  + pwr * 0.9)
-                        local lagMax = math.floor(15 + pwr * 2.5)
-                        local lagTime = math.random(lagMin, lagMax) / 1000
-
-                        local normalMin = math.floor(150 - pwr * 0.8)
-                        local normalMax = math.floor(350 - pwr * 1.5)
-                        normalMin = math.max(normalMin, 50)
-                        normalMax = math.max(normalMax, normalMin + 30)
-                        local normalTime = math.random(normalMin, normalMax) / 1000
-
-                        pcall(function() rp.Anchored = true end)
-                        task.wait(lagTime)
-                        pcall(function()
-                            rp.Anchored = false
-                            if hm.FloorMaterial == Enum.Material.Air then
-                                local flat = Vector3.new(savedVel.X, 0, savedVel.Z)
-                                if flat.Magnitude > hm.WalkSpeed then
-                                    flat = flat.Unit * hm.WalkSpeed
-                                end
-                                rp.AssemblyLinearVelocity = Vector3.new(flat.X, savedVel.Y, flat.Z)
-                            else
-                                rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0)
-                            end
-                        end)
-                        task.wait(normalTime)
-                    else
-                        if rp then pcall(function() rp.Anchored = false end) end
-                        task.wait(0.1)
-                    end
-                end
-                local cr = LP.Character
-                local rp = cr and cr:FindFirstChild("HumanoidRootPart")
-                if rp then pcall(function() rp.Anchored = false end) end
-            end)
-        elseif nm == "Noclip" then
-            ncStuck = 0; lastNcPos = Vector3.zero; ncOrigCanCollide = {}
-            if C then NoclipApply(C) end
-        elseif nm == "Aim" then
-            aimTarget = nil; aimLocked = false; aimLostFrames = 0; aimLastSwitch = 0
-        end
+        if nm == "Potato" then DoPotato()
+        elseif nm == "ShadowLock" then LockedTarget = GetClosestEnemy()
+        elseif nm == "Fly" and H then pcall(function() H.PlatformStand = false end)
+        elseif nm == "Speed" and H then pcall(function() H.WalkSpeed = gameBaseSpeed end)
+        elseif nm == "HighJump" and H then pcall(function() H.UseJumpPower = true H.JumpPower = Config.JumpPower H.JumpHeight = Config.JumpPower * 0.35 end)
+        elseif nm == "Spin" and R then local att = R:FindFirstChild("OmniSpinAtt") if not att then att = Instance.new("Attachment", R) att.Name = "OmniSpinAtt" end local av = Instance.new("AngularVelocity", R) av.Name = "OmniSpin" av.Attachment0 = att av.MaxTorque = math.huge av.AngularVelocity = Vector3.new(0, 22, 0)
+        elseif nm == "Freecam" then Camera.CameraSubject = nil Camera.CameraType = Enum.CameraType.Scriptable local x, y = Camera.CFrame:ToEulerAnglesYXZ() FC_P = x FC_Y = y pcall(function() if R then R.Anchored = true end end)
+        elseif nm == "FakeLag" then _fakeLagToken += 1 local myToken = _fakeLagToken task.spawn(function() while State.FakeLag and _fakeLagToken == myToken do local cr = LP.Character local rp = cr and cr:FindFirstChild("HumanoidRootPart") local hm = cr and cr:FindFirstChildOfClass("Humanoid") if rp and hm and not State.Fly and not State.Freecam then local savedVel = rp.AssemblyLinearVelocity local pwr = math.clamp(Config.FakeLagPower, 1, 100) local lagTime = math.random(math.floor(5 + pwr * 0.9), math.floor(15 + pwr * 2.5)) / 1000 local normalTime = math.random(math.max(50, math.floor(150 - pwr * 0.8)), math.max(80, math.floor(350 - pwr * 1.5))) / 1000 pcall(function() rp.Anchored = true end) task.wait(lagTime) pcall(function() rp.Anchored = false if hm.FloorMaterial == Enum.Material.Air then local flat = Vector3.new(savedVel.X, 0, savedVel.Z) if flat.Magnitude > hm.WalkSpeed then flat = flat.Unit * hm.WalkSpeed end rp.AssemblyLinearVelocity = Vector3.new(flat.X, savedVel.Y, flat.Z) else rp.AssemblyLinearVelocity = Vector3.new(0, savedVel.Y, 0) end end) task.wait(normalTime) else if rp then pcall(function() rp.Anchored = false end) end task.wait(0.1) end end local cr = LP.Character local rp = cr and cr:FindFirstChild("HumanoidRootPart") if rp then pcall(function() rp.Anchored = false end) end end)
+        elseif nm == "Noclip" then ncStuck = 0 lastNcPos = Vector3.zero ncOrigCanCollide = {} if C then NoclipApply(C) end
+        elseif nm == "Aim" then aimTarget = nil aimLocked = false aimLostFrames = 0 aimLastSwitch = 0 end
     end
-
-    UpdVis(nm)
-    Notify(nm, State[nm] and "ON ✓" or "OFF ✗", 1)
+    UpdVis(nm) Notify(nm, State[nm] and "ON" or "OFF", 1)
 end
 
-local _hjConn = nil
-local _hjFired = false
-
-local function SetupHJDetector()
-    if _hjConn then _hjConn:Disconnect(); _hjConn = nil end
-    _hjFired = false
-    local C = LP.Character
-    if not C then return end
-    local H = C:FindFirstChildOfClass("Humanoid")
-    if not H then return end
-
-    _hjConn = H.StateChanged:Connect(function(_, newState)
-        if newState == Enum.HumanoidStateType.Landed
-            or newState == Enum.HumanoidStateType.Running
-            or newState == Enum.HumanoidStateType.RunningNoPhysics then
-            _hjFired = false; return
-        end
-        if newState ~= Enum.HumanoidStateType.Jumping then return end
-        if not State.HighJump or State.Fly then return end
-        if _hjFired then return end
-        _hjFired = true
-        local R2 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-        if R2 then
-            local v = R2.AssemblyLinearVelocity
-            if v.Y >= 0 then
-                R2.AssemblyLinearVelocity = Vector3.new(v.X, Config.JumpPower, v.Z)
-            end
-        end
-        task.delay(0.03, function()
-            if not State.HighJump then return end
-            local R3 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-            if R3 then
-                local v2 = R3.AssemblyLinearVelocity
-                if v2.Y >= 0 and v2.Y < Config.JumpPower * 0.7 then
-                    R3.AssemblyLinearVelocity = Vector3.new(v2.X, Config.JumpPower, v2.Z)
-                end
-            end
-        end)
-        task.delay(0.5, function() _hjFired = false end)
-    end)
-end
+local _hjConn = nil local _hjFired = false
+local function SetupHJDetector() if _hjConn then _hjConn:Disconnect() _hjConn = nil end _hjFired = false local C = LP.Character if not C then return end local H = C:FindFirstChildOfClass("Humanoid") if not H then return end _hjConn = H.StateChanged:Connect(function(_, newState) if newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Running or newState == Enum.HumanoidStateType.RunningNoPhysics then _hjFired = false return end if newState ~= Enum.HumanoidStateType.Jumping then return end if not State.HighJump or State.Fly then return end if _hjFired then return end _hjFired = true local R2 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") if R2 then local v = R2.AssemblyLinearVelocity if v.Y >= 0 then R2.AssemblyLinearVelocity = Vector3.new(v.X, Config.JumpPower, v.Z) end end task.delay(0.03, function() if not State.HighJump then return end local R3 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") if R3 then local v2 = R3.AssemblyLinearVelocity if v2.Y >= 0 and v2.Y < Config.JumpPower * 0.7 then R3.AssemblyLinearVelocity = Vector3.new(v2.X, Config.JumpPower, v2.Z) end end end) task.delay(0.5, function() _hjFired = false end) end) end
 task.spawn(SetupHJDetector)
 
-local _afkFlip = false
-local function DoAntiAFK()
-    pcall(function()
-        VirtualUser:CaptureController()
-        _afkFlip = not _afkFlip
-        VirtualUser:MoveMouse(_afkFlip and Vector2.new(1, 0) or Vector2.new(-1, 0))
-    end)
-end
+local _afkFlip = false local function DoAntiAFK() pcall(function() VirtualUser:CaptureController() _afkFlip = not _afkFlip VirtualUser:MoveMouse(_afkFlip and Vector2.new(1, 0) or Vector2.new(-1, 0)) end) end
 LP.Idled:Connect(function() if State.AntiAFK then DoAntiAFK() end end)
-task.spawn(function()
-    while task.wait(48 + math.random() * 14) do
-        if State.AntiAFK then DoAntiAFK() end
-    end
-end)
+task.spawn(function() while task.wait(48 + math.random() * 14) do if State.AntiAFK then DoAntiAFK() end end end)
 
 local _lastSafePos = nil
-task.spawn(function()
-    while task.wait(0.5) do
-        local C = LP.Character
-        local R = C and C:FindFirstChild("HumanoidRootPart")
-        local H = C and C:FindFirstChildOfClass("Humanoid")
-        if R and H and H.Health > 0 then
-            if H.FloorMaterial ~= Enum.Material.Air then _lastSafePos = R.CFrame end
-            if State.AntiVoid and R.Position.Y < Config.AntiVoidHeight then
-                if _lastSafePos then
-                    pcall(function()
-                        R.CFrame = _lastSafePos + Vector3.new(0, 3, 0)
-                        R.AssemblyLinearVelocity = Vector3.zero
-                    end)
-                    Notify("Anti-Void", L("ntf_anti_void"), 2)
-                end
-            end
-        end
-    end
-end)
+task.spawn(function() while task.wait(0.5) do local C = LP.Character local R = C and C:FindFirstChild("HumanoidRootPart") local H = C and C:FindFirstChildOfClass("Humanoid") if R and H and H.Health > 0 then if H.FloorMaterial ~= Enum.Material.Air then _lastSafePos = R.CFrame end if State.AntiVoid and R.Position.Y < Config.AntiVoidHeight then if _lastSafePos then pcall(function() R.CFrame = _lastSafePos + Vector3.new(0, 3, 0) R.AssemblyLinearVelocity = Vector3.zero end) Notify("Anti-Void", "Teleported", 2) end end end end end)
 
-LP.CharacterAdded:Connect(function(char)
-    char:WaitForChild("HumanoidRootPart", 5)
-    MobUp = false; MobDn = false; ncStuck = 0
-    aimTarget = nil; aimLocked = false; aimLostFrames = 0
-    ncOrigCanCollide = {}; _lastSafePos = nil
+LP.CharacterAdded:Connect(function(char) char:WaitForChild("HumanoidRootPart", 5) MobUp = false MobDn = false ncStuck = 0 aimTarget = nil aimLocked = false aimLostFrames = 0 ncOrigCanCollide = {} _lastSafePos = nil for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag"}) do if State[n] then State[n] = false UpdVis(n) end end _fakeLagToken += 1 local hum = char:FindFirstChildOfClass("Humanoid") if hum then Camera.CameraType = Enum.CameraType.Custom Camera.CameraSubject = hum pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end) task.spawn(function() task.wait(1.2) pcall(function() if hum and hum.Parent and not State.Speed then local spd = hum.WalkSpeed if spd >= 4 and spd <= 100 then gameBaseSpeed = spd end end end) end) task.wait(0.5) if State.Speed then pcall(function() hum.WalkSpeed = gameBaseSpeed end) end if State.HighJump then pcall(function() hum.UseJumpPower = true hum.JumpPower = Config.JumpPower hum.JumpHeight = Config.JumpPower * 0.35 end) end task.spawn(function() task.wait(0.3) SetupHJDetector() end) end end)
 
-    for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag"}) do
-        if State[n] then State[n] = false; UpdVis(n) end
-    end
-    _fakeLagToken += 1
-
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        Camera.CameraType = Enum.CameraType.Custom
-        Camera.CameraSubject = hum
-        pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
-        task.spawn(function()
-            task.wait(1.2)
-            pcall(function()
-                if hum and hum.Parent and not State.Speed then
-                    local spd = hum.WalkSpeed
-                    if spd >= 4 and spd <= 100 then gameBaseSpeed = spd end
-                end
-            end)
-        end)
-        task.wait(0.5)
-        if State.Speed then pcall(function() hum.WalkSpeed = gameBaseSpeed end) end
-        if State.HighJump then
-            pcall(function()
-                hum.UseJumpPower = true
-                hum.JumpPower = Config.JumpPower
-                hum.JumpHeight = Config.JumpPower * 0.35
-            end)
-        end
-        task.spawn(function() task.wait(0.3); SetupHJDetector() end)
-    end
-end)
-
--- ============================================================
--- SILENT AIM HOOK (FIXED FOR BLOXSTRIKE)
--- ============================================================
 local silentAimHooked = false
-
-local function SetupSilentAimHook()
-    if silentAimHooked then return end
-
-    if ENV.hasHookMeta and hookmetamethod then
-        local ok = pcall(function()
-            hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
-                local method = getnamecallmethod and getnamecallmethod() or ""
-                if not State.SilentAim then return self[method](self, ...) end
-                -- Фікс для Bloxstrike: перехоплюємо Raycast, FindPartOnRay, FindPartOnRayWithIgnoreList
-                if (method == "Raycast" or method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local vel = part.AssemblyLinearVelocity
-                            local predPos = part.Position + vel * 0.05
-                            local dir = (predPos - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
-                            end
-                            if method == "Raycast" then
-                                args[2] = dir.Unit * dir.Magnitude
-                                return self[method](self, unpack(args))
-                            elseif method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" then
-                                args[1] = Ray.new(origin, dir.Unit * 5000)
-                                return self[method](self, unpack(args))
-                            end
-                        end
-                    end
-                end
-                return self[method](self, ...)
-            end) or function(self, ...) return self[method](self, ...) end)
-        end)
-        if ok then
-            silentAimHooked = true
-            Notify("Silent Aim", L("ntf_hook_ok") .. " [Meta]", 3)
-            return
-        end
-    end
-
-    Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
-end
-
-task.spawn(function() task.wait(2); SetupSilentAimHook() end)
+local function SetupSilentAimHook() if silentAimHooked then return end if ENV.hasHookMeta and hookmetamethod then local ok = pcall(function() hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...) local method = getnamecallmethod and getnamecallmethod() or "" if not State.SilentAim then return self[method](self, ...) end if (method == "Raycast" or method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then local target = GetBestAimTarget() local part = target and FindAimPart(target) if part then local args = {...} local origin = args[1] if typeof(origin) == "Vector3" then local vel = part.AssemblyLinearVelocity local predPos = part.Position + vel * 0.05 local dir = (predPos - origin) if Config.AimAntiDetect then dir = dir + Vector3.new((math.random() - 0.5) * 0.15, (math.random() - 0.5) * 0.10, (math.random() - 0.5) * 0.15) end if method == "Raycast" then args[2] = dir.Unit * dir.Magnitude return self[method](self, unpack(args)) elseif method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" then args[1] = Ray.new(origin, dir.Unit * 5000) return self[method](self, unpack(args)) end end end return self[method](self, ...) end) or function(self, ...) return self[method](self, ...) end) end) if ok then silentAimHooked = true Notify("Silent Aim", "Hook installed", 3) return end end Notify("Silent Aim", "No hooks support", 5) end
+task.spawn(function() task.wait(2) SetupSilentAimHook() end)
 
 local function GetHTTP(url) local ok, result = pcall(function() return game:HttpGet(url) end) if ok and result then return result end ok, result = pcall(function() if syn then return syn.request({Url = url, Method = "GET"}).Body end end) if ok and result then return result end ok, result = pcall(function() if request then return request({Url = url, Method = "GET"}).Body end end) if ok and result then return result end return nil end
 local function GetServerList() local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&excludeFullGames=false&limit=100" local data = GetHTTP(url) if not data then return nil end local ok, parsed = pcall(function() return HttpService:JSONDecode(data) end) if not ok or not parsed or not parsed.data then return nil end return parsed.data end
-local serverActionCooldown = false local function ServerCooldown() if serverActionCooldown then Notify("Server Hop", L("ntf_wait"), 2); return true end serverActionCooldown = true task.delay(3, function() serverActionCooldown = false end) return false end
-local function RejoinSameServer() if ServerCooldown() then return end Notify("Rejoin", L("ntf_rejoin"), 3) task.delay(1.5, function() pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP) end) end) end
-local function JoinRandomServer() if ServerCooldown() then return end Notify("Server Hop", L("ntf_search_rnd"), 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local filtered = {} for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing > 0 then table.insert(filtered, s) end end if #filtered > 0 then pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, filtered[math.random(1, #filtered)].id, LP) end) return end end pcall(function() TeleportService:Teleport(game.PlaceId, LP) end) end) end
-local function JoinBiggestServer() if ServerCooldown() then return end Notify("Server Hop", L("ntf_search_big"), 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local best, bestCount = nil, -1 for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing > bestCount then bestCount = s.playing; best = s end end if best then Notify("Server Hop", "👥 " .. bestCount .. L("ntf_players"), 2) task.wait(1) pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end) return end end Notify("Server Hop", L("ntf_srv_fail"), 3) end) end
-local function JoinSmallestServer() if ServerCooldown() then return end Notify("Server Hop", L("ntf_search_sml"), 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local best, bestCount = nil, math.huge for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing < bestCount then bestCount = s.playing; best = s end end if best then Notify("Server Hop", "🕵️ " .. bestCount .. L("ntf_players"), 2) task.wait(1) pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end) return end end Notify("Server Hop", L("ntf_srv_fail"), 3) end) end
+local serverActionCooldown = false local function ServerCooldown() if serverActionCooldown then Notify("Server Hop", "Please wait", 2) return true end serverActionCooldown = true task.delay(3, function() serverActionCooldown = false end) return false end
+local function RejoinSameServer() if ServerCooldown() then return end Notify("Rejoin", "Rejoining...", 3) task.delay(1.5, function() pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP) end) end) end
+local function JoinRandomServer() if ServerCooldown() then return end Notify("Server Hop", "Searching random...", 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local filtered = {} for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing > 0 then table.insert(filtered, s) end end if #filtered > 0 then pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, filtered[math.random(1, #filtered)].id, LP) end) return end end pcall(function() TeleportService:Teleport(game.PlaceId, LP) end) end) end
+local function JoinBiggestServer() if ServerCooldown() then return end Notify("Server Hop", "Searching biggest...", 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local best, bestCount = nil, -1 for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing > bestCount then bestCount = s.playing best = s end end if best then Notify("Server Hop", bestCount .. " players", 2) task.wait(1) pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end) return end end Notify("Server Hop", "Unavailable", 3) end) end
+local function JoinSmallestServer() if ServerCooldown() then return end Notify("Server Hop", "Searching smallest...", 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local best, bestCount = nil, math.huge for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing < bestCount then bestCount = s.playing best = s end end if best then Notify("Server Hop", bestCount .. " players", 2) task.wait(1) pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end) return end end Notify("Server Hop", "Unavailable", 3) end) end
 
--- Чекаємо на "дай частину 2" для продовження коду...-- ============================================================
--- GHOST GUI INITIALIZATION (STABLE FOR XENO/DELTA)
+-- ЧАСТИНА 1 ЗАВЕРШЕНА. НАПИШИ "2", ЩОБ ОТРИМАТИ ДРУГУ ПОЛОВИНУ.-- ============================================================
+-- GHOST GUI INITIALIZATION (SOLARA/DELTA SAFE)
 -- ============================================================
 local GuiP
 if gethui then
@@ -1492,42 +354,6 @@ Scr.ResetOnSpawn = false
 Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Scr.IgnoreGuiInset = true
 Scr.Parent = GuiP
-
--- GHOST GUI HOOK: Ховає UI від античитів (Bloxstrike)
-if ENV.hasHookMeta and hookmetamethod then
-    pcall(function()
-        local oldNC
-        oldNC = hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
-            local method = getnamecallmethod and getnamecallmethod() or ""
-            if (method == "GetChildren" or method == "GetDescendants" or method == "FindFirstChild") and (self == GuiP or self == Scr) then
-                local res = oldNC(self, ...)
-                if type(res) == "table" then
-                    local filtered = {}
-                    for _, v in ipairs(res) do
-                        if v ~= Scr and not v:IsDescendantOf(Scr) then
-                            table.insert(filtered, v)
-                        end
-                    end
-                    return filtered
-                elseif res == Scr then
-                    return nil
-                end
-            end
-            return oldNC(self, ...)
-        end) or function(self, ...) return oldNC(self, ...) end)
-    end)
-
-    -- SPOOF WALKSPEED: Античит завжди бачить базову швидкість
-    pcall(function()
-        local oldIndex
-        oldIndex = hookmetamethod(game, "__index", newcclosure and newcclosure(function(self, key)
-            if not checkcaller() and self:IsA("Humanoid") and key == "WalkSpeed" and State.Speed then
-                return gameBaseSpeed
-            end
-            return oldIndex(self, key)
-        end) or function(self, key) return oldIndex(self, key) end)
-    end)
-end
 
 local P = {
     bg   = Color3.fromRGB(12, 12, 18), card = Color3.fromRGB(20, 20, 30),
@@ -1982,7 +808,7 @@ local function EnterMobEditor()
     for _, entry in pairs(MobMovableBtns) do
         MakeDraggableMob(entry)
     end
-    Notify("Editor", "📐 Тягни ✱ Змінюй розмір ⤡ · натисни 📐 щоб зберегти", 4)
+    Notify("Editor", "Drag/Resize. Press icon to save", 4)
 end
 
 local function ExitMobEditor()
@@ -1998,7 +824,7 @@ local function ExitMobEditor()
     end
     MobEditorOverlays = {}
     SaveMobLayout()
-    Notify("Editor", "✅ Layout saved!", 2)
+    Notify("Editor", "Layout saved!", 2)
 end
 
 QuickBtnActive = {}
@@ -2604,34 +1430,6 @@ MkSlider("Move", "✖", "sl_safe_mult", 10, 40, math.floor(Config.SafeSpeedMult 
     Config.SafeSpeedMult = v / 10
 end)
 
-task.spawn(function()
-    local pg = TabPages["Move"]
-    local infoF = Instance.new("Frame", pg)
-    infoF.Size = UDim2.new(0.95, 0, 0, IsMob and 44 or 36)
-    infoF.BackgroundColor3 = Color3.fromRGB(14, 18, 14); infoF.BorderSizePixel = 0
-    Instance.new("UICorner", infoF).CornerRadius = UDim.new(0, 8)
-    do local infoSt = Instance.new("UIStroke", infoF)
-    infoSt.Color = Color3.fromRGB(0, 160, 80); infoSt.Transparency = 0.5 end
-    local infoLbl = Instance.new("TextLabel", infoF)
-    infoLbl.Size = UDim2.new(1, -10, 1, 0); infoLbl.Position = UDim2.new(0, 5, 0, 0)
-    infoLbl.BackgroundTransparency = 1; infoLbl.TextColor3 = Color3.fromRGB(100, 230, 140)
-    infoLbl.Font = Enum.Font.GothamBold; infoLbl.TextSize = IsMob and 10 or 9
-    infoLbl.TextXAlignment = Enum.TextXAlignment.Left; infoLbl.TextWrapped = true
-    infoLbl.Text = ""
-    while task.wait(0.8) do
-        pcall(function()
-            local cap = math.floor(gameBaseSpeed * Config.SafeSpeedMult)
-            local setSpd = Config.WalkSpeed; local active = State.SafeSpeedMode
-            local eff = active and math.min(setSpd, cap) or setSpd
-            local warn = (setSpd > cap and active) and " ⚠️" or ""
-            infoLbl.Text = string.format(L("stat_safe_info"),
-                math.floor(gameBaseSpeed), Config.SafeSpeedMult, cap, warn, setSpd, eff)
-            infoLbl.TextColor3 = (setSpd > cap and active)
-                and Color3.fromRGB(255, 180, 50) or Color3.fromRGB(100, 230, 140)
-        end)
-    end
-end)
-
 AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
@@ -2680,8 +1478,7 @@ do
     langRow.MouseButton1Click:Connect(function()
         CurrentLang = (CurrentLang == "EN") and "UA" or "EN"
         RefreshLanguage()
-        local langName = CurrentLang == "EN" and "English" or "Українська"
-        Notify("Language", L("ntf_lang") .. langName, 2)
+        Notify("Language", L("ntf_lang") .. (CurrentLang == "EN" and "English" or "Українська"), 2)
     end)
 end
 
@@ -2855,7 +1652,7 @@ UIS.InputBegan:Connect(function(inp, gpe)
                 d.bindBtn.Text = tostring(key):gsub("Enum.KeyCode.", "")
                 d.bindBtn.TextColor3 = P.dim
             end
-            Notify("BIND", nm .. " → " .. tostring(key):gsub("Enum.KeyCode.", ""), 2)
+            Notify("BIND", nm .. " -> " .. tostring(key):gsub("Enum.KeyCode.", ""), 2)
             waitingBind = nil
         end
         return
@@ -3093,21 +1890,27 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- БЕЗПЕЧНИЙ SPEED (CFrame Bypass)
+    -- БЕЗПЕЧНИЙ SPEED (CFrame Bypass) - ФІНАЛЬНЕ ВИПРАВЛЕННЯ НАПРЯМКУ
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
+            -- ВАЖЛИВО: Не міняємо WalkSpeed, залишаємо його базовим для сервера
             Hum.WalkSpeed = gameBaseSpeed 
+            
+            -- Використовуємо Humanoid.MoveDirection - він ніколи не глючить після Fly
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local targetSpd = GetSafeSpeed()
-                local camCF = Camera.CFrame
-                local moveDir = camCF.LookVector * -Hum.MoveDirection.Z + camCF.RightVector * Hum.MoveDirection.X
-                if moveDir.Magnitude > 0 then
-                    moveDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
-                    local moveAmount = (targetSpd - gameBaseSpeed) * dt * 1.2
-                    if moveAmount > 0 then
-                        HRP.CFrame = HRP.CFrame + (moveDir * moveAmount)
-                    end
+                local moveDir = Hum.MoveDirection -- Напрямок вже правильний (відносно світу)
+                
+                -- Зсуваємо персонажа через CFrame
+                -- Рахуємо лишок швидкості (на скільки ми швидші за базову)
+                local moveAmount = (targetSpd - gameBaseSpeed) * dt * 1.5
+                
+                -- РУХАЄМОСЯ ТІЛЬКИ ВПЕРЕД (якщо moveAmount > 0)
+                if moveAmount > 0 then
+                    HRP.CFrame = HRP.CFrame + (moveDir * moveAmount)
                 end
+                
+                -- Скидаємо швидкість падіння, щоб не було слайду
                 if HRP.AssemblyLinearVelocity.Y < 0 and Hum.FloorMaterial ~= Enum.Material.Air then
                     HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
