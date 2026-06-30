@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — SOLARA/DELTA EDITION (PART 1)            ██
+-- ██  OMNI V305 — SOLARA/DELTA EDITION (FULL)              ██
 -- ██████████████████████████████████████████████████████████
 
 local Players = game:GetService("Players")
@@ -41,9 +41,20 @@ local Strings = {
         sl_aim_smooth = "Aim Smooth %", sl_anti_void_h = "Anti-Void Height", sl_safe_mult = "Multiplier",
         sl_fakelag_power = "FakeLag Power %", btn_save = "Save", btn_load = "Load", btn_reset = "Reset",
         ntf_startup = "✅ Edition Loaded · Press RShift to Hide UI",
+        ntf_loaded = "✅ Config Loaded Successfully",
         ntf_lang = "Language changed to: ", stat_no_target = "No target", stat_auto_save = "Auto-save every 60s",
         btn_lang_toggle = "Language: English -> UA", lbl_fullbright = "FullBright", sl_esp_dist = "ESP Radius",
         sl_aim_predict = "Aim Predict", hdr_quick_btns = "QUICK BUTTONS",
+        btn_rejoin = "Rejoin Server", btn_random = "Random Server", btn_biggest = "Biggest Server", btn_smallest = "Smallest Server",
+        desc_auto_aim = "Automatically locks onto the closest target.", desc_silent_aim = "Hooks raycast to silently aim.",
+        desc_shadow_lock = "Magnetizes your character to the closest enemy.", desc_hitbox = "Expands the hitboxes of other players.",
+        desc_esp = "Shows players through walls.", desc_freecam = "Free camera movement.",
+        desc_bhop = "Auto bhop.", desc_high_jump = "Increases jump height.",
+        desc_infinite_jump = "Allows jumping in mid-air.", desc_noclip = "Walk through walls.", desc_no_fall = "Prevents fall damage.",
+        desc_anti_void = "Teleports back if falling into the void.", desc_safe_speed = "Limits speed to avoid anti-cheat kicks.",
+        desc_spin = "Spins your character.", desc_potato = "Removes visual effects for FPS.", desc_fake_lag = "Simulates lag.",
+        desc_fullbright = "Removes darkness.", desc_anti_afk = "Prevents AFK kick.", desc_speed_jitter = "Randomizes speed slightly.",
+        desc_hitbox_rand = "Randomizes hitbox size.", desc_aim_anti = "Anti-detect for aim.",
     },
     UA = {
         title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · SOLARA/DELTA", subtitle_pc = "УНІВЕРСАЛЬНА · SOLARA/DELTA",
@@ -67,9 +78,20 @@ local Strings = {
         sl_aim_smooth = "Плавність %", sl_anti_void_h = "Висота Анти-Войд", sl_safe_mult = "Множник",
         sl_fakelag_power = "Сила FakeLag %", btn_save = "Зберегти", btn_load = "Завантажити", btn_reset = "Скинути",
         ntf_startup = "✅ Завантажено · Натисни RShift щоб приховати UI",
+        ntf_loaded = "✅ Конфіг успішно завантажено",
         ntf_lang = "Мову змінено на: ", stat_no_target = "Ціль відсутня", stat_auto_save = "Авто-зберігання кожні 60 сек",
         btn_lang_toggle = "Мова: UA -> EN", lbl_fullbright = "FullBright", sl_esp_dist = "Радіус ESP",
         sl_aim_predict = "Предікт", hdr_quick_btns = "ШВИДКІ КНОПКИ",
+        btn_rejoin = "Перезайти", btn_random = "Випадковий", btn_biggest = "Найбільший", btn_smallest = "Найменший",
+        desc_auto_aim = "Автоматично наводиться на найближчу ціль.", desc_silent_aim = "Перехоплює промінь для тихого прицілу.",
+        desc_shadow_lock = "Притягує вашого персонажа до найближчого ворога.", desc_hitbox = "Збільшує хітбокси інших гравців.",
+        desc_esp = "Показує гравців крізь стіни.", desc_freecam = "Вільна камера.",
+        desc_bhop = "Автоматичні розгойбки.", desc_high_jump = "Збільшує висоту стрибка.",
+        desc_infinite_jump = "Дозволяє стрибати в повітрі.", desc_noclip = "Ходити крізь стіни.", desc_no_fall = "Запобігає шкоді від падіння.",
+        desc_anti_void = "Телепортує назад при падінні в безодню.", desc_safe_speed = "Обмежує швидкість для уникнення кіка.",
+        desc_spin = "Обертає вашого персонажа.", desc_potato = "Видаляє візуальні ефекти для FPS.", desc_fake_lag = "Імітує лаги.",
+        desc_fullbright = "Видаляє темряву.", desc_anti_afk = "Запобігає кіку за АФК.", desc_speed_jitter = "Трохи змінює швидкість.",
+        desc_hitbox_rand = "Рандомізує розмір хітбокса.", desc_aim_anti = "Анти-детект для прицілу.",
     },
 }
 
@@ -94,7 +116,7 @@ pcall(function()
     for _, sg in pairs({game:GetService("CoreGui"), LP:WaitForChild("PlayerGui", 5)}) do
         if not sg then continue end
         for _, v in pairs(sg:GetChildren()) do
-            if v:IsA("ScreenGui") and v:FindFirstChild("OmniMarker") then v:Destroy() end
+            if v:IsA("ScreenGui") and v.Name == "OmniGhostUI" then v:Destroy() end
         end
     end
 end)
@@ -326,7 +348,7 @@ task.spawn(function() while task.wait(0.5) do local C = LP.Character local R = C
 LP.CharacterAdded:Connect(function(char) char:WaitForChild("HumanoidRootPart", 5) MobUp = false MobDn = false ncStuck = 0 aimTarget = nil aimLocked = false aimLostFrames = 0 ncOrigCanCollide = {} _lastSafePos = nil for _, n in pairs({"Fly", "Noclip", "Freecam", "Spin", "FakeLag"}) do if State[n] then State[n] = false UpdVis(n) end end _fakeLagToken += 1 local hum = char:FindFirstChildOfClass("Humanoid") if hum then Camera.CameraType = Enum.CameraType.Custom Camera.CameraSubject = hum pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end) task.spawn(function() task.wait(1.2) pcall(function() if hum and hum.Parent and not State.Speed then local spd = hum.WalkSpeed if spd >= 4 and spd <= 100 then gameBaseSpeed = spd end end end) end) task.wait(0.5) if State.Speed then pcall(function() hum.WalkSpeed = gameBaseSpeed end) end if State.HighJump then pcall(function() hum.UseJumpPower = true hum.JumpPower = Config.JumpPower hum.JumpHeight = Config.JumpPower * 0.35 end) end task.spawn(function() task.wait(0.3) SetupHJDetector() end) end end)
 
 local silentAimHooked = false
-local function SetupSilentAimHook() if silentAimHooked then return end if ENV.hasHookMeta and hookmetamethod then local ok = pcall(function() hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...) local method = getnamecallmethod and getnamecallmethod() or "" if not State.SilentAim then return self[method](self, ...) end if (method == "Raycast" or method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then local target = GetBestAimTarget() local part = target and FindAimPart(target) if part then local args = {...} local origin = args[1] if typeof(origin) == "Vector3" then local vel = part.AssemblyLinearVelocity local predPos = part.Position + vel * 0.05 local dir = (predPos - origin) if Config.AimAntiDetect then dir = dir + Vector3.new((math.random() - 0.5) * 0.15, (math.random() - 0.5) * 0.10, (math.random() - 0.5) * 0.15) end if method == "Raycast" then args[2] = dir.Unit * dir.Magnitude return self[method](self, unpack(args)) elseif method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" then args[1] = Ray.new(origin, dir.Unit * 5000) return self[method](self, unpack(args)) end end end return self[method](self, ...) end) or function(self, ...) return self[method](self, ...) end) end) if ok then silentAimHooked = true Notify("Silent Aim", "Hook installed", 3) return end end Notify("Silent Aim", "No hooks support", 5) end
+local function SetupSilentAimHook() if silentAimHooked then return end if ENV.hasHookMeta and hookmetamethod then local ok = pcall(function() hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...) local method = getnamecallmethod and getnamecallmethod() or "" if not State.SilentAim then return self[method](self, ...) end if (method == "Raycast" or method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList") and self == Workspace then local target = GetBestAimTarget() local part = target and FindAimPart(target) if part then local args = {...} local origin = args[1] if typeof(origin) == "Vector3" then local vel = part.AssemblyLinearVelocity local predPos = part.Position + vel * 0.05 local dir = (predPos - origin) if Config.AimAntiDetect then dir = dir + Vector3.new((math.random() - 0.5) * 0.15, (math.random() - 0.5) * 0.10, (math.random() - 0.5) * 0.15) end if method == "Raycast" then args[2] = dir.Unit * dir.Magnitude return self[method](self, unpack(args)) elseif method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" then args[1] = Ray.new(origin, dir.Unit * 5000) return self[method](self, unpack(args)) end end end return self[method](self, ...) end) or function(self, ...) local m = getnamecallmethod and getnamecallmethod() or "" return self[m](self, ...) end) end) if ok then silentAimHooked = true Notify("Silent Aim", "Hook installed", 3) return end end Notify("Silent Aim", "No hooks support", 5) end
 task.spawn(function() task.wait(2) SetupSilentAimHook() end)
 
 local function GetHTTP(url) local ok, result = pcall(function() return game:HttpGet(url) end) if ok and result then return result end ok, result = pcall(function() if syn then return syn.request({Url = url, Method = "GET"}).Body end end) if ok and result then return result end ok, result = pcall(function() if request then return request({Url = url, Method = "GET"}).Body end end) if ok and result then return result end return nil end
@@ -337,7 +359,7 @@ local function JoinRandomServer() if ServerCooldown() then return end Notify("Se
 local function JoinBiggestServer() if ServerCooldown() then return end Notify("Server Hop", "Searching biggest...", 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local best, bestCount = nil, -1 for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing > bestCount then bestCount = s.playing best = s end end if best then Notify("Server Hop", bestCount .. " players", 2) task.wait(1) pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end) return end end Notify("Server Hop", "Unavailable", 3) end) end
 local function JoinSmallestServer() if ServerCooldown() then return end Notify("Server Hop", "Searching smallest...", 3) task.spawn(function() local servers = GetServerList() if servers and #servers > 0 then local best, bestCount = nil, math.huge for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing and s.playing < bestCount then bestCount = s.playing best = s end end if best then Notify("Server Hop", bestCount .. " players", 2) task.wait(1) pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end) return end end Notify("Server Hop", "Unavailable", 3) end) end
 
--- ЧАСТИНА 1 ЗАВЕРШЕНА. НАПИШИ "2", ЩОБ ОТРИМАТИ ДРУГУ ПОЛОВИНУ.-- ============================================================
+-- ============================================================
 -- GHOST GUI INITIALIZATION (SOLARA/DELTA SAFE)
 -- ============================================================
 local GuiP
@@ -349,7 +371,7 @@ else
 end
 
 local Scr = Instance.new("ScreenGui")
-Scr.Name = RndStr(12)
+Scr.Name = "OmniGhostUI"
 Scr.ResetOnSpawn = false
 Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Scr.IgnoreGuiInset = true
@@ -1627,7 +1649,6 @@ end)()
 
 -- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
-    -- RIGHT SHIFT TO GHOST UI
     if inp.KeyCode == Enum.KeyCode.RightShift then
         Scr.Enabled = not Scr.Enabled
         Notify("Ghost UI", Scr.Enabled and "Visible" or "Hidden", 1)
@@ -1749,7 +1770,6 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    -- БЕЗПЕЧНИЙ FLY (CFrame Bypass)
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -1779,7 +1799,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- FREECAM
     if State.Freecam then
         pcall(function()
             local mx, mz = GetDir()
@@ -1796,7 +1815,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- AUTO AIM
     if State.Aim and not State.Freecam and Char and HRP then
         pcall(function()
             local target = GetBestAimTarget()
@@ -1835,7 +1853,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- SILENT AIM INDICATOR
     if State.SilentAim and not State.Aim and not State.Freecam then
         pcall(function()
             local tgt = GetBestAimTarget()
@@ -1881,27 +1898,20 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- БЕЗПЕЧНИЙ SPEED (CFrame Bypass) - ФІНАЛЬНЕ ВИПРАВЛЕННЯ НАПРЯМКУ
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
-            -- ВАЖЛИВО: Не міняємо WalkSpeed, залишаємо його базовим для сервера
             Hum.WalkSpeed = gameBaseSpeed 
             
-            -- Використовуємо Humanoid.MoveDirection - він ніколи не глючить після Fly
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local targetSpd = GetSafeSpeed()
-                local moveDir = Hum.MoveDirection -- Напрямок вже правильний (відносно світу)
+                local moveDir = Hum.MoveDirection 
                 
-                -- Зсуваємо персонажа через CFrame
-                -- Рахуємо лишок швидкості (на скільки ми швидші за базову)
                 local moveAmount = (targetSpd - gameBaseSpeed) * dt * 1.5
                 
-                -- РУХАЄМОСЯ ТІЛЬКИ ВПЕРЕД (якщо moveAmount > 0)
                 if moveAmount > 0 then
                     HRP.CFrame = HRP.CFrame + (moveDir * moveAmount)
                 end
                 
-                -- Скидаємо швидкість падіння, щоб не було слайду
                 if HRP.AssemblyLinearVelocity.Y < 0 and Hum.FloorMaterial ~= Enum.Material.Air then
                     HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
