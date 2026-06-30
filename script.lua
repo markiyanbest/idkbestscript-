@@ -1,6 +1,6 @@
--- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — SOLARA/DELTA EDITION (FULL)              ██
--- ██████████████████████████████████████████████████████████
+-- Додаємо безпечну затримку для Solara/Delta, щоб гра встигла прогрузитись
+if not game:IsLoaded() then game.Loaded:Wait() end
+task.wait(1.5)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -363,11 +363,12 @@ local function JoinSmallestServer() if ServerCooldown() then return end Notify("
 -- GHOST GUI INITIALIZATION (SOLARA/DELTA SAFE)
 -- ============================================================
 local GuiP
-if gethui then
-    GuiP = gethui()
-else
+pcall(function() if gethui then GuiP = gethui() end end)
+if not GuiP then
     pcall(function() GuiP = game:GetService("CoreGui") end)
-    if not GuiP then GuiP = LP:WaitForChild("PlayerGui") end
+    if not GuiP then
+        GuiP = LP:WaitForChild("PlayerGui")
+    end
 end
 
 local Scr = Instance.new("ScreenGui")
@@ -387,9 +388,12 @@ local P = {
     onBg = Color3.fromRGB(30, 38, 34), srvBtn = Color3.fromRGB(28, 28, 44),
 }
 
-local VP  = Camera.ViewportSize
-local MW  = IsMob and math.min(325, VP.X - 20) or 315
-local MH  = IsMob and math.min(590, VP.Y - 80) or 555
+local VP = Camera.ViewportSize
+if VP.X < 100 or VP.Y < 100 then task.wait(1) VP = Camera.ViewportSize end
+if VP.X < 100 then VP = Vector2.new(500, 500) end
+
+local MW  = IsMob and math.min(325, math.max(250, VP.X - 20)) or 315
+local MH  = IsMob and math.min(590, math.max(300, VP.Y - 80)) or 555
 local BH  = IsMob and 44 or 34
 local FS  = IsMob and 13 or 11
 local MBS = IsMob and 58 or 48
@@ -1373,6 +1377,7 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
 
     local function Upd(inp)
         local abs = trk.AbsolutePosition; local sz = trk.AbsoluteSize
+        if sz.X <= 0 then return end
         local t = math.clamp((inp.Position.X - abs.X) / sz.X, 0, 1)
         local cur = math.floor(minV + t * (maxV - minV))
         SetValue(cur)
@@ -1401,6 +1406,7 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
         SliderRefs[configKey] = {
             default = def,
             update = function(val)
+                if type(val) ~= "number" then val = def end
                 val = math.clamp(val, minV, maxV); SetValue(val)
             end,
         }
