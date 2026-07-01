@@ -1,8 +1,6 @@
-
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — PERFECT EDITION (EN/UA) [FIXED]         ██
--- ██  Fixes: FullBright, SilentAim, FakeLag slider,       ██
--- ██  Speed instant stop, velocity zero on disable        ██
+-- ██  OMNI V305 — GHOST EDITION (XENO/DELTA FIX)           ██
+-- ██  Fixes: gethui() bypass, CFrame Fly, CFrame Speed     ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -26,8 +24,8 @@ local CurrentLang = "EN"
 local Strings = {
     EN = {
         title = "OMNI V305",
-        subtitle_mobile = "MOBILE · PERFECT EDITION",
-        subtitle_pc = "UNIVERSAL · PERFECT EDITION",
+        subtitle_mobile = "MOBILE · GHOST EDITION",
+        subtitle_pc = "UNIVERSAL · GHOST EDITION",
         tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
@@ -36,8 +34,8 @@ local Strings = {
         hdr_hitbox_cfg = "HITBOX", hdr_aim_settings = "AIM SETTINGS", hdr_anti_void = "ANTI-VOID",
         hdr_anti_ban = "ANTI-BAN", hdr_language = "LANGUAGE",
         lbl_auto_aim = "Auto Aim", lbl_silent_aim = "Silent Aim", lbl_shadow_lock = "Magnet (ShadowLock)",
-        lbl_hitbox = "Hitbox Expand", lbl_esp = "ESP", lbl_fly = "Fly", lbl_freecam = "Freecam",
-        lbl_speed = "Speed", lbl_bhop = "Bhop", lbl_high_jump = "High Jump",
+        lbl_hitbox = "Hitbox Expand", lbl_esp = "ESP", lbl_fly = "Fly (CFrame)", lbl_freecam = "Freecam",
+        lbl_speed = "Speed (CFrame)", lbl_bhop = "Bhop", lbl_high_jump = "High Jump",
         lbl_infinite_jump = "Infinite Jump", lbl_noclip = "Noclip", lbl_no_fall = "No Fall Damage",
         lbl_anti_void = "Anti-Void", lbl_safe_speed = "Safe Speed (Anti Rubber-Band)", lbl_spin = "Spin",
         lbl_potato = "Potato Mode", lbl_fake_lag = "Fake Lag", lbl_anti_afk = "Anti-AFK",
@@ -47,9 +45,9 @@ local Strings = {
         desc_shadow_lock = "Teleports you behind the closest enemy, following their movement.",
         desc_hitbox = "Expands enemy hitbox parts so they are easier to hit.",
         desc_esp = "Shows player name, HP and distance as clean text. No boxes.",
-        desc_fly = "Allows free flight in any direction. Use W/A/S/D + Space/Ctrl.",
+        desc_fly = "Free flight using CFrame bypass. Undetected by velocity anti-cheats.",
         desc_freecam = "Detaches camera from character for free spectating.",
-        desc_speed = "Increases your walk speed beyond the game default.",
+        desc_speed = "Increases speed using CFrame bypass. Undetected by WalkSpeed anti-cheats.",
         desc_bhop = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
         desc_high_jump = "Increases your jump height/power significantly.",
         desc_infinite_jump = "Allows jumping in mid-air infinitely.",
@@ -79,9 +77,9 @@ local Strings = {
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
         ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Perfect Edition · Noclip Universal · ESP Clean",
+        ntf_startup = "✅ Ghost Edition · Anti-Cheat Bypass Active",
         ntf_lang = "Language changed to: ",
-        stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Config.json",
+        stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Ghost.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
         btn_lang_toggle = "🌐 Language: English → Українська",
         lbl_fullbright = "FullBright",
@@ -95,8 +93,8 @@ local Strings = {
         ntf_sa_hook_fail = "❌ Silent Aim: hook failed (try different exploit)",
     },
     UA = {
-        title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
-        subtitle_pc = "УНІВЕРСАЛЬНА · ІДЕАЛЬНА ВЕРСІЯ",
+        title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · GHOST ВЕРСІЯ",
+        subtitle_pc = "УНІВЕРСАЛЬНА · GHOST ВЕРСІЯ",
         tab_combat = "Бій", tab_move = "Рух", tab_misc = "Інше", tab_config = "Налашт.",
         hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
         hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
@@ -106,7 +104,7 @@ local Strings = {
         hdr_anti_void = "АНТИ-ВОЙД", hdr_anti_ban = "АНТИ-БАН", hdr_language = "МОВА",
         lbl_auto_aim = "Авто Прицілювання", lbl_silent_aim = "Тихий Прицілювання",
         lbl_shadow_lock = "Магніт (ShadowLock)", lbl_hitbox = "Розширення хітбокса", lbl_esp = "ESP",
-        lbl_fly = "Літання", lbl_freecam = "Вільна камера", lbl_speed = "Швидкість", lbl_bhop = "Bhop",
+        lbl_fly = "Літання (CFrame)", lbl_freecam = "Вільна камера", lbl_speed = "Швидкість (CFrame)", lbl_bhop = "Bhop",
         lbl_high_jump = "Високий стрибок", lbl_infinite_jump = "Нескінченний стрибок", lbl_noclip = "Нокліп",
         lbl_no_fall = "Без пошкодження від падіння", lbl_anti_void = "Анти-Войд",
         lbl_safe_speed = "Безпечна швидкість (Анти Rubber-Band)", lbl_spin = "Обертання",
@@ -118,9 +116,9 @@ local Strings = {
         desc_shadow_lock = "Телепортує вас за найближчого ворога, слідуючи за його рухом.",
         desc_hitbox = "Збільшує хітбокс частини ворогів, щоб в них було легше попасти.",
         desc_esp = "Показує нік гравця, HP та дистанцію чистим текстом. Без квадратів.",
-        desc_fly = "Дозволяє вільний політ у будь-якому напрямку. W/A/S/D + Пробіл/Ctrl.",
+        desc_fly = "Політ через CFrame обход. Не детектиться античитами швидкості.",
         desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду.",
-        desc_speed = "Збільшує швидкість ходьби понад стандартну гри.",
+        desc_speed = "Швидкість через CFrame обход. Не детектиться античитами WalkSpeed.",
         desc_bhop = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
         desc_high_jump = "Значно збільшує висоту/силу стрибка.",
         desc_infinite_jump = "Дозволяє стрибати в повітрі нескінченно.",
@@ -151,9 +149,9 @@ local Strings = {
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
         ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ідеальна Версія · Нокліп Унів. · ESP Чистий",
+        ntf_startup = "✅ Ghost Version · Обхід Античиту Активний",
         ntf_lang = "Мову змінено на: ",
-        stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Config.json",
+        stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Ghost.json",
         stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
         btn_lang_toggle = "🌐 Мова: Українська → English",
         lbl_fullbright = "FullBright",
@@ -275,7 +273,6 @@ local Config = {
     ESPMaxDist        = 1000,
     AimPredictMult    = 1.0,
     FullBright        = false,
-    -- FIX: FakeLag power slider (1-100, default 50)
     FakeLagPower      = 50,
 }
 
@@ -299,7 +296,7 @@ local State = {
     FullBright = false,
 }
 
-local CFG_FILE = "OmniV305_Config.json"
+local CFG_FILE = "OmniV305_Ghost.json"
 local SAVE_STATE_KEYS = {
     "AntiAFK", "ESP", "Hitbox", "Speed", "HighJump",
     "Bhop", "NoFallDamage", "InfiniteJump", "Potato", "AntiVoid",
@@ -410,8 +407,6 @@ local function PseudoNoise(x)
 end
 
 local _speedNoiseT = 0
-local _flyNoiseT   = 100
-
 local gameBaseSpeed = 16
 
 task.spawn(function()
@@ -642,7 +637,7 @@ local function UpdateESP()
             end
 
             local bb = Instance.new("BillboardGui")
-            bb.Name = "OmniESP"
+            bb.Name = RndStr(8)
             bb.Size = UDim2.new(0, 120, 0, 44)
             bb.StudsOffset = Vector3.new(0, 2.8, 0)
             bb.AlwaysOnTop = true
@@ -952,14 +947,12 @@ local function UndoPotato()
 end
 
 -- ============================================================
--- FULLBRIGHT — FIXED
--- Зберігає оригінальні значення Lighting та вимикає Atmosphere/ефекти
+-- FULLBRIGHT
 -- ============================================================
 local _fbOrigLighting = nil
 local _fbDisabledEffects = {}
 
 local function ApplyFullBright()
-    -- Зберігаємо оригінальні значення
     _fbOrigLighting = {
         Brightness          = Lighting.Brightness,
         ClockTime           = Lighting.ClockTime,
@@ -974,7 +967,6 @@ local function ApplyFullBright()
     pcall(function() _fbOrigLighting.ExposureCompensation     = Lighting.ExposureCompensation     end)
     pcall(function() _fbOrigLighting.ShadowSoftness           = Lighting.ShadowSoftness           end)
 
-    -- Максимальний свет
     pcall(function()
         Lighting.Brightness          = 8
         Lighting.ClockTime           = 14
@@ -989,7 +981,6 @@ local function ApplyFullBright()
     pcall(function() Lighting.ExposureCompensation     = 0 end)
     pcall(function() Lighting.ShadowSoftness           = 0 end)
 
-    -- Вимикаємо Atmosphere і всі ефекти що затемнюють
     _fbDisabledEffects = {}
     for _, v in pairs(Lighting:GetChildren()) do
         local shouldDisable = false
@@ -1009,7 +1000,6 @@ local function ApplyFullBright()
 end
 
 local function RemoveFullBright()
-    -- Відновлюємо Lighting
     if _fbOrigLighting then
         pcall(function()
             Lighting.Brightness     = _fbOrigLighting.Brightness
@@ -1027,7 +1017,6 @@ local function RemoveFullBright()
         _fbOrigLighting = nil
     end
 
-    -- Відновлюємо ефекти
     for v, orig in pairs(_fbDisabledEffects) do
         pcall(function()
             if v and v.Parent then v.Enabled = orig end
@@ -1182,8 +1171,6 @@ local function UpdVis(nm)
 end
 
 local function RestoreMouse()
-    -- Тільки скидаємо MouseBehavior. НЕ чіпаємо CameraType/CameraSubject —
-    -- вони відновлюються безпосередньо в Toggle("Freecam") OFF з затримкою.
     pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
 end
 
@@ -1214,9 +1201,6 @@ local function Toggle(nm)
         return
     end
 
-    -- ============================================================
-    -- FULLBRIGHT FIXED — зберігає та відновлює оригінальні значення
-    -- ============================================================
     if nm == "FullBright" then
         Config.FullBright = not Config.FullBright
         State.FullBright = Config.FullBright
@@ -1242,18 +1226,13 @@ local function Toggle(nm)
                 if R then R.Anchored = false; R.AssemblyLinearVelocity = Vector3.zero end
                 if H then H.PlatformStand = false end
             end)
-        -- ============================================================
-        -- SPEED OFF FIXED — миттєва зупинка: WalkSpeed=0 + нульова velocity
-        -- ============================================================
         elseif nm == "Speed" then
             pcall(function()
-                -- Миттєвий гальм: зупиняємо WalkSpeed і обнуляємо горизонтальну швидкість
                 if H then H.WalkSpeed = 0 end
                 if R then
                     R.AssemblyLinearVelocity = Vector3.new(0, R.AssemblyLinearVelocity.Y, 0)
                 end
             end)
-            -- Через 100мс відновлюємо стандартну WalkSpeed гри
             task.delay(0.1, function()
                 local cc = LP.Character
                 local hh = cc and cc:FindFirstChildOfClass("Humanoid")
@@ -1261,7 +1240,6 @@ local function Toggle(nm)
                 if hh and not State.Speed then
                     hh.WalkSpeed = gameBaseSpeed
                 end
-                -- Додатковий скид залишкової швидкості
                 if rr and not State.Speed then
                     local v = rr.AssemblyLinearVelocity
                     if Vector2.new(v.X, v.Z).Magnitude > 4 then
@@ -1313,7 +1291,7 @@ local function Toggle(nm)
         elseif nm == "Fly" and H then
             pcall(function() H.PlatformStand = false end)
         elseif nm == "Speed" and H then
-            pcall(function() H.WalkSpeed = GetSafeSpeed() end)
+            pcall(function() H.WalkSpeed = gameBaseSpeed end)
         elseif nm == "HighJump" and H then
             pcall(function()
                 H.UseJumpPower = true
@@ -1333,11 +1311,6 @@ local function Toggle(nm)
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
         elseif nm == "FakeLag" then
-            -- ============================================================
-            -- FAKELAG FIXED — використовує Config.FakeLagPower (1-100)
-            -- Power 1 = мінімальний лаг (~10-30мс)
-            -- Power 100 = максимальний лаг (~100-300мс)
-            -- ============================================================
             _fakeLagToken += 1
             local myToken = _fakeLagToken
             task.spawn(function()
@@ -1350,14 +1323,12 @@ local function Toggle(nm)
                         local savedVel = rp.AssemblyLinearVelocity
                         local pwr = math.clamp(Config.FakeLagPower, 1, 100)
 
-                        -- Час зависання залежить від сили лагу
-                        local lagMin = math.floor(5  + pwr * 0.9)   -- 6ms - 95ms
-                        local lagMax = math.floor(15 + pwr * 2.5)   -- 18ms - 265ms
+                        local lagMin = math.floor(5  + pwr * 0.9)
+                        local lagMax = math.floor(15 + pwr * 2.5)
                         local lagTime = math.random(lagMin, lagMax) / 1000
 
-                        -- Час нормального руху між лагами (менша сила = рідший лаг)
-                        local normalMin = math.floor(150 - pwr * 0.8)  -- 70ms - 149ms
-                        local normalMax = math.floor(350 - pwr * 1.5)  -- 200ms - 348ms
+                        local normalMin = math.floor(150 - pwr * 0.8)
+                        local normalMax = math.floor(350 - pwr * 1.5)
                         normalMin = math.max(normalMin, 50)
                         normalMax = math.max(normalMax, normalMin + 30)
                         local normalTime = math.random(normalMin, normalMax) / 1000
@@ -1503,7 +1474,7 @@ LP.CharacterAdded:Connect(function(char)
             end)
         end)
         task.wait(0.5)
-        if State.Speed then pcall(function() hum.WalkSpeed = GetSafeSpeed() end) end
+        if State.Speed then pcall(function() hum.WalkSpeed = gameBaseSpeed end) end
         if State.HighJump then
             pcall(function()
                 hum.UseJumpPower = true
@@ -1516,17 +1487,13 @@ LP.CharacterAdded:Connect(function(char)
 end)
 
 -- ============================================================
--- SILENT AIM HOOK — FIXED
--- Використовує hookmetamethod якщо доступний (кращий метод)
--- Fallback до getrawmetatable + setreadonly
--- Показує чітке повідомлення якщо хуки недоступні
+-- SILENT AIM HOOK
 -- ============================================================
 local silentAimHooked = false
 
 local function SetupSilentAimHook()
     if silentAimHooked then return end
 
-    -- Метод 1: hookmetamethod (найнадійніший, підтримується більшістю сучасних exploit'ів)
     if ENV.hasHookMeta and hookmetamethod then
         local ok = pcall(function()
             hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
@@ -1581,125 +1548,10 @@ local function SetupSilentAimHook()
         end
     end
 
-    -- Метод 2: getrawmetatable + setreadonly (Synapse/Fluxus/тощо)
-    if ENV.hasGetRawMeta and ENV.hasGetNameCall then
-        local ok = pcall(function()
-            local mt = getrawmetatable(game)
-            if not mt then error("no mt") end
-            local oldNC = rawget(mt, "__namecall")
-            if not oldNC then error("no __namecall") end
-
-            -- Зробити таблицю записуваною
-            if setreadonly then pcall(function() setreadonly(mt, false) end) end
-            if make_writeable then pcall(function() make_writeable(mt) end) end
-
-            local function hookBody(self, ...)
-                local method = getnamecallmethod()
-                if not State.SilentAim then return oldNC(self, ...) end
-                if method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local vel = part.AssemblyLinearVelocity
-                            local predPos = part.Position + vel * 0.05
-                            local dir = (predPos - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
-                            end
-                            args[2] = dir.Unit * dir.Magnitude
-                            return oldNC(self, unpack(args))
-                        end
-                    end
-                end
-                if (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList")
-                    and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local ray = args[1]
-                        if typeof(ray) == "Ray" then
-                            local origin = ray.Origin
-                            local dir = (part.Position - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
-                            end
-                            args[1] = Ray.new(origin, dir.Unit * 5000)
-                            return oldNC(self, unpack(args))
-                        end
-                    end
-                end
-                return oldNC(self, ...)
-            end
-
-            local newNC = newcclosure and newcclosure(hookBody) or hookBody
-            -- Спроба записати в метатаблицю
-            rawset(mt, "__namecall", newNC)
-
-            -- Назад read-only
-            if setreadonly then pcall(function() setreadonly(mt, true) end) end
-            if make_readonly then pcall(function() make_readonly(mt) end) end
-            silentAimHooked = true
-        end)
-        if silentAimHooked then
-            Notify("Silent Aim", L("ntf_hook_ok") .. " [rawmeta]", 3)
-            return
-        end
-    end
-
-    -- Метод 3: hookfunction на Workspace.Raycast напряму
-    if ENV.hasHookFunction and hookfunction then
-        local ok = pcall(function()
-            local origRaycast = Workspace.Raycast
-            hookfunction(origRaycast, newcclosure and newcclosure(function(self, origin, dir, params)
-                if not State.SilentAim then return origRaycast(self, origin, dir, params) end
-                local target = GetBestAimTarget()
-                local part = target and FindAimPart(target)
-                if part and typeof(origin) == "Vector3" then
-                    local vel = part.AssemblyLinearVelocity
-                    local predPos = part.Position + vel * 0.05
-                    local newDir = (predPos - origin)
-                    return origRaycast(self, origin, newDir.Unit * newDir.Magnitude, params)
-                end
-                return origRaycast(self, origin, dir, params)
-            end) or function(self, origin, dir, params)
-                return Workspace:Raycast(origin, dir, params)
-            end)
-            silentAimHooked = true
-        end)
-        if silentAimHooked then
-            Notify("Silent Aim", L("ntf_hook_ok") .. " [hookfunction]", 3)
-            return
-        end
-    end
-
-    -- Хуки недоступні
     Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
 end
 
 task.spawn(function() task.wait(2); SetupSilentAimHook() end)
-
-task.spawn(function()
-    task.wait(4)
-    if IsMob and not silentAimHooked then
-        if not ENV.hasGetRawMeta and not ENV.hasGetNameCall and not ENV.hasHookMeta then
-            Notify("Silent Aim", "⚠️ Exploit не підтримує хуки. Використай Auto Aim.", 6)
-        else
-            SetupSilentAimHook()
-        end
-    end
-end)
 
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
@@ -1811,14 +1663,23 @@ local function JoinSmallestServer()
     end)
 end
 
--- GUI
-local GuiP = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui") or LP:WaitForChild("PlayerGui")
-pcall(function() local c = game:GetService("CoreGui"); local _ = c.Name; GuiP = c end)
+-- ============================================================
+-- GHOST GUI INITIALIZATION (STABLE FOR XENO/DELTA)
+-- ============================================================
+local GuiP
+if gethui then
+    GuiP = gethui()
+else
+    pcall(function() GuiP = game:GetService("CoreGui") end)
+    if not GuiP then GuiP = LP:WaitForChild("PlayerGui") end
+end
 
-if not GuiP then GuiP = LP:WaitForChild("PlayerGui") end
-local Scr = Instance.new("ScreenGui", GuiP)
-Scr.Name = RndStr(12); Scr.ResetOnSpawn = false
-Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; Scr.IgnoreGuiInset = true
+local Scr = Instance.new("ScreenGui")
+Scr.Name = RndStr(12)
+Scr.ResetOnSpawn = false
+Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Scr.IgnoreGuiInset = true
+Scr.Parent = GuiP
 Instance.new("BoolValue", Scr).Name = "OmniMarker"
 
 local P = {
@@ -2293,9 +2154,6 @@ local function ExitMobEditor()
     Notify("Editor", "✅ Layout saved!", 2)
 end
 
--- ================================================================
--- QUICK BUTTONS
--- ================================================================
 QuickBtnActive = {}
 
 local QuickBtnDefs = {
@@ -2931,7 +2789,6 @@ AddHdr("Misc", "🔧", "hdr_effects")
 MkToggle("Misc", "🌀", "lbl_spin", "Spin", "desc_spin")
 MkToggle("Misc", "🥔", "lbl_potato", "Potato", "desc_potato")
 MkToggleBind("Misc", "📡", "lbl_fake_lag", "FakeLag", "desc_fake_lag")
--- FIX: FakeLag Power slider (безпосередньо під тоглом)
 MkSlider("Misc", "📡", "sl_fakelag_power", 1, 100, Config.FakeLagPower, "FakeLagPower", function(v)
     Config.FakeLagPower = v
 end)
@@ -3042,8 +2899,6 @@ AddHdr("Config", "🚀", "hdr_speed_vals")
 MkSlider("Config", "✈️", "sl_fly_speed", 0, 300, Config.FlySpeed, "FlySpeed", function(v) Config.FlySpeed = v end)
 MkSlider("Config", "👟", "sl_walk_speed", 16, 200, Config.WalkSpeed, "WalkSpeed", function(v)
     Config.WalkSpeed = v
-    local h = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-    if State.Speed and h then pcall(function() h.WalkSpeed = GetSafeSpeed() end) end
 end)
 
 AddHdr("Config", "⬆️", "hdr_jump_vals")
@@ -3252,10 +3107,12 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    -- FLY
+    -- БЕЗПЕЧНИЙ FLY (CFrame Bypass)
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
+            HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            
             local mx, mz = GetDir()
             local camCF = Camera.CFrame
             local dir = camCF.LookVector * -mz + camCF.RightVector * mx
@@ -3264,33 +3121,19 @@ RunService.RenderStepped:Connect(function(dt)
             if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then upD = -1 end
             dir = dir + Vector3.new(0, upD, 0)
 
-            local target_vel
             if dir.Magnitude > 0.05 then
                 dir = dir.Unit
-                if Config.FlyAntiBan then
-                    _flyNoiseT = _flyNoiseT + 0.005
-                    local nx = PseudoNoise(_flyNoiseT) * 0.12
-                    local ny = PseudoNoise(_flyNoiseT + 100) * 0.06
-                    local nz = PseudoNoise(_flyNoiseT + 200) * 0.12
-                    target_vel = dir * Config.FlySpeed + Vector3.new(nx, ny, nz)
-                else
-                    target_vel = dir * Config.FlySpeed
-                end
+                local moveStep = dir * (Config.FlySpeed * dt * 1.5)
                 if HRP.Position.Y > Config.FlyHeightMax then
-                    target_vel = Vector3.new(target_vel.X, math.min(target_vel.Y, -0.1), target_vel.Z)
+                    moveStep = Vector3.new(moveStep.X, math.min(moveStep.Y, -0.1), moveStep.Z)
                 end
-            else
-                target_vel = Vector3.new(0, -1.8, 0)
+                HRP.CFrame = HRP.CFrame + moveStep
+                
+                if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
+                    HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-dir.X, -dir.Z), 0)
+                end
+                if not State.Spin then HRP.AssemblyAngularVelocity = Vector3.zero end
             end
-
-            local cur_vel = HRP.AssemblyLinearVelocity
-            local lerp_vel = cur_vel:Lerp(target_vel, math.clamp(dt * 18, 0, 1))
-            HRP.AssemblyLinearVelocity = lerp_vel
-
-            if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
-                HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-camCF.LookVector.X, -camCF.LookVector.Z), 0)
-            end
-            if not State.Spin then HRP.AssemblyAngularVelocity = Vector3.zero end
         end)
     end
 
@@ -3396,33 +3239,28 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
+    -- БЕЗПЕЧНИЙ SPEED (CFrame Bypass)
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
-            local targetSpd = GetSafeSpeed()
-            Hum.WalkSpeed = targetSpd
+            -- ВАЖЛИВО: Не міняємо WalkSpeed, залишаємо його базовим для сервера
+            Hum.WalkSpeed = gameBaseSpeed 
+            
             if Hum.MoveDirection.Magnitude > 0.1 then
-                local md = Hum.MoveDirection.Unit
-                local vel = HRP.AssemblyLinearVelocity
-                local flatVel = Vector3.new(vel.X, 0, vel.Z)
-                if State.SafeSpeedMode then
-                    local cycle = tick() % 0.60
-                    local onTime = 0.60 * 0.82
-                    if cycle > onTime then
-                        local brake = 1 - ((cycle - onTime) / (0.60 - onTime))
-                        local want = md * targetSpd * math.max(brake, 0.15)
-                        HRP.AssemblyLinearVelocity = Vector3.new(
-                            vel.X + (want.X - vel.X) * 0.30, vel.Y, vel.Z + (want.Z - vel.Z) * 0.30)
-                    else
-                        if flatVel.Magnitude < targetSpd * 0.9 then
-                            local want = md * targetSpd
-                            HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
-                        end
+                local targetSpd = GetSafeSpeed()
+                local camCF = Camera.CFrame
+                -- Визначаємо напрямок руху відносно камери
+                local moveDir = camCF.LookVector * -Hum.MoveDirection.Z + camCF.RightVector * Hum.MoveDirection.X
+                if moveDir.Magnitude > 0 then
+                    moveDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
+                    -- Рахуємо, на скільки треба зсунути
+                    local moveAmount = (targetSpd - gameBaseSpeed) * dt * 1.2
+                    if moveAmount > 0 then
+                        HRP.CFrame = HRP.CFrame + (moveDir * moveAmount)
                     end
-                else
-                    if flatVel.Magnitude < targetSpd * 0.9 then
-                        local want = md * targetSpd
-                        HRP.AssemblyLinearVelocity = Vector3.new(want.X, vel.Y, want.Z)
-                    end
+                end
+                -- Скидаємо швидкість падіння, якщо йдемо по рівнині
+                if HRP.AssemblyLinearVelocity.Y < 0 and Hum.FloorMaterial ~= Enum.Material.Air then
+                    HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
             end
         end)
