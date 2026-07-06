@@ -1,6 +1,6 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — GHOST EDITION (XENO/DELTA FIX)           ██
--- ██  Fixes: gethui() bypass, CFrame Fly, CFrame Speed     ██
+-- ██  OMNI V305 — GHOST EDITION (BLOCK STRIKE BYPASS)      ██
+-- ██  Fixes: gethui() bypass, CFrame Fly, Spider, TP       ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -23,9 +23,7 @@ local CurrentLang = "EN"
 
 local Strings = {
     EN = {
-        title = "OMNI V305",
-        subtitle_mobile = "MOBILE · GHOST EDITION",
-        subtitle_pc = "UNIVERSAL · GHOST EDITION",
+        title = "OMNI V305", subtitle_mobile = "MOBILE · GHOST EDITION", subtitle_pc = "UNIVERSAL · GHOST EDITION",
         tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
@@ -40,6 +38,8 @@ local Strings = {
         lbl_anti_void = "Anti-Void", lbl_safe_speed = "Safe Speed (Anti Rubber-Band)", lbl_spin = "Spin",
         lbl_potato = "Potato Mode", lbl_fake_lag = "Fake Lag", lbl_anti_afk = "Anti-AFK",
         lbl_speed_jitter = "Speed Jitter", lbl_hitbox_rand = "Hitbox Randomize", lbl_aim_anti = "Aim Anti-Detect",
+        lbl_spider = "Spider (CFrame)", lbl_tp_player = "TP to Player", btn_tp_go = "Teleport",
+        desc_spider = "Hold bind to zip to surface you look at.",
         desc_auto_aim = "Automatically aims your camera at the nearest visible enemy within FOV radius.",
         desc_silent_aim = "Redirects raycasts to enemies without moving your camera. Requires exploit hooks.",
         desc_shadow_lock = "Teleports you behind the closest enemy, following their movement.",
@@ -77,7 +77,7 @@ local Strings = {
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
         ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Ghost Edition · Anti-Cheat Bypass Active",
+        ntf_startup = "✅ Ghost Edition · Block Strike Bypass Active",
         ntf_lang = "Language changed to: ",
         stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Ghost.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
@@ -111,6 +111,8 @@ local Strings = {
         lbl_potato = "Картопляний режим", lbl_fake_lag = "Фейк лаг", lbl_anti_afk = "Анти-АФК",
         lbl_speed_jitter = "Джиттер швидкості", lbl_hitbox_rand = "Рандомізація хітбокса",
         lbl_aim_anti = "Анти-детект прицілу",
+        lbl_spider = "Павук (CFrame)", lbl_tp_player = "ТП до Гравця", btn_tp_go = "Телепорт",
+        desc_spider = "Тримай бінд щоб притягнутись до поверхні.",
         desc_auto_aim = "Автоматично наводить камеру на найближчого видимого ворога в радіусі FOV.",
         desc_silent_aim = "Перенаправляє рейкасти на ворогів без руху камери. Потрібні хуки експлойту.",
         desc_shadow_lock = "Телепортує вас за найближчого ворога, слідуючи за його рухом.",
@@ -149,7 +151,7 @@ local Strings = {
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
         ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ghost Version · Обхід Античиту Активний",
+        ntf_startup = "✅ Ghost Version · Обхід Block Strike Активний",
         ntf_lang = "Мову змінено на: ",
         stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Ghost.json",
         stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
@@ -274,6 +276,7 @@ local Config = {
     AimPredictMult    = 1.0,
     FullBright        = false,
     FakeLagPower      = 50,
+    SpiderSpeed       = 100,
 }
 
 local Binds = {
@@ -283,6 +286,7 @@ local Binds = {
     SilentAim  = Enum.KeyCode.B,
     ToggleMenu = Enum.KeyCode.M,
     FakeLag    = Enum.KeyCode.J,
+    Spider     = Enum.KeyCode.T,
 }
 
 local State = {
@@ -293,13 +297,13 @@ local State = {
     AntiAFK = false, InfiniteJump = false, AntiVoid = false,
     SpeedAntiBan = true, HitboxRandomize = true,
     AimAntiDetect = true, SafeSpeedMode = false,
-    FullBright = false,
+    FullBright = false, Spider = false,
 }
 
 local CFG_FILE = "OmniV305_Ghost.json"
 local SAVE_STATE_KEYS = {
     "AntiAFK", "ESP", "Hitbox", "Speed", "HighJump",
-    "Bhop", "NoFallDamage", "InfiniteJump", "Potato", "AntiVoid",
+    "Bhop", "NoFallDamage", "InfiniteJump", "Potato", "AntiVoid", "Spider",
 }
 local SAVE_CFG_KEYS = {
     "SpeedAntiBan", "HitboxRandomize", "AimAntiDetect", "SafeSpeedMode",
@@ -380,9 +384,10 @@ local function ResetConfig()
     Config.SpeedJitter = 1.5; Config.FlyHeightMax = 1800
     Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8; Config.AntiVoidHeight = -180
     Config.ESPMaxDist = 1000; Config.AimPredictMult = 1.0; Config.FullBright = false
-    Config.FakeLagPower = 50
+    Config.FakeLagPower = 50; Config.SpiderSpeed = 100
     Binds.Fly = Enum.KeyCode.F; Binds.Aim = Enum.KeyCode.G
     Binds.Noclip = Enum.KeyCode.V; Binds.SilentAim = Enum.KeyCode.B; Binds.ToggleMenu = Enum.KeyCode.M
+    Binds.Spider = Enum.KeyCode.T
     State.SpeedAntiBan = true; State.HitboxRandomize = true
     State.AimAntiDetect = true; State.SafeSpeedMode = false
     UpdateAllSliders(); Notify("Config", L("ntf_reset"), 2)
@@ -584,6 +589,23 @@ local function GetBestAimTarget()
         return best.Character
     end
     return nil
+end
+
+local function TpToPlayer(partialName)
+    if not partialName or partialName == "" then Notify("TP", "Enter name first", 3) return end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and string.sub(string.lower(p.Name), 1, #partialName) == string.lower(partialName) then
+            local targetChar = p.Character
+            local targetHrp = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+            local myHrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+            if targetHrp and myHrp then
+                myHrp.CFrame = targetHrp.CFrame * CFrame.new(0, 0, 3)
+                Notify("TP", "Teleported to " .. p.Name, 2)
+                return
+            end
+        end
+    end
+    Notify("TP", "Player not found", 3)
 end
 
 -- ============================================================
@@ -1664,18 +1686,22 @@ local function JoinSmallestServer()
 end
 
 -- ============================================================
--- GHOST GUI INITIALIZATION (STABLE FOR XENO/DELTA)
+-- GHOST GUI INITIALIZATION (BLOCK STRIKE BYPASS)
 -- ============================================================
 local GuiP
 if gethui then
     GuiP = gethui()
 else
     pcall(function() GuiP = game:GetService("CoreGui") end)
+    if not GuiP then 
+        -- Block Strike Bypass: Hide GUI in TweenService
+        pcall(function() GuiP = game:GetService("TweenService") end)
+    end
     if not GuiP then GuiP = LP:WaitForChild("PlayerGui") end
 end
 
 local Scr = Instance.new("ScreenGui")
-Scr.Name = RndStr(12)
+Scr.Name = "RobloxGui"
 Scr.ResetOnSpawn = false
 Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Scr.IgnoreGuiInset = true
@@ -2176,6 +2202,7 @@ local QuickBtnDefs = {
     {nm="FakeLag",      icon="📡", lbl="FakeLag"},
     {nm="Freecam",      icon="📷", lbl="FreeCam"},
     {nm="Potato",       icon="🥔", lbl="Potato"},
+    {nm="Spider",       icon="🕷", lbl="Spider"},
 }
 
 local QB_SIZE  = IsMob and 64 or 52
@@ -2749,8 +2776,55 @@ MkToggle("Move", "⬆️", "lbl_high_jump", "HighJump", "desc_high_jump")
 MkToggle("Move", "♾️", "lbl_infinite_jump", "InfiniteJump", "desc_infinite_jump")
 AddHdr("Move", "👻", "hdr_physics")
 MkToggleBind("Move", "👻", "lbl_noclip", "Noclip", "desc_noclip")
+MkToggleBind("Move", "🕷", "lbl_spider", "Spider", "desc_spider")
 MkToggle("Move", "🛡", "lbl_no_fall", "NoFallDamage", "desc_no_fall")
 MkToggle("Move", "🌊", "lbl_anti_void", "AntiVoid", "desc_anti_void")
+
+do
+    local pg = TabPages["Move"]
+    local tpRow = Instance.new("Frame", pg)
+    tpRow.Size = UDim2.new(0.95, 0, 0, BH)
+    tpRow.BackgroundColor3 = P.btn
+    tpRow.BorderSizePixel = 0
+    Instance.new("UICorner", tpRow).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", tpRow).Color = P.brd
+
+    local tpLbl = Instance.new("TextLabel", tpRow)
+    tpLbl.Size = UDim2.new(0.4, 0, 1, 0)
+    tpLbl.Position = UDim2.new(0, 10, 0, 0)
+    tpLbl.BackgroundTransparency = 1
+    tpLbl.Text = L("lbl_tp_player")
+    tpLbl.TextColor3 = P.txt
+    tpLbl.Font = Enum.Font.GothamBold
+    tpLbl.TextSize = FS
+    tpLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local tpBox = Instance.new("TextBox", tpRow)
+    tpBox.Size = UDim2.new(0.4, 0, 0, IsMob and 22 or 18)
+    tpBox.Position = UDim2.new(0.4, 0, 0.5, -9)
+    tpBox.BackgroundColor3 = P.dark
+    tpBox.Text = ""
+    tpBox.PlaceholderText = "Nick"
+    tpBox.TextColor3 = P.wht
+    tpBox.Font = Enum.Font.GothamBold
+    tpBox.TextSize = FS
+    tpBox.BorderSizePixel = 0
+    Instance.new("UICorner", tpBox).CornerRadius = UDim.new(0, 5)
+
+    local tpBtn = Instance.new("TextButton", tpRow)
+    tpBtn.Size = UDim2.new(0, 50, 0, IsMob and 22 or 18)
+    tpBtn.Position = UDim2.new(1, -55, 0.5, -9)
+    tpBtn.BackgroundColor3 = P.acc
+    tpBtn.Text = L("btn_tp_go")
+    tpBtn.TextColor3 = P.wht
+    tpBtn.Font = Enum.Font.GothamBold
+    tpBtn.TextSize = FS
+    tpBtn.BorderSizePixel = 0
+    tpBtn.AutoButtonColor = false
+    Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 5)
+    tpBtn.MouseButton1Click:Connect(function() TpToPlayer(tpBox.Text) end)
+end
+
 AddHdr("Move", "🛡", "hdr_safe_speed")
 MkToggle("Move", "🛡", "lbl_safe_speed", "SafeSpeedMode", "desc_safe_speed")
 MkSlider("Move", "✖", "sl_safe_mult", 10, 40, math.floor(Config.SafeSpeedMult * 10), "SafeSpeedMult_slider", function(v)
@@ -3107,7 +3181,6 @@ RunService.RenderStepped:Connect(function(dt)
     local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
     fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    -- БЕЗПЕЧНИЙ FLY (CFrame Bypass)
     if State.Fly and not State.Freecam and HRP and Hum then
         pcall(function()
             Hum.PlatformStand = false
@@ -3137,7 +3210,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- FREECAM
     if State.Freecam then
         pcall(function()
             local mx, mz = GetDir()
@@ -3154,7 +3226,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- AUTO AIM
     if State.Aim and not State.Freecam and Char and HRP then
         pcall(function()
             local target = GetBestAimTarget()
@@ -3193,7 +3264,6 @@ RunService.RenderStepped:Connect(function(dt)
         end)
     end
 
-    -- SILENT AIM INDICATOR
     if State.SilentAim and not State.Aim and not State.Freecam then
         pcall(function()
             local tgt = GetBestAimTarget()
@@ -3239,26 +3309,40 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- БЕЗПЕЧНИЙ SPEED (CFrame Bypass)
+    if State.Spider then
+        if UIS:IsKeyDown(Binds.Spider) then
+            local mPos = UIS:GetMouseLocation()
+            local ray = Camera:ViewportPointToRay(mPos.X, mPos.Y)
+            local params = RaycastParams.new()
+            params.FilterType = Enum.RaycastFilterType.Exclude
+            params.FilterDescendantsInstances = {Char}
+            local hit = Workspace:Raycast(ray.Origin, ray.Direction * 500, params)
+            if hit then
+                local dir = (hit.Position - HRP.Position)
+                local dist = dir.Magnitude
+                if dist > 2 then
+                    HRP.CFrame = HRP.CFrame + dir.Unit * (Config.SpiderSpeed * dt)
+                    HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end
+            end
+        end
+    end
+
     if State.Speed and not State.Fly and not State.Freecam then
         pcall(function()
-            -- ВАЖЛИВО: Не міняємо WalkSpeed, залишаємо його базовим для сервера
             Hum.WalkSpeed = gameBaseSpeed 
             
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local targetSpd = GetSafeSpeed()
                 local camCF = Camera.CFrame
-                -- Визначаємо напрямок руху відносно камери
                 local moveDir = camCF.LookVector * -Hum.MoveDirection.Z + camCF.RightVector * Hum.MoveDirection.X
                 if moveDir.Magnitude > 0 then
                     moveDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
-                    -- Рахуємо, на скільки треба зсунути
                     local moveAmount = (targetSpd - gameBaseSpeed) * dt * 1.2
                     if moveAmount > 0 then
                         HRP.CFrame = HRP.CFrame + (moveDir * moveAmount)
                     end
                 end
-                -- Скидаємо швидкість падіння, якщо йдемо по рівнині
                 if HRP.AssemblyLinearVelocity.Y < 0 and Hum.FloorMaterial ~= Enum.Material.Air then
                     HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
