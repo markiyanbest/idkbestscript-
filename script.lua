@@ -1,5 +1,5 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — GHOST EDITION (VELOCITY OPTIMIZED)       ██
+-- ██  OMNI V305 — GHOST EDITION (STEALTH HOOK FIX)         ██
 -- ██  Fixes: Freecam Mouse, Safe Server Hop, CFrame Spider ██
 -- ██████████████████████████████████████████████████████████
 
@@ -1206,6 +1206,82 @@ local LockedTarget = nil
 local lastBhop     = 0
 local ShadowLockStartCFrame = nil
 
+local silentAimHooked = false
+
+-- ============================================================
+-- STEALTH SILENT AIM HOOK
+-- ============================================================
+local function SetupSilentAimHook()
+    if silentAimHooked then return true end
+
+    if Env.hasHookMeta and hookmetamethod then
+        local ok = pcall(function()
+            hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
+                local method = getnamecallmethod and getnamecallmethod() or ""
+                if not State.SilentAim then return self[method](self, ...) end
+                
+                if method == "Raycast" and self == Workspace then
+                    local args = {...}
+                    local origin = args[1]
+                    
+                    -- СКРИТНІСТЬ: Змінюємо рейкаст ТІЛЬКИ якщо він виходить з камери гравця або його зброї.
+                    -- Античітовські "пастки" зазвичай відправляють промені з (0,0,0) або випадкових точок.
+                    if typeof(origin) == "Vector3" then
+                        local camPos = Camera.CFrame.Position
+                        local myHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                        local isMyRay = (origin == camPos or (myHRP and origin == myHRP.Position) or (camPos - origin).Magnitude < 10)
+                        
+                        if isMyRay then
+                            local target = GetBestAimTarget()
+                            local part = target and FindAimPart(target)
+                            if part then
+                                local vel = part.AssemblyLinearVelocity
+                                local predPos = part.Position + vel * 0.05
+                                local dir = (predPos - origin)
+                                if Config.AimAntiDetect then
+                                    dir = dir + Vector3.new(
+                                        (math.random() - 0.5) * 0.15,
+                                        (math.random() - 0.5) * 0.10,
+                                        (math.random() - 0.5) * 0.15
+                                    )
+                                end
+                                args[2] = dir.Unit * dir.Magnitude
+                                return self[method](self, unpack(args))
+                            end
+                        end
+                    end
+                end
+                return self[method](self, ...)
+            end) or function(self, ...)
+                local method = getnamecallmethod and getnamecallmethod() or ""
+                if not State.SilentAim then return self[method](self, ...) end
+                if method == "Raycast" and self == Workspace then
+                    local args = {...}
+                    local origin = args[1]
+                    if typeof(origin) == "Vector3" and (Camera.CFrame.Position - origin).Magnitude < 10 then
+                        local target = GetBestAimTarget()
+                        local part = target and FindAimPart(target)
+                        if part then
+                            local dir = (part.Position - origin)
+                            args[2] = dir.Unit * dir.Magnitude
+                            return self[method](self, unpack(args))
+                        end
+                    end
+                end
+                return self[method](self, ...)
+            end)
+        end)
+        if ok then
+            silentAimHooked = true
+            Notify("Silent Aim", L("ntf_hook_ok") .. " [Stealth Mode]", 3)
+            return true
+        end
+    end
+
+    Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
+    return false
+end
+
 local function Toggle(nm)
     if nm == "SpeedAntiBan" then
         Config.SpeedAntiBan = not Config.SpeedAntiBan; State.SpeedAntiBan = Config.SpeedAntiBan
@@ -1322,6 +1398,11 @@ local function Toggle(nm)
     else
         if nm == "Potato" then
             DoPotato()
+        elseif nm == "SilentAim" then
+            -- Встановлюємо хук ТІЛЬКИ при натисканні кнопки
+            if not silentAimHooked then
+                SetupSilentAimHook()
+            end
         elseif nm == "ShadowLock" then
             LockedTarget = GetClosestEnemy()
             if R then ShadowLockStartCFrame = R.CFrame end
@@ -1525,73 +1606,6 @@ LP.CharacterAdded:Connect(function(char)
     end
 end)
 
--- ============================================================
--- SILENT AIM HOOK
--- ============================================================
-local silentAimHooked = false
-
-local function SetupSilentAimHook()
-    if silentAimHooked then return end
-
-    if Env.hasHookMeta and hookmetamethod then
-        local ok = pcall(function()
-            hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
-                local method = getnamecallmethod and getnamecallmethod() or ""
-                if not State.SilentAim then return self[method](self, ...) end
-                if (method == "Raycast") and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local vel = part.AssemblyLinearVelocity
-                            local predPos = part.Position + vel * 0.05
-                            local dir = (predPos - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
-                            end
-                            args[2] = dir.Unit * dir.Magnitude
-                            return self[method](self, unpack(args))
-                        end
-                    end
-                end
-                return self[method](self, ...)
-            end) or function(self, ...)
-                local method = getnamecallmethod and getnamecallmethod() or ""
-                if not State.SilentAim then return self[method](self, ...) end
-                if method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local dir = (part.Position - origin)
-                            args[2] = dir.Unit * dir.Magnitude
-                            return self[method](self, unpack(args))
-                        end
-                    end
-                end
-                return self[method](self, ...)
-            end)
-        end)
-        if ok then
-            silentAimHooked = true
-            Notify("Silent Aim", L("ntf_hook_ok") .. " [hookmetamethod]", 3)
-            return
-        end
-    end
-
-    Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
-end
-
-task.spawn(function() task.wait(2); SetupSilentAimHook() end)
-
 local function GetHTTP(url)
     local ok, result = pcall(function() return game:HttpGet(url) end)
     if ok and result then return result end
@@ -1636,12 +1650,10 @@ local function JoinRandomServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_rnd"), 3)
     task.spawn(function()
-        -- Шукаємо сервери від найбільших до найменших
         local servers = GetServerList("Desc", true)
         if servers and #servers > 0 then
             local filtered = {}
             for _, s in pairs(servers) do
-                -- Відсіюємо сервери з менше ніж 5 гравцями, щоб не потрапити на мертві
                 if s.id ~= game.JobId and s.playing and s.playing >= 5 then
                     table.insert(filtered, s)
                 end
@@ -2282,7 +2294,8 @@ local function CreateQuickBtn(def)
     local startY = IsMob and 200 or 160
     local posX = startX + col * (QB_SIZE + QB_GAP)
     local posY = startY + row * (QB_SIZE + QB_GAP)
- UDim2.new(0, QB_SIZE, 0, QB_SIZE)
+    local qb = Instance.new("Frame", Scr)
+    qb.Size = UDim2.new(0, QB_SIZE, 0, QB_SIZE)
     qb.Position = UDim2.new(0, posX, 0, posY)
     qb.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
     qb.BorderSizePixel = 0; qb.ZIndex = 50
@@ -3144,7 +3157,6 @@ UIS.InputBegan:Connect(function(inp, gpe)
 end)
 
 UIS.InputChanged:Connect(function(inp, gpe)
-    -- Прибрано gpe перевірку, щоб фрікам коректно рухав мишу
     if not State.Freecam then return end
     if inp.UserInputType == Enum.UserInputType.MouseMovement then
         FC_Y = FC_Y - math.rad(inp.Delta.X * 0.35)
@@ -3359,7 +3371,6 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    -- СПРАВЖНІЙ СПАЙДЕР (Лазіння по стінах)
     if State.Spider and not State.Fly and not State.Freecam then
         if Hum.MoveDirection.Magnitude > 0.1 then
             local rayParams = RaycastParams.new()
@@ -3369,11 +3380,9 @@ RunService.Heartbeat:Connect(function(dt)
             local moveDir = Hum.MoveDirection
             moveDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
             
-            -- Б'ємо променем з грудей персонажа вперед
             local origin = HRP.Position + Vector3.new(0, 1.5, 0)
             local hit = Workspace:Raycast(origin, moveDir * 2.5, rayParams)
             if hit then
-                -- Якщо перед нами стіна, плавно піднімаємося вгору через CFrame
                 HRP.CFrame = HRP.CFrame + Vector3.new(0, Config.SpiderSpeed * dt, 0)
             end
         end
