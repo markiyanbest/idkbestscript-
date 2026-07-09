@@ -1,6 +1,6 @@
 -- ██████████████████████████████████████████████████████████
 -- ██  OMNI V305 — GHOST EDITION (BLOCK STRIKE BYPASS)      ██
--- ██  Fixes: gethui() bypass, CFrame Fly, Spider, TP       ██
+-- ██  Real Executor Strict Fix & Mouse/Server Hop Fixes    ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -14,7 +14,6 @@ local TweenService      = game:GetService("TweenService")
 local StarterGui        = game:GetService("StarterGui")
 local HttpService       = game:GetService("HttpService")
 local TeleportService   = game:GetService("TeleportService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LP     = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
@@ -179,7 +178,10 @@ end
 local ENV = {}
 local function _envCheck(fn)
     local ok, v = pcall(fn)
-    return ok and v == true
+    if ok and v == true then
+        return true
+    end
+    return false
 end
 ENV.hasGetRawMeta    = _envCheck(function() return getrawmetatable ~= nil end)
 ENV.hasSetReadOnly   = _envCheck(function() return setreadonly ~= nil end)
@@ -187,8 +189,7 @@ ENV.hasNewCClosure   = _envCheck(function() return newcclosure ~= nil end)
 ENV.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
 ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
 ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
-ENV.hasSynapse       = _envCheck(function() return syn ~= nil end)
-                    or _envCheck(function() return SENTINEL_V2 ~= nil end)
+ENV.hasSynapse       = _envCheck(function() return syn ~= nil end) or _envCheck(function() return rawget(_G, "SENTINEL_V2") ~= nil end)
 
 pcall(function()
     for _, sg in pairs({game:GetService("CoreGui"), LP:WaitForChild("PlayerGui", 5)}) do
@@ -350,7 +351,8 @@ local function ApplyLoadedConfig(data)
     if data.binds then DeserializeBinds(data.binds) end
     for _, k in pairs(SAVE_CFG_KEYS) do
         if data.state and data.state[k] ~= nil then
-            State[k] = data.state[k]; Config[k] = data.state[k]
+            State[k] = data.state[k]
+            Config[k] = data.state[k]
         end
     end
     if data.lang and (data.lang == "EN" or data.lang == "UA") then
@@ -372,8 +374,10 @@ local function LoadConfig()
     if not ok or not content or content == "" then Notify("Config", L("ntf_no_file"), 2); return false end
     local ok2, data = pcall(function() return HttpService:JSONDecode(content) end)
     if not ok2 or not data then Notify("Config", L("ntf_json_err"), 3); return false end
-    ApplyLoadedConfig(data); UpdateAllSliders()
-    Notify("Config", L("ntf_loaded"), 2); return true
+    ApplyLoadedConfig(data)
+    UpdateAllSliders()
+    Notify("Config", L("ntf_loaded"), 2)
+    return true
 end
 
 local function ResetConfig()
@@ -390,7 +394,8 @@ local function ResetConfig()
     Binds.Spider = Enum.KeyCode.T
     State.SpeedAntiBan = true; State.HitboxRandomize = true
     State.AimAntiDetect = true; State.SafeSpeedMode = false
-    UpdateAllSliders(); Notify("Config", L("ntf_reset"), 2)
+    UpdateAllSliders()
+    Notify("Config", L("ntf_reset"), 2)
 end
 
 task.spawn(function()
@@ -592,7 +597,7 @@ local function GetBestAimTarget()
 end
 
 local function TpToPlayer(partialName)
-    if not partialName or partialName == "" then Notify("TP", "Enter name first", 3) return end
+    if not partialName or partialName == "" then Notify("TP", "Enter name first", 3); return end
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LP and string.sub(string.lower(p.Name), 1, #partialName) == string.lower(partialName) then
             local targetChar = p.Character
@@ -606,6 +611,7 @@ local function TpToPlayer(partialName)
         end
     end
     Notify("TP", "Player not found", 3)
+    return
 end
 
 -- ============================================================
@@ -1092,6 +1098,19 @@ local function NoclipApply(char)
     end
 end
 
+local function RestoreMouse()
+    pcall(function()
+        UIS.MouseBehavior = Enum.MouseBehavior.Default
+        UIS.MouseIconEnabled = true
+        if Camera then
+            Camera.CameraType = Enum.CameraType.Custom
+            local char = LP.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then Camera.CameraSubject = hum end
+        end
+    end)
+end
+
 local function ForceRestore()
     local C = LP.Character
     if not C then return end
@@ -1150,7 +1169,7 @@ local function ForceRestore()
 
     ncStuck = 0
     lastNcPos = Vector3.zero
-    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
+    RestoreMouse()
 end
 
 local _fakeLagToken = 0
@@ -1190,10 +1209,6 @@ local function UpdVis(nm)
     if QuickBtnActive and QuickBtnActive[nm] then
         pcall(function() UpdateQuickBtnColor(nm) end)
     end
-end
-
-local function RestoreMouse()
-    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
 end
 
 local UpdFly
@@ -1284,14 +1299,7 @@ local function Toggle(nm)
             pcall(function() if R then R.Anchored = false end end)
             task.spawn(function()
                 task.wait(0.05)
-                pcall(function()
-                    Camera.CameraType = Enum.CameraType.Custom
-                    local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-                    if H2 then Camera.CameraSubject = H2 end
-                    UIS.MouseBehavior = Enum.MouseBehavior.Default
-                end)
-                task.wait(0.05)
-                pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
+                RestoreMouse()
             end)
         elseif nm == "Spin" and R then
             for _, v in pairs(R:GetChildren()) do
@@ -1332,6 +1340,12 @@ local function Toggle(nm)
             local x, y = Camera.CFrame:ToEulerAnglesYXZ()
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
+            if not IsMob then
+                pcall(function()
+                    UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+                    UIS.MouseIconEnabled = false
+                end)
+            end
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
             local myToken = _fakeLagToken
@@ -1389,6 +1403,7 @@ local function Toggle(nm)
 
     UpdVis(nm)
     Notify(nm, State[nm] and "ON ✓" or "OFF ✗", 1)
+    return
 end
 
 local _hjConn = nil
@@ -1483,9 +1498,7 @@ LP.CharacterAdded:Connect(function(char)
 
     local hum = char:FindFirstChildOfClass("Humanoid")
     if hum then
-        Camera.CameraType = Enum.CameraType.Custom
-        Camera.CameraSubject = hum
-        pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
+        RestoreMouse()
         task.spawn(function()
             task.wait(1.2)
             pcall(function()
@@ -1509,59 +1522,62 @@ LP.CharacterAdded:Connect(function(char)
 end)
 
 -- ============================================================
--- SILENT AIM HOOK
+-- SILENT AIM HOOK (FIXED FOR REAL EXECUTOR & BLOCK STRIKE)
 -- ============================================================
 local silentAimHooked = false
 
 local function SetupSilentAimHook()
     if silentAimHooked then return end
 
-    if ENV.hasHookMeta and hookmetamethod then
+    if ENV.hasHookMeta and hookmetamethod and newcclosure then
         local ok = pcall(function()
-            hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
+            hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
                 local method = getnamecallmethod and getnamecallmethod() or ""
-                if not State.SilentAim then return self[method](self, ...) end
-                if (method == "Raycast") and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local vel = part.AssemblyLinearVelocity
-                            local predPos = part.Position + vel * 0.05
-                            local dir = (predPos - origin)
-                            if Config.AimAntiDetect then
-                                dir = dir + Vector3.new(
-                                    (math.random() - 0.5) * 0.15,
-                                    (math.random() - 0.5) * 0.10,
-                                    (math.random() - 0.5) * 0.15
-                                )
+                if State.SilentAim and self == Workspace then
+                    local isRayMethod = (method == "Raycast" or method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" or method == "FindPartOnRayWithWhitelist")
+                    if isRayMethod then
+                        local target = GetBestAimTarget()
+                        local part = target and FindAimPart(target)
+                        if part then
+                            local args = {...}
+                            local origin
+
+                            if method == "Raycast" then
+                                origin = args[1]
+                            else
+                                local ray = args[1]
+                                if typeof(ray) == "Instance" and ray:IsA("Ray") then
+                                    origin = ray.Origin
+                                end
                             end
-                            args[2] = dir.Unit * dir.Magnitude
-                            return self[method](self, unpack(args))
+
+                            if origin then
+                                local vel = part.AssemblyLinearVelocity
+                                local predPos = part.Position + vel * (Config.AimPredictMult * 0.05)
+                                local dir = (predPos - origin)
+                                
+                                if Config.AimAntiDetect then
+                                    dir = dir + Vector3.new(
+                                        (math.random() - 0.5) * 0.15,
+                                        (math.random() - 0.5) * 0.10,
+                                        (math.random() - 0.5) * 0.15
+                                    )
+                                end
+                                
+                                local finalDir = dir.Unit * (dir.Magnitude > 0 and dir.Magnitude or 1)
+
+                                if method == "Raycast" then
+                                    args[2] = finalDir
+                                else
+                                    args[1] = Ray.new(origin, finalDir)
+                                end
+                                return self[method](self, unpack(args))
+                            end
                         end
                     end
                 end
                 return self[method](self, ...)
-            end) or function(self, ...)
-                local method = getnamecallmethod and getnamecallmethod() or ""
-                if not State.SilentAim then return self[method](self, ...) end
-                if method == "Raycast" and self == Workspace then
-                    local target = GetBestAimTarget()
-                    local part = target and FindAimPart(target)
-                    if part then
-                        local args = {...}
-                        local origin = args[1]
-                        if typeof(origin) == "Vector3" then
-                            local dir = (part.Position - origin)
-                            args[2] = dir.Unit * dir.Magnitude
-                            return self[method](self, unpack(args))
-                        end
-                    end
-                end
-                return self[method](self, ...)
-            end)
+            end))
         end)
         if ok then
             silentAimHooked = true
@@ -1571,6 +1587,7 @@ local function SetupSilentAimHook()
     end
 
     Notify("Silent Aim", L("ntf_sa_no_hooks"), 5)
+    return
 end
 
 task.spawn(function() task.wait(2); SetupSilentAimHook() end)
@@ -1589,9 +1606,12 @@ local function GetHTTP(url)
     return nil
 end
 
-local function GetServerList()
+-- ============================================================
+-- SERVER HOP FIX (BIGGEST/SMALLEST)
+-- ============================================================
+local function GetServerList(sortOrder)
     local url = "https://games.roblox.com/v1/games/" .. game.PlaceId
-        .. "/servers/Public?sortOrder=Asc&excludeFullGames=false&limit=100"
+        .. "/servers/Public?sortOrder=" .. sortOrder .. "&excludeFullGames=false&limit=100"
     local data = GetHTTP(url)
     if not data then return nil end
     local ok, parsed = pcall(function() return HttpService:JSONDecode(data) end)
@@ -1619,7 +1639,7 @@ local function JoinRandomServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_rnd"), 3)
     task.spawn(function()
-        local servers = GetServerList()
+        local servers = GetServerList("Asc")
         if servers and #servers > 0 then
             local filtered = {}
             for _, s in pairs(servers) do
@@ -1643,7 +1663,7 @@ local function JoinBiggestServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_big"), 3)
     task.spawn(function()
-        local servers = GetServerList()
+        local servers = GetServerList("Desc")
         if servers and #servers > 0 then
             local best, bestCount = nil, -1
             for _, s in pairs(servers) do
@@ -1666,11 +1686,11 @@ local function JoinSmallestServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_sml"), 3)
     task.spawn(function()
-        local servers = GetServerList()
+        local servers = GetServerList("Asc")
         if servers and #servers > 0 then
             local best, bestCount = nil, math.huge
             for _, s in pairs(servers) do
-                if s.id ~= game.JobId and s.playing and s.playing < bestCount then
+                if s.id ~= game.JobId and s.playing and s.playing < bestCount and s.playing > 0 then
                     bestCount = s.playing; best = s
                 end
             end
@@ -1686,18 +1706,19 @@ local function JoinSmallestServer()
 end
 
 -- ============================================================
--- GHOST GUI INITIALIZATION (BLOCK STRIKE BYPASS)
+-- GHOST GUI INITIALIZATION (HIDDEN VIA GETHUI)
 -- ============================================================
 local GuiP
-if gethui then
-    GuiP = gethui()
-else
-    pcall(function() GuiP = game:GetService("CoreGui") end)
-    if not GuiP then 
-        -- Block Strike Bypass: Hide GUI in TweenService
-        pcall(function() GuiP = game:GetService("TweenService") end)
+pcall(function()
+    if gethui then
+        GuiP = gethui()
     end
-    if not GuiP then GuiP = LP:WaitForChild("PlayerGui") end
+end)
+if not GuiP then
+    pcall(function() GuiP = game:GetService("CoreGui") end)
+end
+if not GuiP then
+    GuiP = LP:WaitForChild("PlayerGui")
 end
 
 local Scr = Instance.new("ScreenGui")
@@ -1857,6 +1878,7 @@ local tLangKeys = {"tab_combat", "tab_move", "tab_misc", "tab_config"}
 local tW = 1 / #tNames
 
 local function SwitchTab(name)
+    if CurTab == name then return end
     CurTab = name
     for n, pg in pairs(TabPages) do pg.Visible = (n == name) end
     for n, bt in pairs(TabBtns) do
@@ -1942,7 +1964,8 @@ local exGrad = Instance.new("UIGradient", exS)
 exGrad.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 16, 28)),
     ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 16)),
-}); exGrad.Rotation = 135
+})
+exGrad.Rotation = 135
 local exStroke = Instance.new("UIStroke", exS)
 exStroke.Color = Color3.fromRGB(0, 200, 100); exStroke.Thickness = 1.5; exStroke.Transparency = 0.4
 
@@ -2223,7 +2246,7 @@ UpdateQuickBtnColor = function(nm)
         }):Play()
         e.stroke.Color = on and Color3.fromRGB(0, 220, 110) or Color3.fromRGB(48, 48, 68)
         e.lbl.TextColor3 = on and Color3.fromRGB(0, 255, 130) or Color3.fromRGB(140, 140, 160)
-    end)
+    })
 end
 
 local function CreateQuickBtn(def)
@@ -2364,47 +2387,47 @@ local flyH = Instance.new("Frame", Scr)
 flyH.Size = UDim2.new(0, 140, 0, 64); flyH.Position = UDim2.new(1, -154, 1, -160)
 flyH.BackgroundTransparency = 1; flyH.Visible = false; flyH.ZIndex = 50
 do
-local flyBG = Instance.new("Frame", flyH)
-flyBG.Size = UDim2.new(1, 0, 1, 0); flyBG.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
-flyBG.BackgroundTransparency = 0.3; flyBG.BorderSizePixel = 0; flyBG.ZIndex = 49
-Instance.new("UICorner", flyBG).CornerRadius = UDim.new(0, 12)
-Instance.new("UIStroke", flyBG).Color = P.brd
+    local flyBG = Instance.new("Frame", flyH)
+    flyBG.Size = UDim2.new(1, 0, 1, 0); flyBG.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
+    flyBG.BackgroundTransparency = 0.3; flyBG.BorderSizePixel = 0; flyBG.ZIndex = 49
+    Instance.new("UICorner", flyBG).CornerRadius = UDim.new(0, 12)
+    Instance.new("UIStroke", flyBG).Color = P.brd
 
-local function MkFlyB(t, x, cb)
-    local b = Instance.new("TextButton", flyH)
-    b.Size = UDim2.new(0, 62, 0, 58); b.Position = UDim2.new(0, x, 0, 3)
-    b.BackgroundColor3 = P.btn; b.Text = t; b.TextColor3 = P.wht
-    b.Font = Enum.Font.GothamBlack; b.TextSize = 28
-    b.BorderSizePixel = 0; b.ZIndex = 51; b.AutoButtonColor = false
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
-    Instance.new("UIStroke", b).Color = P.acc
-    b.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.Touch
-            or i.UserInputType == Enum.UserInputType.MouseButton1 then
-            cb(true)
-            TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.tabA}):Play()
-        end
-    end)
-    b.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.Touch
-            or i.UserInputType == Enum.UserInputType.MouseButton1 then
-            cb(false)
-            TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
-        end
-    end)
-    b.InputChanged:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.Touch then
-            local abs = b.AbsolutePosition; local sz = b.AbsoluteSize
-            if i.Position.X < abs.X or i.Position.X > abs.X + sz.X
-                or i.Position.Y < abs.Y or i.Position.Y > abs.Y + sz.Y then
+    local function MkFlyB(t, x, cb)
+        local b = Instance.new("TextButton", flyH)
+        b.Size = UDim2.new(0, 62, 0, 58); b.Position = UDim2.new(0, x, 0, 3)
+        b.BackgroundColor3 = P.btn; b.Text = t; b.TextColor3 = P.wht
+        b.Font = Enum.Font.GothamBlack; b.TextSize = 28
+        b.BorderSizePixel = 0; b.ZIndex = 51; b.AutoButtonColor = false
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+        Instance.new("UIStroke", b).Color = P.acc
+        b.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.Touch
+                or i.UserInputType == Enum.UserInputType.MouseButton1 then
+                cb(true)
+                TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.tabA}):Play()
+            end
+        end)
+        b.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.Touch
+                or i.UserInputType == Enum.UserInputType.MouseButton1 then
                 cb(false)
                 TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
             end
-        end
-    end)
-end
-MkFlyB("▲", 4, function(v) MobUp = v end)
-MkFlyB("▼", 72, function(v) MobDn = v end)
+        end)
+        b.InputChanged:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.Touch then
+                local abs = b.AbsolutePosition; local sz = b.AbsoluteSize
+                if i.Position.X < abs.X or i.Position.X > abs.X + sz.X
+                    or i.Position.Y < abs.Y or i.Position.Y > abs.Y + sz.Y then
+                    cb(false)
+                    TweenService:Create(b, TweenInfo.new(0.08), {BackgroundColor3 = P.btn}):Play()
+                end
+            end
+        end)
+    end
+    MkFlyB("▲", 4, function(v) MobUp = v end)
+    MkFlyB("▼", 72, function(v) MobDn = v end)
 end
 
 if IsTab then table.insert(MobMovableBtns, {btn = flyH, name = "FlyBtns"}) end
@@ -2473,54 +2496,55 @@ local ShowDesc, HideDesc, AddHdr
 local langBtnRef, autoSaveLblRef = nil, nil
 local waitingBind = nil
 
-;(function()
 do
-local descPopup = Instance.new("Frame", Scr)
-descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
-descPopup.Position = UDim2.new(0.5, -(MW - 30) / 2, 0.5, -50)
-descPopup.BackgroundColor3 = Color3.fromRGB(16, 16, 28)
-descPopup.BorderSizePixel = 0; descPopup.Visible = false; descPopup.ZIndex = 200
-descPopup.ClipsDescendants = true
-Instance.new("UICorner", descPopup).CornerRadius = UDim.new(0, 12)
-do local descStroke = Instance.new("UIStroke", descPopup)
-descStroke.Color = P.acc; descStroke.Thickness = 2 end
+    local descPopup = Instance.new("Frame", Scr)
+    descPopup.Size = UDim2.new(0, MW - 30, 0, 0)
+    descPopup.Position = UDim2.new(0.5, -(MW - 30) / 2, 0.5, -50)
+    descPopup.BackgroundColor3 = Color3.fromRGB(16, 16, 28)
+    descPopup.BorderSizePixel = 0; descPopup.Visible = false; descPopup.ZIndex = 200
+    descPopup.ClipsDescendants = true
+    Instance.new("UICorner", descPopup).CornerRadius = UDim.new(0, 12)
+    do 
+        local descStroke = Instance.new("UIStroke", descPopup)
+        descStroke.Color = P.acc; descStroke.Thickness = 2 
+    end
 
-local descTitle = Instance.new("TextLabel", descPopup)
-descTitle.Size = UDim2.new(1, -10, 0, 24); descTitle.Position = UDim2.new(0, 5, 0, 8)
-descTitle.BackgroundTransparency = 1; descTitle.TextColor3 = P.acc
-descTitle.Font = Enum.Font.GothamBlack; descTitle.TextSize = 13
-descTitle.TextXAlignment = Enum.TextXAlignment.Left; descTitle.ZIndex = 201
+    local descTitle = Instance.new("TextLabel", descPopup)
+    descTitle.Size = UDim2.new(1, -10, 0, 24); descTitle.Position = UDim2.new(0, 5, 0, 8)
+    descTitle.BackgroundTransparency = 1; descTitle.TextColor3 = P.acc
+    descTitle.Font = Enum.Font.GothamBlack; descTitle.TextSize = 13
+    descTitle.TextXAlignment = Enum.TextXAlignment.Left; descTitle.ZIndex = 201
 
-local descBody = Instance.new("TextLabel", descPopup)
-descBody.Size = UDim2.new(1, -14, 0, 60); descBody.Position = UDim2.new(0, 7, 0, 34)
-descBody.BackgroundTransparency = 1; descBody.TextColor3 = P.txt
-descBody.Font = Enum.Font.Gotham; descBody.TextSize = IsMob and 11 or 10
-descBody.TextWrapped = true; descBody.TextXAlignment = Enum.TextXAlignment.Left
-descBody.TextYAlignment = Enum.TextYAlignment.Top; descBody.ZIndex = 201
+    local descBody = Instance.new("TextLabel", descPopup)
+    descBody.Size = UDim2.new(1, -14, 0, 60); descBody.Position = UDim2.new(0, 7, 0, 34)
+    descBody.BackgroundTransparency = 1; descBody.TextColor3 = P.txt
+    descBody.Font = Enum.Font.Gotham; descBody.TextSize = IsMob and 11 or 10
+    descBody.TextWrapped = true; descBody.TextXAlignment = Enum.TextXAlignment.Left
+    descBody.TextYAlignment = Enum.TextYAlignment.Top; descBody.ZIndex = 201
 
-local descClose = Instance.new("TextButton", descPopup)
-descClose.Size = UDim2.new(0, 24, 0, 24); descClose.Position = UDim2.new(1, -30, 0, 6)
-descClose.BackgroundColor3 = Color3.fromRGB(50, 50, 65); descClose.Text = "✕"
-descClose.TextColor3 = P.txt; descClose.Font = Enum.Font.GothamBold; descClose.TextSize = 11
-descClose.BorderSizePixel = 0; descClose.ZIndex = 202; descClose.AutoButtonColor = false
-Instance.new("UICorner", descClose).CornerRadius = UDim.new(1, 0)
+    local descClose = Instance.new("TextButton", descPopup)
+    descClose.Size = UDim2.new(0, 24, 0, 24); descClose.Position = UDim2.new(1, -30, 0, 6)
+    descClose.BackgroundColor3 = Color3.fromRGB(50, 50, 65); descClose.Text = "✕"
+    descClose.TextColor3 = P.txt; descClose.Font = Enum.Font.GothamBold; descClose.TextSize = 11
+    descClose.BorderSizePixel = 0; descClose.ZIndex = 202; descClose.AutoButtonColor = false
+    Instance.new("UICorner", descClose).CornerRadius = UDim.new(1, 0)
 
-ShowDesc = function(title, descKey)
-    descTitle.Text = title; descBody.Text = L(descKey)
-    local textH = math.max(60, math.min(descBody.TextBounds.Y + 10, 160))
-    local totalH = textH + 48
-    descPopup.Size = UDim2.new(0, MW - 30, 0, 0); descPopup.Visible = true
-    TweenService:Create(descPopup, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-        Size = UDim2.new(0, MW - 30, 0, totalH)
-    }):Play()
-    descBody.Size = UDim2.new(1, -14, 0, textH)
-end
+    ShowDesc = function(title, descKey)
+        descTitle.Text = title; descBody.Text = L(descKey)
+        local textH = math.max(60, math.min(descBody.TextBounds.Y + 10, 160))
+        local totalH = textH + 48
+        descPopup.Size = UDim2.new(0, MW - 30, 0, 0); descPopup.Visible = true
+        TweenService:Create(descPopup, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
+            Size = UDim2.new(0, MW - 30, 0, totalH)
+        }):Play()
+        descBody.Size = UDim2.new(1, -14, 0, textH)
+    end
 
-HideDesc = function()
-    TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
-    task.delay(0.12, function() descPopup.Visible = false end)
-end
-descClose.MouseButton1Click:Connect(HideDesc)
+    HideDesc = function()
+        TweenService:Create(descPopup, TweenInfo.new(0.12), {Size = UDim2.new(0, MW - 30, 0, 0)}):Play()
+        task.delay(0.12, function() descPopup.Visible = false end)
+    end
+    descClose.MouseButton1Click:Connect(HideDesc)
 end
 
 AddHdr = function(tab, icon, langKey)
@@ -2552,7 +2576,7 @@ local function MkToggle(tab, icon, lblKey, logicName, descKey)
     Instance.new("UICorner", accent).CornerRadius = UDim.new(0, 2)
 
     local ic = Instance.new("TextLabel", row)
-    ic.Size = UDim2.new(0, 24, 1, 0); ic.Position = UDim2.new(0, 8, 0, 0)
+    ic.Size = UDim2.new(0, 24, 1, 0); ic.Position = UDim2.new(0, 8,0, 0)
     ic.BackgroundTransparency = 1; ic.Text = icon
     ic.TextSize = IsMob and 15 or 13; ic.Font = Enum.Font.Gotham; ic.TextColor3 = P.dim
 
@@ -2837,8 +2861,11 @@ task.spawn(function()
     infoF.Size = UDim2.new(0.95, 0, 0, IsMob and 44 or 36)
     infoF.BackgroundColor3 = Color3.fromRGB(14, 18, 14); infoF.BorderSizePixel = 0
     Instance.new("UICorner", infoF).CornerRadius = UDim.new(0, 8)
-    do local infoSt = Instance.new("UIStroke", infoF)
-    infoSt.Color = Color3.fromRGB(0, 160, 80); infoSt.Transparency = 0.5 end
+    do 
+        local infoSt = Instance.new("UIStroke", infoF)
+        infoSt.Color = Color3.fromRGB(0, 160, 80)
+        infoSt.Transparency = 0.5
+    end
     local infoLbl = Instance.new("TextLabel", infoF)
     infoLbl.Size = UDim2.new(1, -10, 1, 0); infoLbl.Position = UDim2.new(0, 5, 0, 0)
     infoLbl.BackgroundTransparency = 1; infoLbl.TextColor3 = Color3.fromRGB(100, 230, 140)
@@ -3009,60 +3036,60 @@ MkToggle("Config", "🎲", "lbl_speed_jitter", "SpeedAntiBan", "desc_speed_jitte
 MkToggle("Config", "📦", "lbl_hitbox_rand", "HitboxRandomize", "desc_hitbox_rand")
 MkToggle("Config", "🎯", "lbl_aim_anti", "AimAntiDetect", "desc_aim_anti")
 
-if IsTab then task.spawn(function()
-    AddHdr("Config", "⚡", "hdr_quick_btns")
-    local _qbPg = TabPages["Config"]
-    for _, _qdef in ipairs(QuickBtnDefs) do
-        local _qrow = Instance.new("TextButton", _qbPg)
-        _qrow.Size = UDim2.new(0.95, 0, 0, BH)
-        _qrow.BackgroundColor3 = P.btn; _qrow.BorderSizePixel = 0
-        _qrow.AutoButtonColor = false; _qrow.Text = ""; _qrow.ClipsDescendants = true
-        Instance.new("UICorner", _qrow).CornerRadius = UDim.new(0, 8)
-        Instance.new("UIStroke", _qrow).Color = P.brd
+if IsTab then
+    task.spawn(function()
+        AddHdr("Config", "⚡", "hdr_quick_btns")
+        local _qbPg = TabPages["Config"]
+        for _, _qdef in ipairs(QuickBtnDefs) do
+            local _qrow = Instance.new("TextButton", _qbPg)
+            _qrow.Size = UDim2.new(0.95, 0, 0, BH)
+            _qrow.BackgroundColor3 = P.btn; _qrow.BorderSizePixel = 0
+            _qrow.AutoButtonColor = false; _qrow.Text = ""; _qrow.ClipsDescendants = true
+            Instance.new("UICorner", _qrow).CornerRadius = UDim.new(0, 8)
+            Instance.new("UIStroke", _qrow).Color = P.brd
 
-        local _qic = Instance.new("TextLabel", _qrow)
-        _qic.Size = UDim2.new(0, 28, 1, 0); _qic.Position = UDim2.new(0, 6, 0, 0)
-        _qic.BackgroundTransparency = 1; _qic.Text = _qdef.icon
-        _qic.TextSize = IsMob and 16 or 13; _qic.Font = Enum.Font.Gotham; _qic.TextColor3 = P.dim
+            local _qic = Instance.new("TextLabel", _qrow)
+            _qic.Size = UDim2.new(0, 28, 1, 0); _qic.Position = UDim2.new(0, 6, 0, 0)
+            _qic.BackgroundTransparency = 1; _qic.Text = _qdef.icon
+            _qic.TextSize = IsMob and 16 or 13; _qic.Font = Enum.Font.Gotham; _qic.TextColor3 = P.dim
 
-        local _qlbl = Instance.new("TextLabel", _qrow)
-        _qlbl.Size = UDim2.new(1, -90, 1, 0); _qlbl.Position = UDim2.new(0, 36, 0, 0)
-        _qlbl.BackgroundTransparency = 1; _qlbl.Text = _qdef.lbl .. " (Quick)"
-        _qlbl.TextColor3 = P.txt; _qlbl.Font = Enum.Font.GothamBold; _qlbl.TextSize = FS
-        _qlbl.TextXAlignment = Enum.TextXAlignment.Left
+            local _qlbl = Instance.new("TextLabel", _qrow)
+            _qlbl.Size = UDim2.new(1, -90, 1, 0); _qlbl.Position = UDim2.new(0, 36, 0, 0)
+            _qlbl.BackgroundTransparency = 1; _qlbl.Text = _qdef.lbl .. " (Quick)"
+            _qlbl.TextColor3 = P.txt; _qlbl.Font = Enum.Font.GothamBold; _qlbl.TextSize = FS
+            _qlbl.TextXAlignment = Enum.TextXAlignment.Left
 
-        local _qswBG = Instance.new("Frame", _qrow)
-        _qswBG.Size = UDim2.new(0, 36, 0, 18); _qswBG.Position = UDim2.new(1, -44, 0.5, -9)
-        _qswBG.BackgroundColor3 = P.swOff; _qswBG.BorderSizePixel = 0
-        Instance.new("UICorner", _qswBG).CornerRadius = UDim.new(1, 0)
-        local _qswDot = Instance.new("Frame", _qswBG)
-        _qswDot.Size = UDim2.new(0, 12, 0, 12); _qswDot.Position = UDim2.new(0, 3, 0.5, -6)
-        _qswDot.BackgroundColor3 = Color3.fromRGB(200, 200, 210); _qswDot.BorderSizePixel = 0
-        Instance.new("UICorner", _qswDot).CornerRadius = UDim.new(1, 0)
+            local _qswBG = Instance.new("Frame", _qrow)
+            _qswBG.Size = UDim2.new(0, 36, 0, 18); _qswBG.Position = UDim2.new(1, -44, 0.5, -9)
+            _qswBG.BackgroundColor3 = P.swOff; _qswBG.BorderSizePixel = 0
+            Instance.new("UICorner", _qswBG).CornerRadius = UDim.new(1, 0)
+            local _qswDot = Instance.new("Frame", _qswBG)
+            _qswDot.Size = UDim2.new(0, 12, 0, 12); _qswDot.Position = UDim2.new(0, 3, 0.5, -6)
+            _qswDot.BackgroundColor3 = Color3.fromRGB(200, 200, 210); _qswDot.BorderSizePixel = 0
+            Instance.new("UICorner", _qswDot).CornerRadius = UDim.new(1, 0)
 
-        local _qnm = _qdef.nm
-        local function _qRefresh()
-            local _on = QuickBtnStates[_qnm]
-            TweenService:Create(_qswBG, TweenInfo.new(0.12), {
-                BackgroundColor3 = _on and Color3.fromRGB(0, 200, 100) or P.swOff
-            }):Play()
-            TweenService:Create(_qswDot, TweenInfo.new(0.12), {
-                Position = _on and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
-            }):Play()
-        end
-        _qrow.MouseButton1Click:Connect(function()
-            QuickBtnStates[_qnm] = not QuickBtnStates[_qnm]
-            if QuickBtnStates[_qnm] then
-                CreateQuickBtn(_qdef)
-            else
-                RemoveQuickBtn(_qnm)
+            local _qnm = _qdef.nm
+            local function _qRefresh()
+                local _on = QuickBtnStates[_qnm]
+                TweenService:Create(_qswBG, TweenInfo.new(0.12), {
+                    BackgroundColor3 = _on and Color3.fromRGB(0, 200, 100) or P.swOff
+                }):Play()
+                TweenService:Create(_qswDot, TweenInfo.new(0.12), {
+                    Position = _on and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
+                }):Play()
             end
-            _qRefresh()
-        end)
-    end
-end) end
-
-end)()
+            _qrow.MouseButton1Click:Connect(function()
+                QuickBtnStates[_qnm] = not QuickBtnStates[_qnm]
+                if QuickBtnStates[_qnm] then
+                    CreateQuickBtn(_qdef)
+                else
+                    RemoveQuickBtn(_qnm)
+                end
+                _qRefresh()
+            end)
+        end
+    end)
+end
 
 -- INPUT
 UIS.InputBegan:Connect(function(inp, gpe)
@@ -3153,137 +3180,137 @@ task.spawn(function()
 end)
 
 -- RENDER STEPPED
-;(function()
-local FrameLog   = {}
-local lastPing   = 0
-local pingTk     = 0
+do
+    local FrameLog   = {}
+    local lastPing   = 0
+    local pingTk     = 0
 
-RunService.RenderStepped:Connect(function(dt)
-    local now = tick()
+    RunService.RenderStepped:Connect(function(dt)
+        local now = tick()
 
-    table.insert(FrameLog, now)
-    while FrameLog[1] and FrameLog[1] < now - 1 do table.remove(FrameLog, 1) end
-    local fps = #FrameLog
-    if now - pingTk > 2 then pingTk = now; pcall(function() lastPing = LP:GetNetworkPing() end) end
-    local pm = math.floor(lastPing * 1000)
-    local fc = fps >= 55 and Color3.fromRGB(130, 255, 170) or fps >= 30 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
-    local pc = pm <= 80 and Color3.fromRGB(130, 255, 170) or pm <= 150 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
-    fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
-    pngL.Text = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
-    eF.Text = tostring(fps); eF.TextColor3 = fc
-    eP.Text = pm .. " ms"; eP.TextColor3 = pc
+        table.insert(FrameLog, now)
+        while FrameLog[1] and FrameLog[1] < now - 1 do table.remove(FrameLog, 1) end
+        local fps = #FrameLog
+        if now - pingTk > 2 then pingTk = now; pcall(function() lastPing = LP:GetNetworkPing() end) end
+        local pm = math.floor(lastPing * 1000)
+        local fc = fps >= 55 and Color3.fromRGB(130, 255, 170) or fps >= 30 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
+        local pc = pm <= 80 and Color3.fromRGB(130, 255, 170) or pm <= 150 and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 90, 90)
+        fpsL.Text = "FPS: " .. fps; fpsL.TextColor3 = fc
+        pngL.Text = "Ping: " .. pm .. "ms"; pngL.TextColor3 = pc
+        eF.Text = tostring(fps); eF.TextColor3 = fc
+        eP.Text = pm .. " ms"; eP.TextColor3 = pc
 
-    UpdateESP()
+        UpdateESP()
 
-    local Char = LP.Character
-    local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
-    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
-    local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
-    fovCircle.Visible = showFOV; tgtInfo.Visible = false
+        local Char = LP.Character
+        local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
+        local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+        local showFOV = (State.Aim or State.SilentAim) and not State.Freecam
+        fovCircle.Visible = showFOV; tgtInfo.Visible = false
 
-    if State.Fly and not State.Freecam and HRP and Hum then
-        pcall(function()
-            Hum.PlatformStand = false
-            HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            
-            local mx, mz = GetDir()
-            local camCF = Camera.CFrame
-            local dir = camCF.LookVector * -mz + camCF.RightVector * mx
-            local upD = 0
-            if UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then upD = 1 end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then upD = -1 end
-            dir = dir + Vector3.new(0, upD, 0)
-
-            if dir.Magnitude > 0.05 then
-                dir = dir.Unit
-                local moveStep = dir * (Config.FlySpeed * dt * 1.5)
-                if HRP.Position.Y > Config.FlyHeightMax then
-                    moveStep = Vector3.new(moveStep.X, math.min(moveStep.Y, -0.1), moveStep.Z)
-                end
-                HRP.CFrame = HRP.CFrame + moveStep
+        if State.Fly and not State.Freecam and HRP and Hum then
+            pcall(function()
+                Hum.PlatformStand = false
+                HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 
-                if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
-                    HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-dir.X, -dir.Z), 0)
-                end
-                if not State.Spin then HRP.AssemblyAngularVelocity = Vector3.zero end
-            end
-        end)
-    end
+                local mx, mz = GetDir()
+                local camCF = Camera.CFrame
+                local dir = camCF.LookVector * -mz + camCF.RightVector * mx
+                local upD = 0
+                if UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then upD = 1 end
+                if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then upD = -1 end
+                dir = dir + Vector3.new(0, upD, 0)
 
-    if State.Freecam then
-        pcall(function()
-            local mx, mz = GetDir()
-            local dir = Camera.CFrame.LookVector * -mz + Camera.CFrame.RightVector * mx
-            if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then
-                dir += Camera.CFrame.UpVector
-            end
-            if UIS:IsKeyDown(Enum.KeyCode.Q) or UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then
-                dir -= Camera.CFrame.UpVector
-            end
-            if dir.Magnitude > 1 then dir = dir.Unit end
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position + dir * (Config.FlySpeed / 25) * dt * 60)
-                * CFrame.fromEulerAnglesYXZ(FC_P, FC_Y, 0)
-        end)
-    end
+                if dir.Magnitude > 0.05 then
+                    dir = dir.Unit
+                    local moveStep = dir * (Config.FlySpeed * dt * 1.5)
+                    if HRP.Position.Y > Config.FlyHeightMax then
+                        moveStep = Vector3.new(moveStep.X, math.min(moveStep.Y, -0.1), moveStep.Z)
+                    end
+                    HRP.CFrame = HRP.CFrame + moveStep
+                    
+                    if (math.abs(mx) > 0.1 or math.abs(mz) > 0.1) and not State.Spin then
+                        HRP.CFrame = CFrame.new(HRP.Position) * CFrame.Angles(0, math.atan2(-dir.X, -dir.Z), 0)
+                    end
+                    if not State.Spin then HRP.AssemblyAngularVelocity = Vector3.zero end
+                end
+            end)
+        end
 
-    if State.Aim and not State.Freecam and Char and HRP then
-        pcall(function()
-            local target = GetBestAimTarget()
-            local part = target and FindAimPart(target)
-            if part then
-                local predTime = math.clamp(lastPing, 0.01, 0.25)
-                local vel = part.AssemblyLinearVelocity
-                local dist = (Camera.CFrame.Position - part.Position).Magnitude
-                local predMul = math.clamp(dist / 100, 0.3, 1.5) * Config.AimPredictMult
-                local predictedPos = part.Position + vel * predTime * predMul
-                if vel.Y < -5 then
-                    predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0)
+        if State.Freecam then
+            pcall(function()
+                local mx, mz = GetDir()
+                local dir = Camera.CFrame.LookVector * -mz + Camera.CFrame.RightVector * mx
+                if UIS:IsKeyDown(Enum.KeyCode.E) or UIS:IsKeyDown(Enum.KeyCode.Space) or MobUp then
+                    dir += Camera.CFrame.UpVector
                 end
-                local smooth = Config.AimSmooth
-                local sd = ScreenDist(part)
-                if sd < 30 then smooth = smooth * 0.3 elseif sd < 80 then smooth = smooth * 0.6 end
-                if Config.AimAntiDetect then
-                    predictedPos += Vector3.new(
-                        (math.random() - 0.5) * 0.12,
-                        (math.random() - 0.5) * 0.08,
-                        (math.random() - 0.5) * 0.12
-                    )
+                if UIS:IsKeyDown(Enum.KeyCode.Q) or UIS:IsKeyDown(Enum.KeyCode.LeftControl) or MobDn then
+                    dir -= Camera.CFrame.UpVector
                 end
-                local targetCF = CFrame.new(Camera.CFrame.Position, predictedPos)
-                Camera.CFrame = Camera.CFrame:Lerp(targetCF, smooth)
-                local plr = Players:GetPlayerFromCharacter(target)
-                tgtInfo.Text = "🔒 " .. (plr and plr.Name or "?") .. " [" .. math.floor(dist) .. "m]"
-                tgtInfo.TextColor3 = Color3.fromRGB(0, 230, 120); tgtInfo.Visible = true
-                fovStroke.Color = Color3.fromRGB(0, 230, 100); fovStroke.Thickness = 2
-            else
-                if showFOV then
-                    tgtInfo.Text = L("stat_no_target"); tgtInfo.TextColor3 = P.dim; tgtInfo.Visible = true
-                end
-                fovStroke.Color = Color3.fromRGB(180, 180, 200); fovStroke.Thickness = 1.5
-            end
-        end)
-    end
+                if dir.Magnitude > 1 then dir = dir.Unit end
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position + dir * (Config.FlySpeed / 25) * dt * 60)
+                    * CFrame.fromEulerAnglesYXZ(FC_P, FC_Y, 0)
+            end)
+        end
 
-    if State.SilentAim and not State.Aim and not State.Freecam then
-        pcall(function()
-            local tgt = GetBestAimTarget()
-            local part = tgt and FindAimPart(tgt)
-            if part then
-                local plr = Players:GetPlayerFromCharacter(tgt)
-                local dist = math.floor((Camera.CFrame.Position - part.Position).Magnitude)
-                tgtInfo.Text = "🔇 " .. (plr and plr.Name or "?") .. " [" .. dist .. "m]"
-                tgtInfo.TextColor3 = Color3.fromRGB(255, 200, 50); tgtInfo.Visible = true
-                fovStroke.Color = Color3.fromRGB(255, 200, 50)
-            else
-                if showFOV then
-                    tgtInfo.Text = L("stat_no_target"); tgtInfo.TextColor3 = P.dim; tgtInfo.Visible = true
+        if State.Aim and not State.Freecam and Char and HRP then
+            pcall(function()
+                local target = GetBestAimTarget()
+                local part = target and FindAimPart(target)
+                if part then
+                    local predTime = math.clamp(lastPing, 0.01, 0.25)
+                    local vel = part.AssemblyLinearVelocity
+                    local dist = (Camera.CFrame.Position - part.Position).Magnitude
+                    local predMul = math.clamp(dist / 100, 0.3, 1.5) * Config.AimPredictMult
+                    local predictedPos = part.Position + vel * predTime * predMul
+                    if vel.Y < -5 then
+                        predictedPos += Vector3.new(0, -4.9 * predTime * predTime, 0)
+                    end
+                    local smooth = Config.AimSmooth
+                    local sd = ScreenDist(part)
+                    if sd < 30 then smooth = smooth * 0.3 elseif sd < 80 then smooth = smooth * 0.6 end
+                    if Config.AimAntiDetect then
+                        predictedPos += Vector3.new(
+                            (math.random() - 0.5) * 0.12,
+                            (math.random() - 0.5) * 0.08,
+                            (math.random() - 0.5) * 0.12
+                        )
+                    end
+                    local targetCF = CFrame.new(Camera.CFrame.Position, predictedPos)
+                    Camera.CFrame = Camera.CFrame:Lerp(targetCF, smooth)
+                    local plr = Players:GetPlayerFromCharacter(target)
+                    tgtInfo.Text = "🔒 " .. (plr and plr.Name or "?") .. " [" .. math.floor(dist) .. "m]"
+                    tgtInfo.TextColor3 = Color3.fromRGB(0, 230, 120); tgtInfo.Visible = true
+                    fovStroke.Color = Color3.fromRGB(0, 230, 100); fovStroke.Thickness = 2
+                else
+                    if showFOV then
+                        tgtInfo.Text = L("stat_no_target"); tgtInfo.TextColor3 = P.dim; tgtInfo.Visible = true
+                    end
+                    fovStroke.Color = Color3.fromRGB(180, 180, 200); fovStroke.Thickness = 1.5
                 end
-                fovStroke.Color = Color3.fromRGB(180, 180, 200)
-            end
-        end)
-    end
-end)
-end)()
+            end)
+        end
+
+        if State.SilentAim and not State.Aim and not State.Freecam then
+            pcall(function()
+                local tgt = GetBestAimTarget()
+                local part = tgt and FindAimPart(tgt)
+                if part then
+                    local plr = Players:GetPlayerFromCharacter(tgt)
+                    local dist = math.floor((Camera.CFrame.Position - part.Position).Magnitude)
+                    tgtInfo.Text = "🔇 " .. (plr and plr.Name or "?") .. " [" .. dist .. "m]"
+                    tgtInfo.TextColor3 = Color3.fromRGB(255, 200, 50); tgtInfo.Visible = true
+                    fovStroke.Color = Color3.fromRGB(255, 200, 50)
+                else
+                    if showFOV then
+                        tgtInfo.Text = L("stat_no_target"); tgtInfo.TextColor3 = P.dim; tgtInfo.Visible = true
+                    end
+                    fovStroke.Color = Color3.fromRGB(180, 180, 200)
+                end
+            end)
+        end
+    end)
+end
 
 -- HEARTBEAT
 RunService.Heartbeat:Connect(function(dt)
@@ -3302,7 +3329,7 @@ RunService.Heartbeat:Connect(function(dt)
                     pcall(function() lastPing2 = LP:GetNetworkPing() end)
                     local pr = tR.AssemblyLinearVelocity * math.clamp(lastPing2, 0, 0.2)
                     HRP.CFrame = HRP.CFrame:Lerp(
-                        CFrame.new(tR.Position + pr) * tR.CFrame.Rotation * CFrame.new(0, 0, 3), 0.4)
+                        CFrame.new(tR.Position + pr) * tR.CFrame.Rotation * CFrame.new(0,0,3), 0.4)
                     HRP.AssemblyLinearVelocity = tR.AssemblyLinearVelocity
                 end)
             end
