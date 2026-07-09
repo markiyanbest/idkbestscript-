@@ -1,6 +1,6 @@
 -- ██████████████████████████████████████████████████████████
--- ██  OMNI V305 — GHOST EDITION (BLOCK STRIKE BYPASS)      ██
--- ██  Fixes: gethui() bypass, CFrame Fly, Spider, TP       ██
+-- ██  OMNI V305 — GHOST EDITION (VELOCITY OPTIMIZED)       ██
+-- ██  Fixes: Freecam Mouse, Safe Server Hop, CFrame Spider ██
 -- ██████████████████████████████████████████████████████████
 
 local Players           = game:GetService("Players")
@@ -23,7 +23,7 @@ local CurrentLang = "EN"
 
 local Strings = {
     EN = {
-        title = "OMNI V305", subtitle_mobile = "MOBILE · GHOST EDITION", subtitle_pc = "UNIVERSAL · GHOST EDITION",
+        title = "OMNI V305", subtitle_mobile = "MOBILE · GHOST EDITION", subtitle_pc = "UNIVERSAL · VELOCITY",
         tab_combat = "Combat", tab_move = "Move", tab_misc = "Misc", tab_config = "Config",
         hdr_aiming = "AIMING", hdr_hitbox_esp = "HITBOX & ESP", hdr_flight = "FLIGHT",
         hdr_speed_jump = "SPEED & JUMP", hdr_physics = "PHYSICS", hdr_safe_speed = "SAFE SPEED MODE",
@@ -38,15 +38,15 @@ local Strings = {
         lbl_anti_void = "Anti-Void", lbl_safe_speed = "Safe Speed (Anti Rubber-Band)", lbl_spin = "Spin",
         lbl_potato = "Potato Mode", lbl_fake_lag = "Fake Lag", lbl_anti_afk = "Anti-AFK",
         lbl_speed_jitter = "Speed Jitter", lbl_hitbox_rand = "Hitbox Randomize", lbl_aim_anti = "Aim Anti-Detect",
-        lbl_spider = "Spider (CFrame)", lbl_tp_player = "TP to Player", btn_tp_go = "Teleport",
-        desc_spider = "Hold bind to zip to surface you look at.",
+        lbl_spider = "Spider (Wall Climb)", lbl_tp_player = "TP to Player", btn_tp_go = "Teleport",
+        desc_spider = "Walk into any wall and hold W to climb up it automatically.",
         desc_auto_aim = "Automatically aims your camera at the nearest visible enemy within FOV radius.",
         desc_silent_aim = "Redirects raycasts to enemies without moving your camera. Requires exploit hooks.",
-        desc_shadow_lock = "Teleports you behind the closest enemy, following their movement.",
+        desc_shadow_lock = "Teleports you behind the closest enemy. Returns you to start position when disabled.",
         desc_hitbox = "Expands enemy hitbox parts so they are easier to hit.",
         desc_esp = "Shows player name, HP and distance as clean text. No boxes.",
         desc_fly = "Free flight using CFrame bypass. Undetected by velocity anti-cheats.",
-        desc_freecam = "Detaches camera from character for free spectating.",
+        desc_freecam = "Detaches camera from character for free spectating. (Press C to toggle)",
         desc_speed = "Increases speed using CFrame bypass. Undetected by WalkSpeed anti-cheats.",
         desc_bhop = "Auto-bunny hop: hold Space while moving to chain jumps with speed boost.",
         desc_high_jump = "Increases your jump height/power significantly.",
@@ -77,7 +77,7 @@ local Strings = {
         ntf_srv_fail = "❌ Server list unavailable", ntf_players = " players", ntf_wait = "⏳ Please wait...",
         ntf_safe_on = "🛡 ON · Cap: ", ntf_safe_off = "🛡 OFF", ntf_hook_ok = "🔇 Hook installed ✓",
         ntf_anti_void = "🛡 Teleported to safe position",
-        ntf_startup = "✅ Ghost Edition · Block Strike Bypass Active",
+        ntf_startup = "✅ Velocity Edition · Bypass Active",
         ntf_lang = "Language changed to: ",
         stat_no_target = "No target", stat_auto_save = "⏱ Auto-save every 60s · OmniV305_Ghost.json",
         stat_safe_info = "📊 Game base: %d | Cap (×%.1f): %d%s\n⚡ Set: %d → Effective: %d",
@@ -94,7 +94,7 @@ local Strings = {
     },
     UA = {
         title = "OMNI V305", subtitle_mobile = "МОБІЛЬНА · GHOST ВЕРСІЯ",
-        subtitle_pc = "УНІВЕРСАЛЬНА · GHOST ВЕРСІЯ",
+        subtitle_pc = "УНІВЕРСАЛЬНА · VELOCITY",
         tab_combat = "Бій", tab_move = "Рух", tab_misc = "Інше", tab_config = "Налашт.",
         hdr_aiming = "ПРИЦІЛЮВАННЯ", hdr_hitbox_esp = "ХІТБОКС & ESP", hdr_flight = "ПОЛІТ",
         hdr_speed_jump = "ШВИДКІСТЬ & СТРИБОК", hdr_physics = "ФІЗИКА", hdr_safe_speed = "БЕЗПЕЧНА ШВИДКІСТЬ",
@@ -111,15 +111,15 @@ local Strings = {
         lbl_potato = "Картопляний режим", lbl_fake_lag = "Фейк лаг", lbl_anti_afk = "Анти-АФК",
         lbl_speed_jitter = "Джиттер швидкості", lbl_hitbox_rand = "Рандомізація хітбокса",
         lbl_aim_anti = "Анти-детект прицілу",
-        lbl_spider = "Павук (CFrame)", lbl_tp_player = "ТП до Гравця", btn_tp_go = "Телепорт",
-        desc_spider = "Тримай бінд щоб притягнутись до поверхні.",
+        lbl_spider = "Павук (Лазіння)", lbl_tp_player = "ТП до Гравця", btn_tp_go = "Телепорт",
+        desc_spider = "Просто йди на стіну і тримай W, щоб автоматично піднятися по ній.",
         desc_auto_aim = "Автоматично наводить камеру на найближчого видимого ворога в радіусі FOV.",
         desc_silent_aim = "Перенаправляє рейкасти на ворогів без руху камери. Потрібні хуки експлойту.",
-        desc_shadow_lock = "Телепортує вас за найближчого ворога, слідуючи за його рухом.",
+        desc_shadow_lock = "Телепортує вас за найближчого ворога. При виключенні повертає на стартову позицію.",
         desc_hitbox = "Збільшує хітбокс частини ворогів, щоб в них було легше попасти.",
         desc_esp = "Показує нік гравця, HP та дистанцію чистим текстом. Без квадратів.",
         desc_fly = "Політ через CFrame обход. Не детектиться античитами швидкості.",
-        desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду.",
+        desc_freecam = "Від'єднує камеру від персонажа для вільного перегляду. (Натисни C для активації)",
         desc_speed = "Швидкість через CFrame обход. Не детектиться античитами WalkSpeed.",
         desc_bhop = "Авто-банні хоп: тримайте Пробіл під час руху для ланцюга стрибків.",
         desc_high_jump = "Значно збільшує висоту/силу стрибка.",
@@ -151,7 +151,7 @@ local Strings = {
         ntf_srv_fail = "❌ Список серверів недоступний", ntf_players = " гравців",
         ntf_wait = "⏳ Зачекайте...", ntf_safe_on = "🛡 ON · Ліміт: ", ntf_safe_off = "🛡 OFF",
         ntf_hook_ok = "🔇 Хук встановлено ✓", ntf_anti_void = "🛡 Телепортовано на безпечну позицію",
-        ntf_startup = "✅ Ghost Version · Обхід Block Strike Активний",
+        ntf_startup = "✅ Universal Ghost Edition · Обхід Активний",
         ntf_lang = "Мову змінено на: ",
         stat_no_target = "Ціль відсутня", stat_auto_save = "⏱ Авто-зберігання кожні 60 сек · OmniV305_Ghost.json",
         stat_safe_info = "📊 База гри: %d | Ліміт (×%.1f): %d%s\n⚡ Встановлено: %d → Ефективно: %d",
@@ -176,28 +176,38 @@ local function L(key)
     return key
 end
 
-local ENV = {}
+local Env = {}
 local function _envCheck(fn)
     local ok, v = pcall(fn)
     return ok and v == true
 end
-ENV.hasGetRawMeta    = _envCheck(function() return getrawmetatable ~= nil end)
-ENV.hasSetReadOnly   = _envCheck(function() return setreadonly ~= nil end)
-ENV.hasNewCClosure   = _envCheck(function() return newcclosure ~= nil end)
-ENV.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
-ENV.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
-ENV.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
-ENV.hasSynapse       = _envCheck(function() return syn ~= nil end)
+Env.hasGetRawMeta    = _envCheck(function() return getrawmetatable ~= nil end)
+Env.hasSetReadOnly   = _envCheck(function() return setreadonly ~= nil end)
+Env.hasNewCClosure   = _envCheck(function() return newcclosure ~= nil end)
+Env.hasGetNameCall   = _envCheck(function() return getnamecallmethod ~= nil end)
+Env.hasHookFunction  = _envCheck(function() return hookfunction ~= nil end)
+Env.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
+Env.hasSynapse       = _envCheck(function() return syn ~= nil end)
                     or _envCheck(function() return SENTINEL_V2 ~= nil end)
 
-pcall(function()
-    for _, sg in pairs({game:GetService("CoreGui"), LP:WaitForChild("PlayerGui", 5)}) do
-        if not sg then continue end
-        for _, v in pairs(sg:GetChildren()) do
-            if v:IsA("ScreenGui") and v:FindFirstChild("OmniMarker") then v:Destroy() end
+local function SafeCleanGUIs()
+    local guisToCheck = {
+        game:GetService("CoreGui"),
+        LP:WaitForChild("PlayerGui", 5)
+    }
+    pcall(function() if gethui then table.insert(guisToCheck, gethui()) end end)
+    
+    for _, sg in pairs(guisToCheck) do
+        if sg then
+            for _, v in pairs(sg:GetChildren()) do
+                if v:IsA("ScreenGui") and v:FindFirstChild("OmniMarker") then 
+                    pcall(function() v:Destroy() end) 
+                end
+            end
         end
     end
-end)
+end
+SafeCleanGUIs()
 
 local SafeGroup = "OmniNC_" .. math.random(1000, 9999)
 pcall(function()
@@ -276,7 +286,7 @@ local Config = {
     AimPredictMult    = 1.0,
     FullBright        = false,
     FakeLagPower      = 50,
-    SpiderSpeed       = 100,
+    SpiderSpeed       = 20,
 }
 
 local Binds = {
@@ -286,7 +296,7 @@ local Binds = {
     SilentAim  = Enum.KeyCode.B,
     ToggleMenu = Enum.KeyCode.M,
     FakeLag    = Enum.KeyCode.J,
-    Spider     = Enum.KeyCode.T,
+    Freecam    = Enum.KeyCode.C,
 }
 
 local State = {
@@ -384,10 +394,10 @@ local function ResetConfig()
     Config.SpeedJitter = 1.5; Config.FlyHeightMax = 1800
     Config.SafeSpeedMode = false; Config.SafeSpeedMult = 1.8; Config.AntiVoidHeight = -180
     Config.ESPMaxDist = 1000; Config.AimPredictMult = 1.0; Config.FullBright = false
-    Config.FakeLagPower = 50; Config.SpiderSpeed = 100
+    Config.FakeLagPower = 50; Config.SpiderSpeed = 20
     Binds.Fly = Enum.KeyCode.F; Binds.Aim = Enum.KeyCode.G
     Binds.Noclip = Enum.KeyCode.V; Binds.SilentAim = Enum.KeyCode.B; Binds.ToggleMenu = Enum.KeyCode.M
-    Binds.Spider = Enum.KeyCode.T
+    Binds.Freecam = Enum.KeyCode.C
     State.SpeedAntiBan = true; State.HitboxRandomize = true
     State.AimAntiDetect = true; State.SafeSpeedMode = false
     UpdateAllSliders(); Notify("Config", L("ntf_reset"), 2)
@@ -1150,7 +1160,6 @@ local function ForceRestore()
 
     ncStuck = 0
     lastNcPos = Vector3.zero
-    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
 end
 
 local _fakeLagToken = 0
@@ -1192,13 +1201,10 @@ local function UpdVis(nm)
     end
 end
 
-local function RestoreMouse()
-    pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
-end
-
 local UpdFly
 local LockedTarget = nil
 local lastBhop     = 0
+local ShadowLockStartCFrame = nil
 
 local function Toggle(nm)
     if nm == "SpeedAntiBan" then
@@ -1272,8 +1278,18 @@ local function Toggle(nm)
             end)
         elseif nm == "HighJump" and H then
             pcall(function() H.UseJumpPower = true; H.JumpPower = 50; H.JumpHeight = 7.2 end)
-        elseif nm == "Noclip" or nm == "ShadowLock" then
+        elseif nm == "Noclip" then
             ForceRestore()
+        elseif nm == "ShadowLock" then
+            pcall(function()
+                Camera.CameraType = Enum.CameraType.Custom
+                if H then Camera.CameraSubject = H end
+                if ShadowLockStartCFrame and R then
+                    R.CFrame = ShadowLockStartCFrame
+                    R.AssemblyLinearVelocity = Vector3.zero
+                    ShadowLockStartCFrame = nil
+                end
+            end)
         elseif nm == "ESP" then
             ClearESP()
         elseif nm == "Hitbox" then
@@ -1290,8 +1306,6 @@ local function Toggle(nm)
                     if H2 then Camera.CameraSubject = H2 end
                     UIS.MouseBehavior = Enum.MouseBehavior.Default
                 end)
-                task.wait(0.05)
-                pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
             end)
         elseif nm == "Spin" and R then
             for _, v in pairs(R:GetChildren()) do
@@ -1310,6 +1324,7 @@ local function Toggle(nm)
             DoPotato()
         elseif nm == "ShadowLock" then
             LockedTarget = GetClosestEnemy()
+            if R then ShadowLockStartCFrame = R.CFrame end
         elseif nm == "Fly" and H then
             pcall(function() H.PlatformStand = false end)
         elseif nm == "Speed" and H then
@@ -1332,6 +1347,9 @@ local function Toggle(nm)
             local x, y = Camera.CFrame:ToEulerAnglesYXZ()
             FC_P = x; FC_Y = y
             pcall(function() if R then R.Anchored = true end end)
+            if not IsMob then
+                UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+            end
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
             local myToken = _fakeLagToken
@@ -1438,8 +1456,7 @@ local _afkFlip = false
 local function DoAntiAFK()
     pcall(function()
         VirtualUser:CaptureController()
-        _afkFlip = not _afkFlip
-        VirtualUser:MoveMouse(_afkFlip and Vector2.new(1, 0) or Vector2.new(-1, 0))
+        VirtualUser:ClickButton2(Vector2.new())
     end)
 end
 LP.Idled:Connect(function() if State.AntiAFK then DoAntiAFK() end end)
@@ -1516,7 +1533,7 @@ local silentAimHooked = false
 local function SetupSilentAimHook()
     if silentAimHooked then return end
 
-    if ENV.hasHookMeta and hookmetamethod then
+    if Env.hasHookMeta and hookmetamethod then
         local ok = pcall(function()
             hookmetamethod(game, "__namecall", newcclosure and newcclosure(function(self, ...)
                 local method = getnamecallmethod and getnamecallmethod() or ""
@@ -1589,9 +1606,9 @@ local function GetHTTP(url)
     return nil
 end
 
-local function GetServerList()
+local function GetServerList(sortOrder, excludeFull)
     local url = "https://games.roblox.com/v1/games/" .. game.PlaceId
-        .. "/servers/Public?sortOrder=Asc&excludeFullGames=false&limit=100"
+        .. "/servers/Public?sortOrder=" .. (sortOrder or "Asc") .. "&excludeFullGames=" .. (excludeFull and "true" or "false") .. "&limit=100"
     local data = GetHTTP(url)
     if not data then return nil end
     local ok, parsed = pcall(function() return HttpService:JSONDecode(data) end)
@@ -1603,7 +1620,7 @@ local serverActionCooldown = false
 local function ServerCooldown()
     if serverActionCooldown then Notify("Server Hop", L("ntf_wait"), 2); return true end
     serverActionCooldown = true
-    task.delay(3, function() serverActionCooldown = false end)
+    task.delay(5, function() serverActionCooldown = false end)
     return false
 end
 
@@ -1619,19 +1636,26 @@ local function JoinRandomServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_rnd"), 3)
     task.spawn(function()
-        local servers = GetServerList()
+        -- Шукаємо сервери від найбільших до найменших
+        local servers = GetServerList("Desc", true)
         if servers and #servers > 0 then
             local filtered = {}
             for _, s in pairs(servers) do
-                if s.id ~= game.JobId and s.playing and s.playing > 0 then
+                -- Відсіюємо сервери з менше ніж 5 гравцями, щоб не потрапити на мертві
+                if s.id ~= game.JobId and s.playing and s.playing >= 5 then
                     table.insert(filtered, s)
                 end
             end
             if #filtered > 0 then
                 local chosen = filtered[math.random(1, #filtered)]
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP)
-                end)
+                Notify("Server Hop", "🔄 Joining " .. chosen.playing .. L("ntf_players"), 2)
+                task.wait(1)
+                local ok, err = pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP) end)
+                if not ok then
+                    Notify("Server Hop", "❌ Error, joining random place...", 3)
+                    task.wait(1)
+                    pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
+                end
                 return
             end
         end
@@ -1643,22 +1667,31 @@ local function JoinBiggestServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_big"), 3)
     task.spawn(function()
-        local servers = GetServerList()
+        local servers = GetServerList("Desc", true)
         if servers and #servers > 0 then
-            local best, bestCount = nil, -1
+            local valid = {}
             for _, s in pairs(servers) do
-                if s.id ~= game.JobId and s.playing and s.playing > bestCount then
-                    bestCount = s.playing; best = s
+                if s.id ~= game.JobId and s.playing > 0 then
+                    table.insert(valid, s)
                 end
             end
-            if best then
-                Notify("Server Hop", "👥 " .. bestCount .. L("ntf_players"), 2)
+            local targetIdx = math.min(5, #valid)
+            if targetIdx > 0 then
+                local best = valid[targetIdx]
+                Notify("Server Hop", "👥 " .. best.playing .. L("ntf_players"), 2)
                 task.wait(1)
-                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
+                local ok, err = pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
+                if not ok then
+                    Notify("Server Hop", "❌ Error, joining random...", 3)
+                    task.wait(1)
+                    pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
+                end
                 return
             end
         end
         Notify("Server Hop", L("ntf_srv_fail"), 3)
+        task.wait(1)
+        pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
     end)
 end
 
@@ -1666,38 +1699,44 @@ local function JoinSmallestServer()
     if ServerCooldown() then return end
     Notify("Server Hop", L("ntf_search_sml"), 3)
     task.spawn(function()
-        local servers = GetServerList()
+        local servers = GetServerList("Asc", true)
         if servers and #servers > 0 then
-            local best, bestCount = nil, math.huge
+            local valid = {}
             for _, s in pairs(servers) do
-                if s.id ~= game.JobId and s.playing and s.playing < bestCount then
-                    bestCount = s.playing; best = s
+                if s.id ~= game.JobId and s.playing > 0 then
+                    table.insert(valid, s)
                 end
             end
-            if best then
-                Notify("Server Hop", "🕵️ " .. bestCount .. L("ntf_players"), 2)
+            local targetIdx = math.min(4, #valid)
+            if targetIdx > 0 then
+                local best = valid[targetIdx]
+                Notify("Server Hop", "🕵️ " .. best.playing .. L("ntf_players"), 2)
                 task.wait(1)
-                pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
+                local ok, err = pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, best.id, LP) end)
+                if not ok then
+                    Notify("Server Hop", "❌ Error, joining random...", 3)
+                    task.wait(1)
+                    pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
+                end
                 return
             end
         end
         Notify("Server Hop", L("ntf_srv_fail"), 3)
+        task.wait(1)
+        pcall(function() TeleportService:Teleport(game.PlaceId, LP) end)
     end)
 end
 
 -- ============================================================
--- GHOST GUI INITIALIZATION (BLOCK STRIKE BYPASS)
+-- UNIVERSAL GUI INITIALIZATION (VELOCITY BYPASS)
 -- ============================================================
-local GuiP
-if gethui then
-    GuiP = gethui()
-else
+local GuiP = nil
+pcall(function() if type(gethui) == "function" then GuiP = gethui() end end)
+if not GuiP or typeof(GuiP) ~= "Instance" then
     pcall(function() GuiP = game:GetService("CoreGui") end)
-    if not GuiP then 
-        -- Block Strike Bypass: Hide GUI in TweenService
-        pcall(function() GuiP = game:GetService("TweenService") end)
-    end
-    if not GuiP then GuiP = LP:WaitForChild("PlayerGui") end
+end
+if not GuiP or typeof(GuiP) ~= "Instance" then
+    GuiP = LP:WaitForChild("PlayerGui")
 end
 
 local Scr = Instance.new("ScreenGui")
@@ -1705,6 +1744,13 @@ Scr.Name = "RobloxGui"
 Scr.ResetOnSpawn = false
 Scr.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Scr.IgnoreGuiInset = true
+
+if syn and syn.protect_gui then
+    pcall(syn.protect_gui, Scr)
+elseif protect_gui then
+    pcall(protect_gui, Scr)
+end
+
 Scr.Parent = GuiP
 Instance.new("BoolValue", Scr).Name = "OmniMarker"
 
@@ -2001,7 +2047,7 @@ do
     UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1
             or inp.UserInputType == Enum.UserInputType.Touch then
-            exDr = false; exAbsStart = nil
+                exDr = false; exAbsStart = nil
         end
     end)
 end
@@ -2236,9 +2282,7 @@ local function CreateQuickBtn(def)
     local startY = IsMob and 200 or 160
     local posX = startX + col * (QB_SIZE + QB_GAP)
     local posY = startY + row * (QB_SIZE + QB_GAP)
-
-    local qb = Instance.new("Frame", Scr)
-    qb.Size = UDim2.new(0, QB_SIZE, 0, QB_SIZE)
+ UDim2.new(0, QB_SIZE, 0, QB_SIZE)
     qb.Position = UDim2.new(0, posX, 0, posY)
     qb.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
     qb.BorderSizePixel = 0; qb.ZIndex = 50
@@ -2768,7 +2812,7 @@ end)
 
 AddHdr("Move", "✈️", "hdr_flight")
 MkToggleBind("Move", "✈️", "lbl_fly", "Fly", "desc_fly")
-MkToggle("Move", "📷", "lbl_freecam", "Freecam", "desc_freecam")
+MkToggleBind("Move", "📷", "lbl_freecam", "Freecam", "desc_freecam")
 AddHdr("Move", "🏃", "hdr_speed_jump")
 MkToggle("Move", "👟", "lbl_speed", "Speed", "desc_speed")
 MkToggle("Move", "🐇", "lbl_bhop", "Bhop", "desc_bhop")
@@ -2776,7 +2820,10 @@ MkToggle("Move", "⬆️", "lbl_high_jump", "HighJump", "desc_high_jump")
 MkToggle("Move", "♾️", "lbl_infinite_jump", "InfiniteJump", "desc_infinite_jump")
 AddHdr("Move", "👻", "hdr_physics")
 MkToggleBind("Move", "👻", "lbl_noclip", "Noclip", "desc_noclip")
-MkToggleBind("Move", "🕷", "lbl_spider", "Spider", "desc_spider")
+MkToggle("Move", "🕷", "lbl_spider", "Spider", "desc_spider")
+MkSlider("Move", "🕷", "sl_spider_speed", 5, 100, Config.SpiderSpeed, "SpiderSpeed", function(v)
+    Config.SpiderSpeed = v
+end)
 MkToggle("Move", "🛡", "lbl_no_fall", "NoFallDamage", "desc_no_fall")
 MkToggle("Move", "🌊", "lbl_anti_void", "AntiVoid", "desc_anti_void")
 
@@ -3080,7 +3127,9 @@ UIS.InputBegan:Connect(function(inp, gpe)
         end
         return
     end
-    if gpe then return end
+    
+    if gpe and UIS:GetFocusedTextBox() then return end
+
     for act, key in pairs(Binds) do
         if inp.KeyCode == key then
             if act == "ToggleMenu" then
@@ -3095,7 +3144,8 @@ UIS.InputBegan:Connect(function(inp, gpe)
 end)
 
 UIS.InputChanged:Connect(function(inp, gpe)
-    if gpe or not State.Freecam then return end
+    -- Прибрано gpe перевірку, щоб фрікам коректно рухав мишу
+    if not State.Freecam then return end
     if inp.UserInputType == Enum.UserInputType.MouseMovement then
         FC_Y = FC_Y - math.rad(inp.Delta.X * 0.35)
         FC_P = math.clamp(FC_P - math.rad(inp.Delta.Y * 0.35), -math.rad(89), math.rad(89))
@@ -3145,7 +3195,7 @@ task.spawn(function()
             for _qbnm, _ in pairs(QuickBtnActive) do
                 pcall(function() UpdateQuickBtnColor(_qbnm) end)
             end
-            if (State.Aim or State.Aim) and not (aimLocked and aimTarget) then
+            if (State.Aim or State.SilentAim) and not (aimLocked and aimTarget) then
                 fovStroke.Color = Color3.fromRGB(180, 180, 200)
             end
         end)
@@ -3309,21 +3359,22 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 
-    if State.Spider then
-        if UIS:IsKeyDown(Binds.Spider) then
-            local mPos = UIS:GetMouseLocation()
-            local ray = Camera:ViewportPointToRay(mPos.X, mPos.Y)
-            local params = RaycastParams.new()
-            params.FilterType = Enum.RaycastFilterType.Exclude
-            params.FilterDescendantsInstances = {Char}
-            local hit = Workspace:Raycast(ray.Origin, ray.Direction * 500, params)
+    -- СПРАВЖНІЙ СПАЙДЕР (Лазіння по стінах)
+    if State.Spider and not State.Fly and not State.Freecam then
+        if Hum.MoveDirection.Magnitude > 0.1 then
+            local rayParams = RaycastParams.new()
+            rayParams.FilterType = Enum.RaycastFilterType.Exclude
+            rayParams.FilterDescendantsInstances = {Char}
+            
+            local moveDir = Hum.MoveDirection
+            moveDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
+            
+            -- Б'ємо променем з грудей персонажа вперед
+            local origin = HRP.Position + Vector3.new(0, 1.5, 0)
+            local hit = Workspace:Raycast(origin, moveDir * 2.5, rayParams)
             if hit then
-                local dir = (hit.Position - HRP.Position)
-                local dist = dir.Magnitude
-                if dist > 2 then
-                    HRP.CFrame = HRP.CFrame + dir.Unit * (Config.SpiderSpeed * dt)
-                    HRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                end
+                -- Якщо перед нами стіна, плавно піднімаємося вгору через CFrame
+                HRP.CFrame = HRP.CFrame + Vector3.new(0, Config.SpiderSpeed * dt, 0)
             end
         end
     end
@@ -3334,8 +3385,7 @@ RunService.Heartbeat:Connect(function(dt)
             
             if Hum.MoveDirection.Magnitude > 0.1 then
                 local targetSpd = GetSafeSpeed()
-                local camCF = Camera.CFrame
-                local moveDir = camCF.LookVector * -Hum.MoveDirection.Z + camCF.RightVector * Hum.MoveDirection.X
+                local moveDir = Hum.MoveDirection
                 if moveDir.Magnitude > 0 then
                     moveDir = Vector3.new(moveDir.X, 0, moveDir.Z).Unit
                     local moveAmount = (targetSpd - gameBaseSpeed) * dt * 1.2
