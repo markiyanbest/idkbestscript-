@@ -678,7 +678,7 @@ local function UpdateESP()
             bb.AlwaysOnTop = true
             bb.LightInfluence = 0
             bb.ResetOnSpawn = false
-            bb.Parent = GuiP -- Secure parent
+            bb.Parent = GuiP
 
             local nameLbl = Instance.new("TextLabel")
             nameLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -1318,7 +1318,7 @@ local function Toggle(nm)
         elseif nm == "Potato" then
             UndoPotato()
         elseif nm == "Freecam" then
-            pcall(function() if R then R.Anchored = false end end)
+            -- ВИПРАВЛЕНО: Прибрано заморожування персонажа (R.Anchored = false)
             task.spawn(function()
                 task.wait(0.05)
                 pcall(function()
@@ -1371,8 +1371,7 @@ local function Toggle(nm)
             Camera.CameraType = Enum.CameraType.Scriptable
             local x, y = Camera.CFrame:ToEulerAnglesYXZ()
             FC_P = x; FC_Y = y
-            pcall(function() if R then R.Anchored = true end end)
-            -- ВИПРАВЛЕНО: Тепер миша не блокується і можна натискати на GUI
+            -- ВИПРАВЛЕНО: Не заморожуємо персонажа, щоб можна було ходити
             if not IsMob then
                 UIS.MouseBehavior = Enum.MouseBehavior.Default
             end
@@ -1747,7 +1746,7 @@ end
 
 local Main = Instance.new("Frame", Scr)
 Main.Size = UDim2.new(0, MW, 0, MH)
-Main.ZIndex = 100 -- ВИПРАВЛЕНО: Піднято ZIndex щоб GUI було поверх фріками
+Main.ZIndex = 100 
 do
     local vp = Camera.ViewportSize
     Main.Position = UDim2.new(0, (vp.X - MW) / 2, 0, (vp.Y - MH) / 2)
@@ -2650,6 +2649,7 @@ local function MkButton(tab, icon, lblKey, color, onClick)
     return row
 end
 
+-- ВИПРАВЛЕНО: Ідеальне вирівнювання повзунка
 local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     local pg = TabPages[tab]; if not pg then return end
     local h = IsMob and 56 or 48
@@ -2660,22 +2660,28 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     Instance.new("UIStroke", row).Color = P.brd
 
     local ic = Instance.new("TextLabel", row)
-    ic.Size = UDim2.new(0, 22, 0, 20); ic.Position = UDim2.new(0, 6, 0, 4)
+    ic.Size = UDim2.new(0, 22, 0, 20)
+    ic.Position = UDim2.new(0, 6, 0, 6)
     ic.BackgroundTransparency = 1; ic.Text = icon
     ic.TextSize = IsMob and 14 or 12; ic.Font = Enum.Font.Gotham; ic.TextColor3 = P.dim
+    ic.TextXAlignment = Enum.TextXAlignment.Left
 
     local tl = Instance.new("TextLabel", row)
-    tl.Size = UDim2.new(1, -80, 0, 18); tl.Position = UDim2.new(0, 28, 0, 3)
+    tl.Size = UDim2.new(1, -80, 0, 18)
+    tl.Position = UDim2.new(0, 28, 0, 6)
     tl.BackgroundTransparency = 1; tl.Text = L(lblKey); tl.Font = Enum.Font.GothamBold
     tl.TextSize = FS; tl.TextColor3 = P.txt; tl.TextXAlignment = Enum.TextXAlignment.Left
 
     local vl = Instance.new("TextLabel", row)
-    vl.Size = UDim2.new(0, 50, 0, 18); vl.Position = UDim2.new(1, -54, 0, 3)
+    vl.Size = UDim2.new(0, 50, 0, 18)
+    vl.Position = UDim2.new(1, -58, 0, 6)
     vl.BackgroundTransparency = 1; vl.Text = tostring(def); vl.Font = Enum.Font.GothamBold
     vl.TextSize = FS; vl.TextColor3 = P.grn; vl.TextXAlignment = Enum.TextXAlignment.Right
 
     local trk = Instance.new("Frame", row)
-    trk.Size = UDim2.new(1, -16, 0, 6); trk.Position = UDim2.new(0, 8, 0, h - 16)
+    trk.Size = UDim2.new(1, -16, 0, 6)
+    trk.AnchorPoint = Vector2.new(0, 1)
+    trk.Position = UDim2.new(0, 8, 1, -12)
     trk.BackgroundColor3 = P.dark; trk.BorderSizePixel = 0
     Instance.new("UICorner", trk).CornerRadius = UDim.new(1, 0)
 
@@ -2685,7 +2691,8 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
 
     local dot = Instance.new("Frame", trk)
-    dot.Size = UDim2.new(0, 14, 0, 14); dot.AnchorPoint = Vector2.new(0.5, 0.5)
+    dot.Size = UDim2.new(0, 14, 0, 14)
+    dot.AnchorPoint = Vector2.new(0.5, 0.5)
     dot.Position = UDim2.new((def - minV) / (maxV - minV), 0, 0.5, 0)
     dot.BackgroundColor3 = P.wht; dot.BorderSizePixel = 0
     Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
@@ -3287,50 +3294,44 @@ end)
 end)()
 
 -- ============================================================
--- TRIGGERBOT LOGIC
+-- TRIGGERBOT LOGIC (FIXED: Runs in separate thread)
 -- ============================================================
-local tbCooldown = 0
-local function UpdateTriggerbot()
-    if not State.Triggerbot or State.Freecam then return end
-    local now = tick()
-    if now < tbCooldown then return end
-
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = {LP.Character or nil, Camera}
-    
-    local result = Workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * 5000, rayParams)
-    if result and result.Instance then
-        local hitChar = result.Instance:FindFirstAncestorOfClass("Model")
-        if hitChar then
-            local player = Players:GetPlayerFromCharacter(hitChar)
-            if player and player ~= LP and IsAlive(hitChar) then
-                -- ВИПРАВЛЕНО: Безпечний виклик кліку миші
-                local clicked = false
-                if mouse1click then
-                    pcall(mouse1click)
-                    clicked = true
-                elseif VirtualUser then
-                    pcall(function()
-                        VirtualUser:Button1Down(Vector2.new())
-                        task.wait(0.01)
-                        VirtualUser:Button1Up(Vector2.new())
-                    end)
-                    clicked = true
-                end
+task.spawn(function()
+    local tbCooldown = 0
+    while task.wait() do
+        if State.Triggerbot and not State.Freecam then
+            local now = tick()
+            if now >= tbCooldown then
+                local rayParams = RaycastParams.new()
+                rayParams.FilterType = Enum.RaycastFilterType.Exclude
+                rayParams.FilterDescendantsInstances = {LP.Character or nil, Camera}
                 
-                if clicked then
-                    tbCooldown = now + 0.05
+                local result = Workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * 5000, rayParams)
+                if result and result.Instance then
+                    local hitChar = result.Instance:FindFirstAncestorOfClass("Model")
+                    if hitChar then
+                        local player = Players:GetPlayerFromCharacter(hitChar)
+                        if player and player ~= LP and IsAlive(hitChar) then
+                            if mouse1click then
+                                pcall(mouse1click)
+                            elseif VirtualUser then
+                                pcall(function()
+                                    VirtualUser:Button1Down(Vector2.new())
+                                    task.wait(0.01)
+                                    VirtualUser:Button1Up(Vector2.new())
+                                end)
+                            end
+                            tbCooldown = tick() + 0.05
+                        end
+                    end
                 end
             end
         end
     end
-end
+end)
 
 -- HEARTBEAT
 RunService.Heartbeat:Connect(function(dt)
-    UpdateTriggerbot()
-
     local Char = LP.Character
     local HRP = Char and Char:FindFirstChild("HumanoidRootPart")
     local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
