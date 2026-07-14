@@ -1318,7 +1318,6 @@ local function Toggle(nm)
         elseif nm == "Potato" then
             UndoPotato()
         elseif nm == "Freecam" then
-            -- ВИПРАВЛЕНО: Прибрано заморожування персонажа (R.Anchored = false)
             task.spawn(function()
                 task.wait(0.05)
                 pcall(function()
@@ -1326,6 +1325,8 @@ local function Toggle(nm)
                     local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
                     if H2 then Camera.CameraSubject = H2 end
                     UIS.MouseBehavior = Enum.MouseBehavior.Default
+                    -- ВИПРАВЛЕНО: Повертаємо керування персонажу (він більше не AFK)
+                    pcall(function() if ControlsOK and Controls then Controls:Enable() end end)
                 end)
             end)
         elseif nm == "Spin" and R then
@@ -1371,7 +1372,8 @@ local function Toggle(nm)
             Camera.CameraType = Enum.CameraType.Scriptable
             local x, y = Camera.CFrame:ToEulerAnglesYXZ()
             FC_P = x; FC_Y = y
-            -- ВИПРАВЛЕНО: Не заморожуємо персонажа, щоб можна було ходити
+            -- ВИПРАВЛЕНО: Вимикаємо керування персонажем, щоб він стояв AFK
+            pcall(function() if ControlsOK and Controls then Controls:Disable() end end)
             if not IsMob then
                 UIS.MouseBehavior = Enum.MouseBehavior.Default
             end
@@ -1528,6 +1530,7 @@ LP.CharacterAdded:Connect(function(char)
         Camera.CameraType = Enum.CameraType.Custom
         Camera.CameraSubject = hum
         pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
+        pcall(function() if ControlsOK and Controls then Controls:Enable() end end)
         task.spawn(function()
             task.wait(1.2)
             pcall(function()
@@ -3294,37 +3297,43 @@ end)
 end)()
 
 -- ============================================================
--- TRIGGERBOT LOGIC (FIXED: Runs in separate thread)
+-- TRIGGERBOT LOGIC (FIXED: Extremely robust clicking)
 -- ============================================================
 task.spawn(function()
-    local tbCooldown = 0
     while task.wait() do
         if State.Triggerbot and not State.Freecam then
-            local now = tick()
-            if now >= tbCooldown then
-                local rayParams = RaycastParams.new()
-                rayParams.FilterType = Enum.RaycastFilterType.Exclude
-                rayParams.FilterDescendantsInstances = {LP.Character or nil, Camera}
-                
-                local result = Workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * 5000, rayParams)
-                if result and result.Instance then
-                    local hitChar = result.Instance:FindFirstAncestorOfClass("Model")
-                    if hitChar then
-                        local player = Players:GetPlayerFromCharacter(hitChar)
-                        if player and player ~= LP and IsAlive(hitChar) then
-                            if mouse1click then
-                                pcall(mouse1click)
-                            elseif VirtualUser then
-                                pcall(function()
-                                    VirtualUser:Button1Down(Vector2.new())
-                                    task.wait(0.01)
-                                    VirtualUser:Button1Up(Vector2.new())
-                                end)
-                            end
-                            tbCooldown = tick() + 0.05
-                        end
+            local rayParams = RaycastParams.new()
+            rayParams.FilterType = Enum.RaycastFilterType.Exclude
+            rayParams.FilterDescendantsInstances = {LP.Character, Camera}
+            
+            local result = Workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * 5000, rayParams)
+            local canShoot = false
+            
+            if result and result.Instance then
+                local hitChar = result.Instance:FindFirstAncestorOfClass("Model")
+                if hitChar then
+                    local player = Players:GetPlayerFromCharacter(hitChar)
+                    if player and player ~= LP and IsAlive(hitChar) then
+                        canShoot = true
                     end
                 end
+            end
+            
+            if canShoot then
+                if mouse1press and mouse1release then
+                    pcall(mouse1press)
+                    task.wait(0.02)
+                    pcall(mouse1release)
+                elseif mouse1click then
+                    pcall(mouse1click)
+                elseif VirtualUser then
+                    pcall(function()
+                        VirtualUser:Button1Down(Vector2.new())
+                        task.wait(0.02)
+                        VirtualUser:Button1Up(Vector2.new())
+                    end)
+                end
+                task.wait(0.05) -- Anti-spam cooldown
             end
         end
     end
