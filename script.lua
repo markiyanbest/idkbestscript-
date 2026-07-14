@@ -1324,8 +1324,8 @@ local function Toggle(nm)
                     Camera.CameraType = Enum.CameraType.Custom
                     local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
                     if H2 then Camera.CameraSubject = H2 end
+                    -- ВИПРАВЛЕНО: Повертаємо мишу і розморозку
                     UIS.MouseBehavior = Enum.MouseBehavior.Default
-                    -- ВИПРАВЛЕНО: Безпечно розморозжуємо персонажа
                     if R then R.Anchored = false end
                 end)
             end)
@@ -1372,10 +1372,10 @@ local function Toggle(nm)
             Camera.CameraType = Enum.CameraType.Scriptable
             local x, y = Camera.CFrame:ToEulerAnglesYXZ()
             FC_P = x; FC_Y = y
-            -- ВИПРАВЛЕНО: Заморожуємо тіло, щоб гравець був AFK під час польоту камерою
+            -- ВИПРАВЛЕНО: Заморожуємо тіло (AFK) і блокуємо мишу для огляду
             if R then R.Anchored = true end
             if not IsMob then
-                UIS.MouseBehavior = Enum.MouseBehavior.Default
+                UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
             end
         elseif nm == "FakeLag" then
             _fakeLagToken += 1
@@ -2651,7 +2651,7 @@ local function MkButton(tab, icon, lblKey, color, onClick)
     return row
 end
 
--- ВИПРАВЛЕНО: Ідеальне вирівнювання повзунка через AnchorPoint
+-- ВИПРАВЛЕНО: Ідеальне вирівнювання повзунка
 local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     local pg = TabPages[tab]; if not pg then return end
     local h = IsMob and 56 or 48
@@ -3319,7 +3319,6 @@ task.spawn(function()
             end
             
             if canShoot then
-                -- ВИПРАВЛЕНО: Використовуємо лише безпечний mouse1click або VirtualUser
                 if mouse1click then
                     pcall(mouse1click)
                 else
