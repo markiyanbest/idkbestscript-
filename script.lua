@@ -194,13 +194,17 @@ Env.hasHookMeta      = _envCheck(function() return hookmetamethod ~= nil end)
 Env.hasSynapse       = _envCheck(function() return syn ~= nil end)
                     or _envCheck(function() return SENTINEL_V2 ~= nil end)
 
+local GuiP = nil
+pcall(function() if type(gethui) == "function" then GuiP = gethui() end end)
+if not GuiP or typeof(GuiP) ~= "Instance" then
+    pcall(function() GuiP = game:GetService("CoreGui") end)
+end
+if not GuiP or typeof(GuiP) ~= "Instance" then
+    GuiP = LP:WaitForChild("PlayerGui")
+end
+
 local function SafeCleanGUIs()
-    local guisToCheck = {
-        game:GetService("CoreGui"),
-        LP:WaitForChild("PlayerGui", 5)
-    }
-    pcall(function() if gethui then table.insert(guisToCheck, gethui()) end end)
-    
+    local guisToCheck = { GuiP, LP:WaitForChild("PlayerGui", 5) }
     for _, sg in pairs(guisToCheck) do
         if sg then
             for _, v in pairs(sg:GetChildren()) do
@@ -624,7 +628,7 @@ local function TpToPlayer(partialName)
 end
 
 -- ============================================================
--- ESP SYSTEM
+-- ESP SYSTEM (FIXED: Uses Adornee in Secure GUI)
 -- ============================================================
 local ESPCache = {}
 local ESP_UPDATE_INTERVAL = 0.1
@@ -663,17 +667,18 @@ local function UpdateESP()
         end
 
         local ca = ESPCache[p]
-        if not ca or not ca.bb or not ca.bb.Parent then
+        if not ca or not ca.bb or not ca.bb.Parent or ca.bb.Adornee ~= head then
             if ca and ca.bb then pcall(function() ca.bb:Destroy() end) end
             
             local bb = Instance.new("BillboardGui")
             bb.Name = RndStr(8)
+            bb.Adornee = head
             bb.Size = UDim2.new(0, 120, 0, 44)
             bb.StudsOffset = Vector3.new(0, 2.8, 0)
             bb.AlwaysOnTop = true
             bb.LightInfluence = 0
             bb.ResetOnSpawn = false
-            bb.Parent = head
+            bb.Parent = GuiP -- Secure parent
 
             local nameLbl = Instance.new("TextLabel")
             nameLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -1682,15 +1687,6 @@ end
 -- ============================================================
 -- UNIVERSAL GUI INITIALIZATION (VELOCITY BYPASS)
 -- ============================================================
-local GuiP = nil
-pcall(function() if type(gethui) == "function" then GuiP = gethui() end end)
-if not GuiP or typeof(GuiP) ~= "Instance" then
-    pcall(function() GuiP = game:GetService("CoreGui") end)
-end
-if not GuiP or typeof(GuiP) ~= "Instance" then
-    GuiP = LP:WaitForChild("PlayerGui")
-end
-
 local Scr = Instance.new("ScreenGui")
 Scr.Name = "RobloxGui"
 Scr.ResetOnSpawn = false
@@ -1751,6 +1747,7 @@ end
 
 local Main = Instance.new("Frame", Scr)
 Main.Size = UDim2.new(0, MW, 0, MH)
+Main.ZIndex = 100 -- ВИПРАВЛЕНО: Піднято ZIndex щоб GUI було поверх фріками
 do
     local vp = Camera.ViewportSize
     Main.Position = UDim2.new(0, (vp.X - MW) / 2, 0, (vp.Y - MH) / 2)
@@ -3300,7 +3297,7 @@ local function UpdateTriggerbot()
 
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = {LP.Character or nil}
+    rayParams.FilterDescendantsInstances = {LP.Character or nil, Camera}
     
     local result = Workspace:Raycast(Camera.CFrame.Position, Camera.CFrame.LookVector * 5000, rayParams)
     if result and result.Instance then
@@ -3308,16 +3305,23 @@ local function UpdateTriggerbot()
         if hitChar then
             local player = Players:GetPlayerFromCharacter(hitChar)
             if player and player ~= LP and IsAlive(hitChar) then
+                -- ВИПРАВЛЕНО: Безпечний виклик кліку миші
+                local clicked = false
                 if mouse1click then
-                    mouse1click()
-                else
+                    pcall(mouse1click)
+                    clicked = true
+                elseif VirtualUser then
                     pcall(function()
                         VirtualUser:Button1Down(Vector2.new())
                         task.wait(0.01)
                         VirtualUser:Button1Up(Vector2.new())
                     end)
+                    clicked = true
                 end
-                tbCooldown = now + 0.05
+                
+                if clicked then
+                    tbCooldown = now + 0.05
+                end
             end
         end
     end
