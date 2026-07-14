@@ -1325,8 +1325,8 @@ local function Toggle(nm)
                     local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
                     if H2 then Camera.CameraSubject = H2 end
                     UIS.MouseBehavior = Enum.MouseBehavior.Default
-                    -- ВИПРАВЛЕНО: Повертаємо керування персонажу (він більше не AFK)
-                    pcall(function() if ControlsOK and Controls then Controls:Enable() end end)
+                    -- ВИПРАВЛЕНО: Безпечно розморозжуємо персонажа
+                    if R then R.Anchored = false end
                 end)
             end)
         elseif nm == "Spin" and R then
@@ -1372,8 +1372,8 @@ local function Toggle(nm)
             Camera.CameraType = Enum.CameraType.Scriptable
             local x, y = Camera.CFrame:ToEulerAnglesYXZ()
             FC_P = x; FC_Y = y
-            -- ВИПРАВЛЕНО: Вимикаємо керування персонажем, щоб він стояв AFK
-            pcall(function() if ControlsOK and Controls then Controls:Disable() end end)
+            -- ВИПРАВЛЕНО: Заморожуємо тіло, щоб гравець був AFK під час польоту камерою
+            if R then R.Anchored = true end
             if not IsMob then
                 UIS.MouseBehavior = Enum.MouseBehavior.Default
             end
@@ -1530,7 +1530,6 @@ LP.CharacterAdded:Connect(function(char)
         Camera.CameraType = Enum.CameraType.Custom
         Camera.CameraSubject = hum
         pcall(function() UIS.MouseBehavior = Enum.MouseBehavior.Default end)
-        pcall(function() if ControlsOK and Controls then Controls:Enable() end end)
         task.spawn(function()
             task.wait(1.2)
             pcall(function()
@@ -2652,7 +2651,7 @@ local function MkButton(tab, icon, lblKey, color, onClick)
     return row
 end
 
--- ВИПРАВЛЕНО: Ідеальне вирівнювання повзунка
+-- ВИПРАВЛЕНО: Ідеальне вирівнювання повзунка через AnchorPoint
 local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     local pg = TabPages[tab]; if not pg then return end
     local h = IsMob and 56 or 48
@@ -2683,8 +2682,8 @@ local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
 
     local trk = Instance.new("Frame", row)
     trk.Size = UDim2.new(1, -16, 0, 6)
-    trk.AnchorPoint = Vector2.new(0, 1)
-    trk.Position = UDim2.new(0, 8, 1, -12)
+    trk.AnchorPoint = Vector2.new(0.5, 0.5)
+    trk.Position = UDim2.new(0.5, 0, 1, -14)
     trk.BackgroundColor3 = P.dark; trk.BorderSizePixel = 0
     Instance.new("UICorner", trk).CornerRadius = UDim.new(1, 0)
 
@@ -3297,10 +3296,10 @@ end)
 end)()
 
 -- ============================================================
--- TRIGGERBOT LOGIC (FIXED: Extremely robust clicking)
+-- TRIGGERBOT LOGIC (FIXED: 100% Safe clicking that doesn't freeze input)
 -- ============================================================
 task.spawn(function()
-    while task.wait() do
+    while task.wait(0.05) do
         if State.Triggerbot and not State.Freecam then
             local rayParams = RaycastParams.new()
             rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -3320,20 +3319,16 @@ task.spawn(function()
             end
             
             if canShoot then
-                if mouse1press and mouse1release then
-                    pcall(mouse1press)
-                    task.wait(0.02)
-                    pcall(mouse1release)
-                elseif mouse1click then
+                -- ВИПРАВЛЕНО: Використовуємо лише безпечний mouse1click або VirtualUser
+                if mouse1click then
                     pcall(mouse1click)
-                elseif VirtualUser then
+                else
                     pcall(function()
                         VirtualUser:Button1Down(Vector2.new())
-                        task.wait(0.02)
+                        task.wait()
                         VirtualUser:Button1Up(Vector2.new())
                     end)
                 end
-                task.wait(0.05) -- Anti-spam cooldown
             end
         end
     end
