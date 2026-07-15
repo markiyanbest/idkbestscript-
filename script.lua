@@ -203,9 +203,6 @@ if not GuiP or typeof(GuiP) ~= "Instance" then
     GuiP = LP:WaitForChild("PlayerGui")
 end
 
--- Створюємо надійне посилання на PlayerGui для рендеру 3D-елементів (ESP)
-local EspGuiParent = LP:WaitForChild("PlayerGui", 10) or LP:FindFirstChildOfClass("PlayerGui")
-
 local function SafeCleanGUIs()
     local guisToCheck = { GuiP, LP:WaitForChild("PlayerGui", 5) }
     for _, sg in pairs(guisToCheck) do
@@ -213,10 +210,6 @@ local function SafeCleanGUIs()
             for _, v in pairs(sg:GetChildren()) do
                 if v:IsA("ScreenGui") and v:FindFirstChild("OmniMarker") then 
                     pcall(function() v:Destroy() end) 
-                end
-                -- Очищення старого ESP при перезавантаженні скрипта
-                if v:IsA("BillboardGui") and v:FindFirstChild("OmniESPMarker") then
-                    pcall(function() v:Destroy() end)
                 end
             end
         end
@@ -635,7 +628,7 @@ local function TpToPlayer(partialName)
 end
 
 -- ============================================================
--- ESP SYSTEM (FIXED: Uses PlayerGui as direct parent)
+-- ESP SYSTEM (FIXED: Uses Adornee in Secure GUI)
 -- ============================================================
 local ESPCache = {}
 local ESP_UPDATE_INTERVAL = 0.1
@@ -679,16 +672,13 @@ local function UpdateESP()
             
             local bb = Instance.new("BillboardGui")
             bb.Name = RndStr(8)
-            -- Надійний маркер для відстеження та очищення
-            Instance.new("BoolValue", bb).Name = "OmniESPMarker"
             bb.Adornee = head
             bb.Size = UDim2.new(0, 120, 0, 44)
             bb.StudsOffset = Vector3.new(0, 2.8, 0)
             bb.AlwaysOnTop = true
             bb.LightInfluence = 0
             bb.ResetOnSpawn = false
-            -- Малюємо безпосередньо у PlayerGui, щоб рушій гри рендерив усе без збоїв
-            bb.Parent = EspGuiParent
+            bb.Parent = GuiP
 
             local nameLbl = Instance.new("TextLabel")
             nameLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -1334,6 +1324,7 @@ local function Toggle(nm)
                     Camera.CameraType = Enum.CameraType.Custom
                     local H2 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
                     if H2 then Camera.CameraSubject = H2 end
+                    -- ВИПРАВЛЕНО: Повертаємо мишу і розморозку
                     UIS.MouseBehavior = Enum.MouseBehavior.Default
                     if R then R.Anchored = false end
                 end)
@@ -1381,6 +1372,7 @@ local function Toggle(nm)
             Camera.CameraType = Enum.CameraType.Scriptable
             local x, y = Camera.CFrame:ToEulerAnglesYXZ()
             FC_P = x; FC_Y = y
+            -- ВИПРАВЛЕНО: Заморожуємо тіло (AFK) і блокуємо мишу для огляду
             if R then R.Anchored = true end
             if not IsMob then
                 UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
@@ -1613,7 +1605,7 @@ local function JoinRandomServer()
                 end
             end
             if #filtered > 0 then
-                (chosen = filtered[math.random(1, #filtered)])
+                local chosen = filtered[math.random(1, #filtered)]
                 Notify("Server Hop", "🔄 Joining " .. chosen.playing .. L("ntf_players"), 2)
                 task.wait(1)
                 local ok, err = pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, chosen.id, LP) end)
@@ -1693,7 +1685,6 @@ local function JoinSmallestServer()
     end)
 end
 
--- --- КІНЕЦЬ ПЕРШОЇ ЧАСТИНИ. ПРОСТО ВСТАВ ДРУГУ ЧАСТИНУ ОДРАЗУ НИЖЧЕ БЕЗ ЖОДНИХ ЗМІН ---
 -- ============================================================
 -- UNIVERSAL GUI INITIALIZATION (VELOCITY BYPASS)
 -- ============================================================
@@ -2660,6 +2651,7 @@ local function MkButton(tab, icon, lblKey, color, onClick)
     return row
 end
 
+-- ВИПРАВЛЕНО: Ідеальне вирівнювання повзунка
 local function MkSlider(tab, icon, lblKey, minV, maxV, def, configKey, onChange)
     local pg = TabPages[tab]; if not pg then return end
     local h = IsMob and 56 or 48
@@ -3118,10 +3110,6 @@ UIS.InputChanged:Connect(function(inp, gpe)
         FC_Y = FC_Y - math.rad(inp.Delta.X * 0.35)
         FC_P = math.clamp(FC_P - math.rad(inp.Delta.Y * 0.35), -math.rad(89), math.rad(89))
     end
-end)
-
-UIS.InputEnded:Connect(function(inp, gpe)
-    -- Не заважаємо іншим функціям
 end)
 
 UIS.JumpRequest:Connect(function()
